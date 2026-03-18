@@ -1,0 +1,100 @@
+<main class="catalog-main-content">
+  <h1>Gimnasio Kuda - Panel de Gestión</h1>
+
+  <section class="table-block">
+    <h2>Socios</h2>
+    <button class="primary-btn" type="button" (click)="toggleCreateSocioForm()">
+      {{ showCreateSocioForm ? 'Cancelar' : 'Agregar Nuevo Socio' }}
+    </button>
+
+    <form
+      *ngIf="showCreateSocioForm"
+      class="create-socio-form"
+      (ngSubmit)="onCreateSocio()"
+    >
+      <label>
+        Nombre
+        <input
+          type="text"
+          name="nombre"
+          [(ngModel)]="newSocio.nombre"
+          required
+        />
+      </label>
+
+      <label>
+        Email
+        <input
+          type="email"
+          name="email"
+          [(ngModel)]="newSocio.email"
+          required
+        />
+      </label>
+
+      <label>
+        Teléfono
+        <input
+          type="text"
+          name="telefono"
+          [(ngModel)]="newSocio.telefono"
+          required
+        />
+      </label>
+
+      <button class="primary-btn" type="submit" [disabled]="isSavingSocio">
+        {{ isSavingSocio ? 'Guardando...' : 'Guardar Socio' }}
+      </button>
+      <p class="form-error" *ngIf="createSocioError">{{ createSocioError }}</p>
+    </form>
+
+    <div class="table-wrapper">
+      <table class="socios-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let socio of socios$ | async">
+            <td>{{ socio.id }}</td>
+            <td>{{ socio.nombre }}</td>
+            <td>{{ socio.email }}</td>
+            <td>{{ socio.telefono }}</td>
+            <td>{{ socio.estado_activo ? 'Activo' : 'Inactivo' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="table-block">
+    <h2>Planes Disponibles</h2>
+    <table class="socios-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Precio</th>
+          <th>Duración (días)</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let plan of planes">
+          <td>{{ plan.nombre }}</td>
+          <td>${{ plan.precio }}</td>
+          <td>{{ plan.duracion_dias }}</td>
+          <td>
+            <button class="primary-btn" type="button" (click)="pagarPlan(plan)">
+              Pagar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</main>

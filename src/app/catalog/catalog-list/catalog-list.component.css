@@ -1,0 +1,86 @@
+.catalog-main-content {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+h1 {
+  margin: 0 0 1rem;
+  color: var(--primary-color);
+}
+
+.table-block {
+  margin-top: 1.5rem;
+}
+
+.table-block h2 {
+  margin: 0 0 0.75rem;
+  color: var(--primary-color);
+}
+
+.primary-btn {
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+}
+
+.primary-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.create-socio-form {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.create-socio-form label {
+  display: grid;
+  gap: 0.25rem;
+  font-weight: 500;
+}
+
+.create-socio-form input {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.form-error {
+  margin: 0;
+  color: #c62828;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.socios-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.socios-table th,
+.socios-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.socios-table th {
+  font-weight: 600;
+  color: var(--primary-color);
+}

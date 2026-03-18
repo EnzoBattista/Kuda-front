@@ -1,0 +1,90 @@
+/* src/styles.css */
+
+/* Definición de variables CSS para los colores */
+:root {
+    --primary-color: #ea7e00;
+    --secondary-color: #fbf7f2;
+    --text-color: #333;
+    --light-text-color: #666;
+    --border-color: #e0e0e0;
+    --card-background: #ffffff;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Estilos globales */
+body {
+    margin: 0;
+    font-family: "Inter", sans-serif;
+    /* Usando la fuente Inter */
+    background-color: var(--secondary-color);
+    /* Fondo secundario muy claro */
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--primary-color);
+    /* Títulos con color principal */
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Estilos para el header de la aplicación */
+.app-header {
+    background-color: var(--primary-color);
+    /* Header con color principal */
+    color: #ffffff;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* Bordes redondeados */
+}
+
+.app-header .logo {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.app-header nav a {
+    color: #ffffff;
+    margin-left: 0.5rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.app-header nav a:hover {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+}
+
+.app-header button {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    margin-left: 1rem;
+}
+
+.app-header button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: #ffffff;
+}

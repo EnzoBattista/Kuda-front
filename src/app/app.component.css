@@ -1,0 +1,333 @@
+/* src/app/app.component.css */
+
+/* Estilos para el header (navbar) en general */
+header {
+    background-color: #ff9800;
+    /* Color naranja de tu navbar */
+    padding: 10px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    /* Centra el contenido principal */
+    align-items: center;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    /* O un ancho máximo como max-width: 1200px; */
+}
+
+.logo img {
+    height: 50px;
+    /* Ajusta el tamaño de tu logo */
+}
+
+/* Contenedor principal de nav y búsqueda */
+.nav-and-search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    /* Espacio entre la búsqueda y la navegación */
+}
+
+/* Estilos para el contenedor de búsqueda */
+.search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    border-radius: 25px;
+    padding: 8px 0;
+    /* Ajuste: el padding se moverá al input */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    width: 350px; }
+
+.search-container:focus-within {
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    /* Resplandor al enfocar */
+}
+
+
+.navbar-search-input {
+    border: none;
+    outline: none;
+    flex-grow: 1;
+    padding: 0 15px;
+    font-size: 16px;
+    color: #333;
+    background: transparent; }
+
+.navbar-search-input::placeholder {
+    color: #888;
+}
+
+.navbar-clear-button {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    margin-left: 5px;
+    padding: 0 8px;
+    line-height: 1;
+    transition: color 0.2s ease; }
+
+.navbar-clear-button:hover {
+    color: #555;
+}
+
+/* Estilos para el contenedor de sugerencias y historial */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    /* Debajo del input */
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 5px;
+    /* Pequeño espacio entre input y sugerencias */
+    z-index: 1000;
+    /* Asegura que esté por encima de otros elementos */
+    max-height: 250px;
+    /* Altura máxima para las sugerencias */
+    overflow-y: auto;
+    /* Scroll si hay muchas sugerencias */
+    padding: 10px 0;
+    border: 1px solid #eee;
+    /* Borde suave */
+}
+
+.search-suggestions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.search-suggestions li {
+    padding: 10px 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.search-suggestions li:hover {
+    background-color: #f0f0f0;
+}
+
+.history-section {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+.history-title {
+    font-weight: bold;
+    color: #666;
+    padding: 5px 15px;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.history-section li button {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1em;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.history-section li button:hover {
+    color: #666;
+}
+
+.no-results {
+    padding: 10px 15px;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+}
+
+/* Estilos de la navegación principal */
+.main-nav a {
+    color: #fff;
+    /* Texto blanco en el nav */
+    text-decoration: none;
+    margin-left: 20px;
+    font-weight: bold;
+    font-size: 16px;
+    transition: color 0.2s ease;
+}
+
+.main-nav a:hover {
+    color: #f0f0f0;
+}
+
+/* Estilos para el footer */
+footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 10px;
+    position: relative;
+    bottom: 0;
+    width: 100%; }
+
+
+.navbar-clear-button {
+    /* ... tus estilos existentes ... */
+    margin-right: 5px;
+    /* Espacio antes del botón de búsqueda */
+    padding: 0 8px;
+    /* Pequeño padding para que la X no esté tan pegada */
+}
+
+
+.search-button:hover {
+    background-color: #e08e00;
+    /* Naranja un poco más oscuro al pasar el ratón */
+}
+
+
+/* Ajustes para el historial y sugerencias */
+.history-section {
+    border-bottom: 1px solid #e08e00;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+.history-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.history-section li {
+    padding: 8px 15px;
+    /* Ajustado para que el padding sea más consistente */
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.history-section li button {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 0.9em;
+    /* Más pequeño para la X del historial */
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.no-results {
+    padding: 10px 15px;
+    /* Asegura el padding */
+}
+
+
+.app-header {
+    background-color: var(--primary-color);
+    /* Color principal para el encabezado */
+    color: #ffffff;
+    padding: 0.2rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  
+    position: sticky;
+    /* Hace que el header se quede arriba al hacer scroll */
+    top: 0;
+    z-index: 1000;
+    /* Asegura que esté por encima de otros elementos */
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.brand-text {
+    color: #ffffff;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+
+.main-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    /* Espacio entre los elementos de navegación */
+}
+
+.main-nav a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
+}
+
+.main-nav a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    /* Fondo sutil al pasar el ratón */
+    text-decoration: none;
+}
+
+.main-nav .admin-toggle-btn {
+    background-color: rgba(255, 255, 255, 0.15);
+    /* Botones de admin con fondo más tenue */
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    margin-left: 1rem;
+    /* Espacio con el último enlace */
+}
+
+.main-nav .admin-toggle-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: #ffffff;
+}
+
+/* Media queries para responsividad (opcional pero recomendado) */
+@media (max-width: 768px) {
+    .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .main-nav {
+        margin-top: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+        width: 100%;
+    }
+
+    .main-nav a,
+    .main-nav .admin-toggle-btn {
+        width: calc(100% - 1.6rem);
+        /* Ajuste para padding */
+        text-align: center;
+        margin-left: 0;
+        /* Elimina margen extra */
+    }
+}

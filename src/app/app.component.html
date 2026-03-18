@@ -1,0 +1,30 @@
+<header class="app-header">
+  <a routerLink="/catalogo" class="logo-container">
+    <span class="brand-text">Gimnasio Kuda</span>
+  </a>
+
+  <nav class="main-nav">
+    <a routerLink="/catalogo">Catálogo</a>
+    <a>Iniciar Sesión</a>
+    <a>Panel Admin</a>
+  </nav>
+</header>
+
+<router-outlet></router-outlet>
+
+<footer class="app-footer">
+  <p>&copy; 2025 Gimnasio Kuda. Todos los derechos reservados.</p>
+</footer>
+
+<style>
+  .app-footer {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    text-align: center;
+    padding: 1rem;
+    margin-top: 2rem;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    box-shadow: 0 -2px 4px var(--shadow-color);
+  }
+</style>
