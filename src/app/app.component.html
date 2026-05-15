@@ -9,7 +9,7 @@
     </a>
 
     <nav class="main-nav" aria-label="Navegación principal">
-      <a class="nav-link" routerLink="/catalogo" routerLinkActive="nav-link-active">Actividades</a>
+      <a class="nav-link" routerLink="/catalogo" routerLinkActive="nav-link-active" *ngIf="!auth.isStaff()">Actividades</a>
       <ng-container *ngIf="auth.isLoggedIn(); else noLogueado">
         <ng-container *ngIf="!auth.isStaff()">
           <a class="nav-link" routerLink="/mi-informacion" routerLinkActive="nav-link-active">Mi información</a>

@@ -1,23 +1,23 @@
-<section class="usuarios-section">
-  <header class="usuarios-section-head">
+<section class="card usuarios-section">
+  <div class="card-head">
     <h3>Usuarios</h3>
-    <p class="help">Listá, filtrá y editá los usuarios del centro.</p>
-  </header>
+    <button (click)="limpiarFiltros()">Refrescar</button>
+  </div>
 
   <!-- Filtros -->
-  <form class="card card-pad usuarios-filtros form" [formGroup]="filtros">
-    <div class="field">
-      <div class="label">Buscar</div>
-      <input
-        class="control"
-        type="search"
-        formControlName="q"
-        placeholder="Nombre, apellido, DNI o email"
-        autocomplete="off"
-      />
-    </div>
+  <form class="usuarios-filtros form" [formGroup]="filtros">
+    <div class="filtros-row">
+      <div class="field">
+        <div class="label">Buscar</div>
+        <input
+          class="control"
+          type="search"
+          formControlName="q"
+          placeholder="Nombre, apellido, DNI o email"
+          autocomplete="off"
+        />
+      </div>
 
-    <div class="form-row form-row-2">
       <div class="field">
         <div class="label">Estado</div>
         <select class="control" formControlName="estado">
@@ -36,76 +36,44 @@
           <option value="CLIENTE">Cliente</option>
         </select>
       </div>
-    </div>
 
-    <div class="field">
-      <div class="label">Tipo de inscripción</div>
-      <select class="control" formControlName="tipoInscripcion">
-        <option value="">Todas</option>
-        <option value="ABONADO">Abonado</option>
-        <option value="NO_ABONADO">No abonado</option>
-      </select>
-    </div>
-
-    <div class="form-actions" *ngIf="hayFiltrosAplicados()">
-      <button type="button" class="btn btn-secondary" (click)="limpiarFiltros()">
-        Limpiar filtros
-      </button>
+      <div class="field" *ngIf="hayFiltrosAplicados()">
+        <div class="label">&nbsp;</div>
+        <button type="button" class="control btn-limpiar" (click)="limpiarFiltros()">
+          Limpiar filtros
+        </button>
+      </div>
     </div>
   </form>
 
   <!-- Estados -->
-  <div class="card card-pad usuarios-state" *ngIf="isLoading">
-    <p class="help">Cargando usuarios…</p>
-  </div>
+  <p class="muted" *ngIf="isLoading">Cargando…</p>
+  <p class="error" *ngIf="!isLoading && errorMsg">{{ errorMsg }}</p>
+  <p class="muted" *ngIf="!isLoading && !errorMsg && usuarios.length === 0">
+    No se encontraron usuarios{{ hayFiltrosAplicados() ? ' con los filtros aplicados' : '' }}.
+  </p>
 
-  <div class="card card-pad usuarios-state" *ngIf="!isLoading && errorMsg">
-    <p class="error-text">{{ errorMsg }}</p>
-  </div>
-
-  <div class="card card-pad usuarios-state" *ngIf="!isLoading && !errorMsg && usuarios.length === 0">
-    <h3>No se han encontrado usuarios</h3>
-    <p class="help" *ngIf="hayFiltrosAplicados()">
-      Probá ajustar o limpiar los filtros aplicados.
-    </p>
-  </div>
-
-  <!-- Listado de cards -->
-  <ul class="usuarios-grid" *ngIf="!isLoading && !errorMsg && usuarios.length > 0">
-    <li class="card card-pad usuario-card" *ngFor="let u of usuarios">
-      <div class="usuario-head">
-        <div>
-          <h4 class="usuario-nombre">{{ u.nombre }} {{ u.apellido }}</h4>
-          <p class="usuario-email">{{ u.email }}</p>
-        </div>
-        <span class="badge" [class.badge-inactivo]="!u.activo">
-          {{ estadoLabel(u) }}
-        </span>
+  <!-- Tabla -->
+  <div class="table" *ngIf="!isLoading && !errorMsg && usuarios.length > 0">
+    <div class="row head">
+      <div>Nombre</div>
+      <div>Email</div>
+      <div>DNI</div>
+      <div>Rol</div>
+      <div>Estado</div>
+      <div></div>
+    </div>
+    <div class="row" *ngFor="let u of usuarios">
+      <div>{{ u.nombre }} {{ u.apellido }}</div>
+      <div>{{ u.email }}</div>
+      <div>{{ u.dni }}</div>
+      <div>{{ rolLabel(u) }}</div>
+      <div>
+        <span class="badge" [class.badge-inactivo]="!u.activo">{{ estadoLabel(u) }}</span>
       </div>
-
-      <dl class="usuario-info">
-        <div class="usuario-info-row">
-          <dt>DNI</dt>
-          <dd>{{ u.dni }}</dd>
-        </div>
-        <div class="usuario-info-row">
-          <dt>Rol</dt>
-          <dd>{{ rolLabel(u) }}</dd>
-        </div>
-        <div class="usuario-info-row">
-          <dt>Tipo de inscripción</dt>
-          <dd>{{ tipoInscripcionLabel(u) }}</dd>
-        </div>
-      </dl>
-
-      <div class="form-actions">
-        <a
-          class="btn btn-primary"
-          [routerLink]="['/admin/usuarios', u.email, 'editar']"
-        >
-          Editar usuario
-        </a>
+      <div class="right">
+        <a class="btn-tabla" [routerLink]="['/admin/usuarios', u.email, 'editar']">Editar</a>
       </div>
-    </li>
-  </ul>
+    </div>
+  </div>
 </section>

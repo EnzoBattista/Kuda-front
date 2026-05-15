@@ -6,17 +6,25 @@
 
 .admin-header {
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-header-top {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-end;
   gap: 1rem;
-  flex-wrap: wrap;
+}
+
+.admin-header-top h2 {
+  margin: 0;
 }
 
 .admin-header-right {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-left: auto;
 }
 
 .current-user {
@@ -28,7 +36,7 @@
 }
 
 .role-badge {
-  background: var(--primary-color);
+  background: var(--brand-blue-600);
   color: #fff;
   font-size: 0.7rem;
   font-weight: 800;
@@ -69,8 +77,8 @@
 }
 
 .tabs button.active {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
+  background: var(--brand-blue-600);
+  border-color: var(--brand-blue-600);
   color: #fff;
 }
 
@@ -91,13 +99,25 @@
   flex-wrap: wrap;
 }
 
+.card-head-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .card-head button {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   background: #fff;
   border-radius: 10px;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   font-weight: 700;
+}
+
+.btn-action {
+  background: var(--brand-blue-600) !important;
+  color: #fff !important;
+  border-color: var(--brand-blue-600) !important;
 }
 
 .grid {

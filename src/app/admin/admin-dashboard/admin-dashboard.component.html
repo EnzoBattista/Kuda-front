@@ -1,31 +1,20 @@
 <div class="admin-page">
   <div class="admin-header">
-    <h2>Panel Admin</h2>
-
-    <div class="admin-header-right">
-      <span class="current-user" *ngIf="currentUser">
-        {{ currentUser.nombre }} {{ currentUser.apellido }}
-        <span class="role-badge">{{ currentUser.rol.nombre }}</span>
-      </span>
-      <button class="btn-logout" (click)="logout()">Cerrar sesión</button>
+    <div class="admin-header-top">
+      <h2>Panel de administrador</h2>
+      <div class="admin-header-right">
+        <span class="current-user" *ngIf="currentUser">
+          <strong>{{ currentUser.nombre }} {{ currentUser.apellido }}</strong>
+          <span class="role-badge">{{ currentUser.rol.nombre }}</span>
+        </span>
+      </div>
     </div>
 
     <div class="tabs">
-      <button (click)="setTab('planes')" [class.active]="tab === 'planes'">
-        Planes
-      </button>
-      <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">
-        Usuarios
-      </button>
-      <button (click)="setTab('clases')" [class.active]="tab === 'clases'">
-        Clases
-      </button>
-      <button
-        (click)="setTab('profesores')"
-        [class.active]="tab === 'profesores'"
-      >
-        Profesores
-      </button>
+      <button (click)="setTab('planes')" [class.active]="tab === 'planes'">Planes</button>
+      <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Usuarios</button>
+      <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
+      <button (click)="setTab('profesores')" [class.active]="tab === 'profesores'">Profesores</button>
     </div>
   </div>
 
@@ -64,7 +53,10 @@
   <section *ngIf="tab === 'clases'" class="card">
     <div class="card-head">
       <h3>Clases</h3>
-      <button (click)="refreshClases()">Refrescar</button>
+      <div class="card-head-actions">
+        <button class="btn-action" (click)="onCreateClase()">+ Agendar clase</button>
+        <button (click)="refreshClases()">Refrescar</button>
+      </div>
     </div>
 
     <p class="error" *ngIf="error.clases">{{ error.clases }}</p>
@@ -107,9 +99,6 @@
         <span>Profesor ID</span>
         <input type="number" [(ngModel)]="createClase.profesor_id" />
       </label>
-      <div class="actions">
-        <button (click)="onCreateClase()">Agendar clase</button>
-      </div>
     </div>
 
     <div class="table">
@@ -136,7 +125,10 @@
   <section *ngIf="tab === 'profesores'" class="card">
     <div class="card-head">
       <h3>Profesores</h3>
-      <button (click)="refreshProfesores()">Refrescar</button>
+      <div class="card-head-actions">
+        <button class="btn-action" (click)="onCreateProfesor()">+ Registrar profesor</button>
+        <button (click)="refreshProfesores()">Refrescar</button>
+      </div>
     </div>
 
     <p class="error" *ngIf="error.profesores">{{ error.profesores }}</p>
@@ -157,14 +149,8 @@
       </label>
       <label>
         <span>Actividades (IDs, separados por coma)</span>
-        <input
-          placeholder="Ej: 1,2,3"
-          [(ngModel)]="createProfesor.actividadesCsv"
-        />
+        <input placeholder="Ej: 1,2,3" [(ngModel)]="createProfesor.actividadesCsv" />
       </label>
-      <div class="actions">
-        <button (click)="onCreateProfesor()">Registrar profesor</button>
-      </div>
     </div>
 
     <div class="table">
