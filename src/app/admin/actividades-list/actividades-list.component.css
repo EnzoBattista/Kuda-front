@@ -1,0 +1,195 @@
+:host {
+  display: block;
+}
+
+.actividades-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.actividades-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.actividades-header h3 {
+  margin: 0;
+}
+
+.actividades-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  text-align: center;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.actividades-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 780px) {
+  .actividades-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.actividad-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.actividad-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.actividad-nombre {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.actividad-badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--muted, #64748b);
+}
+
+.actividad-descripcion {
+  margin: 0;
+}
+
+.actividad-precio {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--brand-blue-700, #1d4ed8);
+}
+
+.actividad-card .form-actions {
+  margin-top: 0.25rem;
+}
+
+.actividad-card .form-actions .btn {
+  flex: 1 1 auto;
+  min-width: min(100%, 10rem);
+}
+
+.success-banner {
+  font-weight: 900;
+  color: var(--brand-blue);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(30, 64, 175, 0.08);
+  border: 1px solid rgba(30, 64, 175, 0.2);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+@media (min-width: 600px) {
+  .modal-overlay {
+    align-items: center;
+  }
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: min(480px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.modal-panel-danger {
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.modal-panel .form-actions {
+  margin-top: 0.25rem;
+}
+
+@media (min-width: 480px) {
+  .modal-panel .form-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.profesores-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.profesores-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.profesor-nombre {
+  font-weight: 700;
+}
+
+.profesores-empty {
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text);
+}
+
+textarea.control {
+  min-height: 5rem;
+  resize: vertical;
+}

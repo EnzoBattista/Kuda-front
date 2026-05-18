@@ -1,0 +1,286 @@
+<section class="actividades-section">
+  <div class="actividades-header">
+    <h3>Actividades</h3>
+    <div class="actividades-header-actions">
+      <button
+        *ngIf="isAdmin"
+        type="button"
+        class="btn btn-primary"
+        (click)="onAgregar()"
+      >
+        Agregar actividad
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cargarActividades()">
+        Refrescar
+      </button>
+    </div>
+  </div>
+
+  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status">
+    {{ bannerSuccess }}
+  </div>
+
+  <div class="card card-pad" *ngIf="bannerError">
+    <p class="error-text">{{ bannerError }}</p>
+  </div>
+
+  <div class="card card-pad" *ngIf="isLoading">
+    <p class="help">Cargando…</p>
+  </div>
+
+  <div class="card card-pad" *ngIf="!isLoading && errorMsg && !bannerError">
+    <p class="error-text">{{ errorMsg }}</p>
+  </div>
+
+  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && actividades.length === 0">
+    <p>No hay actividades</p>
+  </div>
+
+  <ul class="actividades-grid" *ngIf="!isLoading && !errorMsg && actividades.length > 0">
+    <li class="card card-pad actividad-card" *ngFor="let actividad of actividades">
+      <div class="actividad-card-head">
+        <h4 class="actividad-nombre">{{ actividad.nombre }}</h4>
+        <span class="actividad-badge" *ngIf="!actividad.activa">Inactiva</span>
+      </div>
+
+      <p class="help actividad-descripcion" *ngIf="actividad.descripcion">
+        {{ actividad.descripcion }}
+      </p>
+
+      <p class="actividad-precio">{{ formatPrecio(actividad.precio) }}</p>
+
+      <div class="form-actions" *ngIf="isAdmin">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="onModificar(actividad)"
+        >
+          Modificar actividad
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="onVerProfesores(actividad)"
+        >
+          Ver profesores
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="onModificarPrecio(actividad)"
+        >
+          Modificar precio
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="onEliminar(actividad)"
+        >
+          Eliminar actividad
+        </button>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- Modal: Agregar actividad -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalAgregar"
+  role="presentation"
+  (click)="cerrarModalAgregar()"
+>
+  <div class="card card-pad modal-panel" role="dialog" aria-labelledby="modal-agregar-title" (click)="$event.stopPropagation()">
+    <h4 id="modal-agregar-title" class="modal-title">Agregar actividad</h4>
+
+    <form class="form" (ngSubmit)="submitAgregar()">
+      <div class="field">
+        <label class="label" for="agregar-nombre">Nombre de actividad</label>
+        <input
+          id="agregar-nombre"
+          class="control"
+          type="text"
+          name="nombre"
+          [(ngModel)]="formNombre"
+          [attr.aria-invalid]="modalError && !formNombre.trim() ? true : null"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="field">
+        <label class="label" for="agregar-descripcion">Descripción</label>
+        <textarea
+          id="agregar-descripcion"
+          class="control"
+          name="descripcion"
+          rows="3"
+          [(ngModel)]="formDescripcion"
+        ></textarea>
+      </div>
+
+      <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
+          Agregar actividad
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalAgregar()" [disabled]="modalSubmitting">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Modificar actividad -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalModificar"
+  role="presentation"
+  (click)="cerrarModalModificar()"
+>
+  <div class="card card-pad modal-panel" role="dialog" aria-labelledby="modal-modificar-title" (click)="$event.stopPropagation()">
+    <h4 id="modal-modificar-title" class="modal-title">Modificar actividad</h4>
+    <p class="help" *ngIf="selectedActividad">Editando: {{ selectedActividad.nombre }}</p>
+
+    <form class="form" (ngSubmit)="submitModificar()">
+      <div class="field">
+        <label class="label" for="modificar-nombre">Nombre de actividad</label>
+        <input
+          id="modificar-nombre"
+          class="control"
+          type="text"
+          name="nombre"
+          [(ngModel)]="formNombre"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="field">
+        <label class="label" for="modificar-descripcion">Descripción</label>
+        <textarea
+          id="modificar-descripcion"
+          class="control"
+          name="descripcion"
+          rows="3"
+          [(ngModel)]="formDescripcion"
+        ></textarea>
+      </div>
+
+      <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
+          Modificar actividad
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalModificar()" [disabled]="modalSubmitting">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Modificar precio -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalPrecio"
+  role="presentation"
+  (click)="cerrarModalPrecio()"
+>
+  <div class="card card-pad modal-panel" role="dialog" aria-labelledby="modal-precio-title" (click)="$event.stopPropagation()">
+    <h4 id="modal-precio-title" class="modal-title">Modificar precio</h4>
+    <p class="help" *ngIf="selectedActividad">
+      {{ selectedActividad.nombre }} — precio actual: {{ formatPrecio(selectedActividad.precio) }}
+    </p>
+
+    <form class="form" (ngSubmit)="submitPrecio()">
+      <div class="field">
+        <label class="label" for="precio-nuevo">Nuevo precio</label>
+        <input
+          id="precio-nuevo"
+          class="control"
+          type="number"
+          name="precio"
+          min="0"
+          step="0.01"
+          [(ngModel)]="formPrecio"
+          [attr.aria-invalid]="precioInvalido ? true : null"
+        />
+      </div>
+
+      <p class="error-text" *ngIf="precioInvalido">{{ precioHuError }}</p>
+      <p class="error-text" *ngIf="modalError && !precioInvalido">{{ modalError }}</p>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || precioInvalido">
+          Guardar cambios
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalPrecio()" [disabled]="modalSubmitting">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Eliminar actividad -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalEliminar"
+  role="presentation"
+  (click)="cerrarModalEliminar()"
+>
+  <div class="card card-pad modal-panel modal-panel-danger" role="dialog" aria-labelledby="modal-eliminar-title" (click)="$event.stopPropagation()">
+    <h4 id="modal-eliminar-title" class="modal-title">Eliminar actividad</h4>
+    <p class="help" *ngIf="selectedActividad">
+      ¿Confirmás la eliminación de <strong>{{ selectedActividad.nombre }}</strong>?
+      Esta acción dará de baja la actividad en el sistema.
+    </p>
+
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-danger" (click)="submitEliminar()" [disabled]="modalSubmitting">
+        Eliminar actividad
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarModalEliminar()" [disabled]="modalSubmitting">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ver profesores -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalProfesores"
+  role="presentation"
+  (click)="cerrarModalProfesores()"
+>
+  <div class="card card-pad modal-panel" role="dialog" aria-labelledby="modal-profesores-title" (click)="$event.stopPropagation()">
+    <h4 id="modal-profesores-title" class="modal-title">Profesores asociados</h4>
+    <p class="help" *ngIf="selectedActividad">Actividad: {{ selectedActividad.nombre }}</p>
+
+    <p class="help" *ngIf="profesoresLoading">Cargando…</p>
+
+    <p class="error-text" *ngIf="modalError && !profesoresLoading">{{ modalError }}</p>
+
+    <p class="help profesores-empty" *ngIf="!profesoresLoading && !modalError && profesoresEmptyHu">
+      No existen profesores asociados a esta actividad
+    </p>
+
+    <ul class="profesores-list" *ngIf="!profesoresLoading && !modalError && profesores.length > 0">
+      <li *ngFor="let p of profesores">
+        <span class="profesor-nombre">{{ nombreProfesor(p) }}</span>
+        <span class="profesor-dni help">DNI {{ p.dni }}</span>
+      </li>
+    </ul>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary" (click)="cerrarModalProfesores()">
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>

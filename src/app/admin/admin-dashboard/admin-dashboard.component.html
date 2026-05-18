@@ -11,115 +11,19 @@
     </div>
 
     <div class="tabs">
-      <button (click)="setTab('planes')" [class.active]="tab === 'planes'">Planes</button>
+      <button (click)="setTab('actividades')" [class.active]="tab === 'actividades'">Actividades</button>
       <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Usuarios</button>
       <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
       <button (click)="setTab('profesores')" [class.active]="tab === 'profesores'">Profesores</button>
     </div>
   </div>
 
-  <!-- PLANES -->
-  <section *ngIf="tab === 'planes'" class="card">
-    <div class="card-head">
-      <h3>Planes</h3>
-      <button (click)="refreshPlanes()">Refrescar</button>
-    </div>
-
-    <p class="error" *ngIf="error.planes">{{ error.planes }}</p>
-    <p class="muted" *ngIf="loading.planes">Cargando…</p>
-
-    <div class="table">
-      <div class="row head">
-        <div>ID</div>
-        <div>Nombre</div>
-        <div>Actividad</div>
-        <div>Tipo</div>
-        <div>Activo</div>
-      </div>
-      <div class="row" *ngFor="let p of planes">
-        <div>{{ p.id }}</div>
-        <div>{{ p.nombre }}</div>
-        <div>{{ p.actividad?.nombre ?? p.actividad_id }}</div>
-        <div>{{ p.tipo }}</div>
-        <div>{{ p.activo ? 'Sí' : 'No' }}</div>
-      </div>
-    </div>
-  </section>
+  <app-actividades-list *ngIf="tab === 'actividades'"></app-actividades-list>
 
   <!-- USUARIOS (HU "Listar usuarios" + "Filtrar usuarios" + atajo a "Editar usuario") -->
   <app-usuarios-list *ngIf="tab === 'usuarios'"></app-usuarios-list>
 
-  <!-- CLASES -->
-  <section *ngIf="tab === 'clases'" class="card">
-    <div class="card-head">
-      <h3>Clases</h3>
-      <div class="card-head-actions">
-        <button class="btn-action" (click)="onCreateClase()">+ Agendar clase</button>
-        <button (click)="refreshClases()">Refrescar</button>
-      </div>
-    </div>
-
-    <p class="error" *ngIf="error.clases">{{ error.clases }}</p>
-    <p class="muted" *ngIf="loading.clases">Cargando…</p>
-
-    <div class="grid grid-2">
-      <label>
-        <span>Día</span>
-        <select [(ngModel)]="createClase.dia_semana">
-          <option>Lunes</option>
-          <option>Martes</option>
-          <option>Miércoles</option>
-          <option>Jueves</option>
-          <option>Viernes</option>
-          <option>Sábado</option>
-          <option>Domingo</option>
-        </select>
-      </label>
-      <label>
-        <span>Hora inicio</span>
-        <input type="time" [(ngModel)]="createClase.hora_inicio" />
-      </label>
-      <label>
-        <span>Hora fin</span>
-        <input type="time" [(ngModel)]="createClase.hora_fin" />
-      </label>
-      <label>
-        <span>Cupo</span>
-        <input type="number" [(ngModel)]="createClase.cupo" />
-      </label>
-      <label>
-        <span>Actividad ID</span>
-        <input type="number" [(ngModel)]="createClase.actividad_id" />
-      </label>
-      <label>
-        <span>Sala ID</span>
-        <input type="number" [(ngModel)]="createClase.sala_id" />
-      </label>
-      <label>
-        <span>Profesor ID</span>
-        <input type="number" [(ngModel)]="createClase.profesor_id" />
-      </label>
-    </div>
-
-    <div class="table">
-      <div class="row head">
-        <div>ID</div>
-        <div>Día</div>
-        <div>Inicio</div>
-        <div>Fin</div>
-        <div>Cupo</div>
-        <div>Activa</div>
-      </div>
-      <div class="row" *ngFor="let c of clases">
-        <div>{{ c.id }}</div>
-        <div>{{ c.dia_semana }}</div>
-        <div>{{ c.hora_inicio }}</div>
-        <div>{{ c.hora_fin }}</div>
-        <div>{{ c.cupo }}</div>
-        <div>{{ c.activa ? 'Sí' : 'No' }}</div>
-      </div>
-    </div>
-  </section>
+  <app-clases-list *ngIf="tab === 'clases'"></app-clases-list>
 
   <!-- PROFESORES -->
   <section *ngIf="tab === 'profesores'" class="card">
