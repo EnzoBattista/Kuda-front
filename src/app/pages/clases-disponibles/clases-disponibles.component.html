@@ -1,0 +1,222 @@
+<div class="container" style="padding-top: 1.25rem;">
+  <header class="page-head">
+    <h2>Clases disponibles</h2>
+    <p class="help">Explorá las clases y reservá tu lugar.</p>
+  </header>
+
+  <!-- Filtros -->
+  <form class="filtros-form" [formGroup]="filtros">
+    <div class="filtros-row">
+      <div class="field">
+        <div class="label">Actividad</div>
+        <select class="control" formControlName="actividad">
+          <option value="">Todas</option>
+          <option *ngFor="let a of actividades" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">Sede</div>
+        <select class="control" formControlName="sede">
+          <option value="">Todas</option>
+          <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="field" *ngIf="hayFiltros()">
+        <div class="label">&nbsp;</div>
+        <button type="button" class="control btn-limpiar" (click)="limpiarFiltros()">
+          Limpiar filtros
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Estados -->
+  <div class="card card-pad empty-state" *ngIf="isLoading">
+    <p class="help">Cargando clases…</p>
+  </div>
+
+  <div class="card card-pad empty-state" *ngIf="!isLoading && errorMsg">
+    <p class="error-text">{{ errorMsg }}</p>
+  </div>
+
+  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && clasesFiltradas.length === 0">
+    <p class="help">No hay clases disponibles{{ hayFiltros() ? ' con los filtros seleccionados' : '' }}.</p>
+  </div>
+
+  <!-- Grid de clases -->
+  <ul class="clases-grid" *ngIf="!isLoading && !errorMsg && clasesFiltradas.length > 0">
+    <li class="card card-pad clase-card" *ngFor="let c of clasesFiltradas">
+      <div class="clase-head">
+        <h3 class="clase-nombre">{{ c.actividad }}</h3>
+        <span class="cupo-badge" [class.sin-cupo]="c.cupoDisponible === 0">
+          {{ c.cupoDisponible === 0 ? 'Sin cupo' : c.cupoDisponible + ' lugares' }}
+        </span>
+      </div>
+
+      <dl class="clase-info">
+        <div class="clase-info-row">
+          <dt>Sede</dt>
+          <dd>{{ c.sede }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Día</dt>
+          <dd>{{ c.diaSemana }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Horario</dt>
+          <dd>{{ c.horaInicio }} – {{ c.horaFin }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Próxima fecha</dt>
+          <dd>{{ c.proximaFecha }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Cupo</dt>
+          <dd>{{ c.cupoDisponible }} / {{ c.cupoTotal }}</dd>
+        </div>
+      </dl>
+
+      <div class="form-actions">
+        <button
+          *ngIf="c.cupoDisponible > 0"
+          class="btn btn-primary"
+          type="button"
+          (click)="abrirReserva(c)"
+        >
+          Reservar
+        </button>
+        <button
+          *ngIf="c.cupoDisponible === 0"
+          class="btn btn-secondary"
+          type="button"
+          (click)="abrirEspera(c)"
+        >
+          Anotarse en lista de espera
+        </button>
+      </div>
+    </li>
+  </ul>
+</div>
+
+<!-- ===== MODAL DE RESERVA ===== -->
+<div class="modal-backdrop" *ngIf="claseSeleccionada && pasoModal !== 'espera' && pasoModal !== 'resultado-espera'" (click)="cerrarModal()">
+  <div class="modal-card card card-pad" (click)="$event.stopPropagation()" *ngIf="claseSeleccionada as c">
+
+    <!-- Paso: selección de tipo de pago -->
+    <ng-container *ngIf="pasoModal === 'seleccion'">
+      <h3 class="modal-titulo">Reservar clase</h3>
+      <p class="help">{{ c.actividad }} — {{ c.diaSemana }} {{ c.horaInicio }}</p>
+
+      <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
+
+      <div class="opciones-pago">
+        <button class="opcion-btn btn btn-primary" type="button" (click)="seleccionarTipoPago('PAGO_COMPLETO')">
+          <strong>Pago completo</strong>
+          <span class="help">Abonás el total ahora</span>
+        </button>
+        <button
+          *ngIf="puedeSenar(c)"
+          class="opcion-btn btn btn-secondary"
+          type="button"
+          (click)="seleccionarTipoPago('SEÑA')"
+        >
+          <strong>Señar</strong>
+          <span class="help">Abonás una seña y el resto en el centro</span>
+        </button>
+        <p class="help aviso-seña" *ngIf="!puedeSenar(c)">
+          La opción de señar no está disponible porque faltan menos de 24 horas para la clase.
+        </p>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cancelar</button>
+      </div>
+    </ng-container>
+
+    <!-- Paso: confirmación -->
+    <ng-container *ngIf="pasoModal === 'confirmacion'">
+      <h3 class="modal-titulo">Confirmá tu reserva</h3>
+      <dl class="clase-info">
+        <div class="clase-info-row">
+          <dt>Actividad</dt>
+          <dd>{{ c.actividad }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Día y hora</dt>
+          <dd>{{ c.diaSemana }} {{ c.horaInicio }} – {{ c.horaFin }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Sede</dt>
+          <dd>{{ c.sede }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Modalidad de pago</dt>
+          <dd>{{ tipoPagoLabel(tipoPagoElegido) }}</dd>
+        </div>
+      </dl>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="button" [disabled]="isSubmitting" (click)="confirmarReserva()">
+          {{ isSubmitting ? 'Reservando…' : 'Confirmar reserva' }}
+        </button>
+        <button class="btn btn-secondary" type="button" (click)="pasoModal = 'seleccion'">Volver</button>
+      </div>
+    </ng-container>
+
+    <!-- Paso: resultado exitoso -->
+    <ng-container *ngIf="pasoModal === 'resultado'">
+      <div class="resultado-ok">
+        <span class="resultado-icono">✓</span>
+        <h3>¡Reserva confirmada!</h3>
+        <p class="help">{{ resultadoMsg }}</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="button" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </ng-container>
+
+  </div>
+</div>
+
+<!-- ===== MODAL DE LISTA DE ESPERA ===== -->
+<div class="modal-backdrop" *ngIf="claseSeleccionada && (pasoModal === 'espera' || pasoModal === 'resultado-espera')" (click)="cerrarModal()">
+  <div class="modal-card card card-pad" (click)="$event.stopPropagation()" *ngIf="claseSeleccionada as c">
+
+    <ng-container *ngIf="pasoModal === 'espera'">
+      <h3 class="modal-titulo">Lista de espera</h3>
+      <p class="help">{{ c.actividad }} — {{ c.diaSemana }} {{ c.horaInicio }} ({{ c.sede }})</p>
+      <p class="help" style="margin-top: 0.5rem;">
+        Esta clase no tiene cupo disponible. Podés anotarte en la lista de espera y te notificaremos si se libera un lugar.
+      </p>
+
+      <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
+
+      <div class="opciones-pago">
+        <button class="opcion-btn btn btn-primary" type="button" [disabled]="isSubmitting" (click)="confirmarEspera('ABONADO')">
+          <strong>Como abonado</strong>
+          <span class="help">Para el mes completo</span>
+        </button>
+        <button class="opcion-btn btn btn-secondary" type="button" [disabled]="isSubmitting" (click)="confirmarEspera('INDIVIDUAL')">
+          <strong>Clase individual</strong>
+          <span class="help">Solo para esta fecha</span>
+        </button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cancelar</button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="pasoModal === 'resultado-espera'">
+      <div class="resultado-ok">
+        <span class="resultado-icono">✓</span>
+        <h3>¡Te anotaste en la lista!</h3>
+        <p class="help">{{ resultadoMsg }}</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="button" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </ng-container>
+
+  </div>
+</div>
