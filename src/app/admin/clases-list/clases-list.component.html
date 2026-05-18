@@ -1,0 +1,289 @@
+<section class="clases-section">
+  <div class="clases-header">
+    <h3>Clases</h3>
+    <div class="clases-header-actions">
+      <button
+        *ngIf="isAdmin"
+        type="button"
+        class="btn btn-primary"
+        (click)="onAgregar()"
+      >
+        Agregar clase
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cargarClases()">
+        Refrescar
+      </button>
+    </div>
+  </div>
+
+  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status">
+    {{ bannerSuccess }}
+  </div>
+
+  <div class="card card-pad" *ngIf="bannerError">
+    <p class="error-text">{{ bannerError }}</p>
+  </div>
+
+  <div class="card card-pad" *ngIf="isLoading">
+    <p class="help">Cargando…</p>
+  </div>
+
+  <div class="card card-pad" *ngIf="!isLoading && errorMsg && !bannerError">
+    <p class="error-text">{{ errorMsg }}</p>
+  </div>
+
+  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && clases.length === 0">
+    <p>No hay clases</p>
+  </div>
+
+  <ul class="clases-grid" *ngIf="!isLoading && !errorMsg && clases.length > 0">
+    <li class="card card-pad clase-card" *ngFor="let clase of clases">
+      <div class="clase-card-head">
+        <p class="clase-fecha-hora">{{ formatFechaHora(clase) }}</p>
+        <span
+          class="clase-estado-badge"
+          [class.clase-estado-cancelada]="estadoEsCancelada(clase)"
+        >
+          {{ estadoLabel(clase) }}
+        </span>
+      </div>
+
+      <dl class="clase-info">
+        <div class="clase-info-row">
+          <dt>Actividad</dt>
+          <dd>{{ nombreActividad(clase) }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Profesor</dt>
+          <dd>{{ nombreProfesor(clase) }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Sala</dt>
+          <dd>{{ nombreSala(clase) }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Cupo</dt>
+          <dd>{{ cupoLabel(clase) }}</dd>
+        </div>
+      </dl>
+
+      <div class="form-actions" *ngIf="isAdmin">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="onModificar(clase)"
+        >
+          Modificar clase
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="onCancelar(clase)"
+        >
+          Cancelar clase
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="onEliminar(clase)"
+        >
+          Eliminar clase
+        </button>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- Modal: Agregar / Modificar clase -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalFormulario"
+  role="presentation"
+  (click)="cerrarModalFormulario()"
+>
+  <div
+    class="card card-pad modal-panel modal-panel-form"
+    role="dialog"
+    aria-labelledby="modal-form-clase-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h4 id="modal-form-clase-title" class="modal-title">{{ formularioTitulo }}</h4>
+
+    <p class="help" *ngIf="catalogosLoading">Cargando opciones…</p>
+    <p class="error-text" *ngIf="catalogosError">{{ catalogosError }}</p>
+
+    <form class="form" [formGroup]="claseForm" (ngSubmit)="submitFormulario()">
+      <div class="field">
+        <label class="label" for="clase-actividad">Actividad</label>
+        <select id="clase-actividad" class="control" formControlName="actividadId">
+          <option [ngValue]="null" disabled>Seleccionar actividad</option>
+          <option *ngFor="let a of actividades" [ngValue]="a.id">{{ a.nombre }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="clase-profesor">Profesor</label>
+        <select id="clase-profesor" class="control" formControlName="profesorId">
+          <option [ngValue]="null" disabled>Seleccionar profesor</option>
+          <option *ngFor="let p of profesores" [ngValue]="p.id">
+            {{ labelProfesor(p) }}
+          </option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="clase-sala">Sala</label>
+        <select id="clase-sala" class="control" formControlName="salaId">
+          <option [ngValue]="null" disabled>Seleccionar sala</option>
+          <option *ngFor="let s of salas" [ngValue]="s.id">{{ labelSala(s) }}</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="clase-dia">Día</label>
+        <select id="clase-dia" class="control" formControlName="dia_semana">
+          <option *ngFor="let d of diasClase" [value]="d.value">{{ d.label }}</option>
+        </select>
+      </div>
+
+      <div class="form-row form-row-2">
+        <div class="field">
+          <label class="label" for="clase-inicio">Horario inicio</label>
+          <input id="clase-inicio" class="control" type="time" formControlName="horario_inicio" />
+        </div>
+        <div class="field">
+          <label class="label" for="clase-fin">Horario fin</label>
+          <input id="clase-fin" class="control" type="time" formControlName="horario_fin" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="clase-cupo">Cupo máximo</label>
+        <input
+          id="clase-cupo"
+          class="control"
+          type="number"
+          formControlName="cupo_maximo"
+          min="1"
+          max="50"
+          [attr.aria-invalid]="cupoRangoInvalido ? true : null"
+        />
+        <p class="error-text" *ngIf="cupoRangoInvalido">{{ cupoRangoMsg }}</p>
+      </div>
+
+      <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="modalSubmitting || catalogosLoading || formularioInvalido"
+        >
+          {{ formMode === 'agregar' ? 'Agregar clase' : 'Guardar cambios' }}
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cerrarModalFormulario()"
+          [disabled]="modalSubmitting"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Cancelar clase -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalCancelar"
+  role="presentation"
+  (click)="cerrarModalCancelar()"
+>
+  <div
+    class="card card-pad modal-panel"
+    role="dialog"
+    aria-labelledby="modal-cancelar-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h4 id="modal-cancelar-title" class="modal-title">Cancelar clase</h4>
+    <p class="help" *ngIf="selectedClase">
+      {{ nombreActividad(selectedClase) }} — {{ selectedClase.dia_semana }}
+      {{ selectedClase.hora_inicio }} – {{ selectedClase.hora_fin }}
+    </p>
+
+    <form class="form" (ngSubmit)="submitCancelar()">
+      <div class="field">
+        <label class="label" for="cancelar-fecha">Fecha a cancelar</label>
+        <input
+          id="cancelar-fecha"
+          class="control"
+          type="date"
+          name="fecha"
+          [(ngModel)]="cancelarFecha"
+          required
+        />
+      </div>
+
+      <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
+          Cancelar clase
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cerrarModalCancelar()"
+          [disabled]="modalSubmitting"
+        >
+          Volver
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Eliminar clase -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalEliminar"
+  role="presentation"
+  (click)="cerrarModalEliminar()"
+>
+  <div
+    class="card card-pad modal-panel modal-panel-danger"
+    role="dialog"
+    aria-labelledby="modal-eliminar-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h4 id="modal-eliminar-title" class="modal-title">Eliminar clase</h4>
+    <p class="help" *ngIf="selectedClase">
+      ¿Confirmás eliminar la clase de <strong>{{ nombreActividad(selectedClase) }}</strong>
+      ({{ selectedClase.dia_semana }} {{ selectedClase.hora_inicio }} –
+      {{ selectedClase.hora_fin }}, sala {{ nombreSala(selectedClase) }})?
+    </p>
+
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-danger"
+        (click)="submitEliminar()"
+        [disabled]="modalSubmitting"
+      >
+        Confirmar
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="cerrarModalEliminar()"
+        [disabled]="modalSubmitting"
+      >
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>

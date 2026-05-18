@@ -3,48 +3,38 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { Clase, ClaseService, CreateClaseDto } from '../../services/clase.service';
 import { Profesor, ProfesorService } from '../../services/profesor.service';
-import { PlanService } from '../../services/plan.service';
-import { Plan } from '../../models/plan.model';
 import { AuthService, CurrentUser } from '../../services/auth.service';
 import { UsuariosListComponent } from '../usuarios-list/usuarios-list.component';
+import { ActividadesListComponent } from '../actividades-list/actividades-list.component';
+import { ClasesListComponent } from '../clases-list/clases-list.component';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, UsuariosListComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    UsuariosListComponent,
+    ActividadesListComponent,
+    ClasesListComponent,
+  ],
   templateUrl: './admin-dashboard.component.html',
-  styleUrl: './admin-dashboard.component.css'
+  styleUrl: './admin-dashboard.component.css',
 })
 export class AdminDashboardComponent {
-  tab: 'planes' | 'usuarios' | 'clases' | 'profesores' = 'usuarios';
+  tab: 'actividades' | 'usuarios' | 'clases' | 'profesores' = 'usuarios';
 
-  planes: Plan[] = [];
-  clases: Clase[] = [];
   profesores: Profesor[] = [];
 
   loading = {
-    planes: false,
-    clases: false,
     profesores: false,
   };
 
   error = {
-    planes: '',
-    clases: '',
     profesores: '',
   };
 
-  createClase: CreateClaseDto = {
-    dia_semana: 'Lunes',
-    hora_inicio: '09:00',
-    hora_fin: '10:00',
-    cupo: 10,
-    actividad_id: 1,
-    sala_id: 1,
-    profesor_id: 1,
-  };
   createProfesor = {
     nombre: '',
     apellido: '',
@@ -55,11 +45,9 @@ export class AdminDashboardComponent {
   currentUser: CurrentUser | null = null;
 
   constructor(
-    private readonly planService: PlanService,
-    private readonly claseService: ClaseService,
     private readonly profesorService: ProfesorService,
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
   ) {
     this.currentUser = this.authService.getCurrentUser();
   }
@@ -72,75 +60,9 @@ export class AdminDashboardComponent {
   setTab(tab: typeof this.tab): void {
     this.tab = tab;
 
-    if (tab === 'planes' && this.planes.length === 0) this.refreshPlanes();
-    if (tab === 'clases' && this.clases.length === 0) this.refreshClases();
-    if (tab === 'profesores' && this.profesores.length === 0) this.refreshProfesores();
-  }
-
-  refreshPlanes(): void {
-    this.loading.planes = true;
-    this.error.planes = '';
-    this.planService.getPlanes().subscribe({
-      next: (data) => {
-        this.planes = data ?? [];
-        this.loading.planes = false;
-      },
-      error: () => {
-        this.error.planes = 'No se pudieron cargar los planes.';
-        this.loading.planes = false;
-      },
-    });
-  }
-
-  refreshClases(): void {
-    this.loading.clases = true;
-    this.error.clases = '';
-    this.claseService.getAll().subscribe({
-      next: (data) => {
-        this.clases = data ?? [];
-        this.loading.clases = false;
-      },
-      error: () => {
-        this.error.clases = 'No se pudieron cargar las clases.';
-        this.loading.clases = false;
-      },
-    });
-  }
-
-  onCreateClase(): void {
-    this.error.clases = '';
-    const c = this.createClase;
-    if (
-      !c.dia_semana ||
-      !c.hora_inicio ||
-      !c.hora_fin ||
-      Number(c.cupo) < 10 ||
-      Number(c.actividad_id) <= 0 ||
-      Number(c.sala_id) <= 0 ||
-      Number(c.profesor_id) <= 0
-    ) {
-      this.error.clases =
-        'Completá todos los campos. El cupo mínimo es 10.';
-      return;
+    if (tab === 'profesores' && this.profesores.length === 0) {
+      this.refreshProfesores();
     }
-
-    this.claseService
-      .create({
-        ...c,
-        cupo: Number(c.cupo),
-        actividad_id: Number(c.actividad_id),
-        sala_id: Number(c.sala_id),
-        profesor_id: Number(c.profesor_id),
-      })
-      .subscribe({
-        next: () => {
-          this.refreshClases();
-        },
-        error: (err) => {
-          this.error.clases =
-            err?.error?.message ?? 'No se pudo agendar la clase.';
-        },
-      });
   }
 
   refreshProfesores(): void {
