@@ -12,6 +12,7 @@ import { MiInformacionComponent } from './pages/mi-informacion/mi-informacion.co
 import { EditarPerfilComponent } from './pages/editar-perfil/editar-perfil.component';
 import { CambiarPasswordComponent } from './pages/cambiar-password/cambiar-password.component';
 import { MisReservasComponent } from './pages/mis-reservas/mis-reservas.component';
+import { ClasesDisponiblesComponent } from './pages/clases-disponibles/clases-disponibles.component';
 import { RecuperarPasswordComponent } from './auth/recuperar-password/recuperar-password.component';
 import { NuevaPasswordComponent } from './auth/nueva-password/nueva-password.component';
 
@@ -26,6 +27,7 @@ export const routes: Routes = [
   { path: 'mi-informacion', component: MiInformacionComponent, canActivate: [authGuard] },
   { path: 'editar-perfil', component: EditarPerfilComponent, canActivate: [authGuard] },
   { path: 'cambiar-password', component: CambiarPasswordComponent, canActivate: [authGuard] },
+  { path: 'clases', component: ClasesDisponiblesComponent, canActivate: [authGuard] },
   { path: 'mis-reservas', component: MisReservasComponent, canActivate: [authGuard] },
   { path: 'admin', component: AdminDashboardComponent, canActivate: [authGuard, adminGuard] },
   {

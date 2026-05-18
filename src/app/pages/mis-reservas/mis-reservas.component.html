@@ -1,35 +1,73 @@
 <div class="container" style="padding-top: 1.25rem;">
   <header class="reservas-head">
-    <h2>Mis reservas actuales</h2>
-    <p class="help">Estas son tus reservas vigentes en CEF Actividades.</p>
+    <h2>Mis reservas</h2>
+    <p class="help">Historial cronológico de tus reservas en CEF Actividades.</p>
   </header>
 
-  <div class="card card-pad" *ngIf="isLoading">
+  <!-- Filtros -->
+  <form class="filtros-form" [formGroup]="filtros">
+    <div class="filtros-row">
+      <div class="field">
+        <div class="label">Actividad</div>
+        <select class="control" formControlName="actividad">
+          <option value="">Todas</option>
+          <option *ngFor="let a of actividades" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">Sede</div>
+        <select class="control" formControlName="sede">
+          <option value="">Todas</option>
+          <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="field" *ngIf="hayFiltros()">
+        <div class="label">&nbsp;</div>
+        <button type="button" class="control btn-limpiar" (click)="limpiarFiltros()">
+          Limpiar filtros
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Estados -->
+  <div class="card card-pad empty-state" *ngIf="isLoading">
     <p class="help">Cargando…</p>
   </div>
 
-  <div class="card card-pad" *ngIf="!isLoading && errorMsg">
+  <div class="card card-pad empty-state" *ngIf="!isLoading && errorMsg">
     <p class="error-text">{{ errorMsg }}</p>
   </div>
 
-  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && reservas.length === 0">
-    <h3>No posee reservas</h3>
-    <p class="help">Cuando reserves una clase, vas a verla acá.</p>
-    <div class="form-actions">
-      <a class="btn btn-primary" routerLink="/catalogo">Ver actividades</a>
+  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && reservasFiltradas.length === 0">
+    <h3>No posee reservas registradas</h3>
+    <p class="help" *ngIf="hayFiltros()">Probá ajustar o limpiar los filtros.</p>
+    <p class="help" *ngIf="!hayFiltros()">Cuando reserves una clase, vas a verla acá.</p>
+    <div class="form-actions" *ngIf="!hayFiltros()">
+      <a class="btn btn-primary" routerLink="/clases">Ver clases disponibles</a>
     </div>
   </div>
 
-  <ul class="reservas-grid" *ngIf="!isLoading && !errorMsg && reservas.length > 0">
-    <li class="card card-pad reserva-card" *ngFor="let r of reservas">
+  <!-- Listado -->
+  <ul class="reservas-grid" *ngIf="!isLoading && !errorMsg && reservasFiltradas.length > 0">
+    <li class="card card-pad reserva-card" *ngFor="let r of reservasFiltradas">
       <div class="reserva-head">
         <h3 class="reserva-actividad">{{ r.actividad }}</h3>
-        <span class="reserva-badge" [class.badge-individual]="r.modalidad === 'INDIVIDUAL'">
-          {{ modalidadLabel(r.modalidad) }}
+        <span
+          class="estado-badge"
+          [class.badge-cancelada]="r.estado === 'CANCELADA'"
+          [class.badge-completada]="r.estado === 'COMPLETADA'"
+          [class.badge-espera]="r.estado === 'EN_ESPERA'"
+        >
+          {{ estadoLabel(r) }}
         </span>
       </div>
 
       <dl class="reserva-info">
+        <div class="reserva-info-row">
+          <dt>Sede</dt>
+          <dd>{{ r.sede }}</dd>
+        </div>
         <div class="reserva-info-row">
           <dt>Día</dt>
           <dd>{{ r.diaSemana }}</dd>
@@ -38,51 +76,122 @@
           <dt>Horario</dt>
           <dd>{{ r.horaInicio }} – {{ r.horaFin }}</dd>
         </div>
-        <div class="reserva-info-row" *ngIf="r.proximaFecha">
+        <div class="reserva-info-row">
+          <dt>Modalidad</dt>
+          <dd>
+            <span class="modalidad-badge" [class.badge-individual]="r.modalidad === 'INDIVIDUAL'">
+              {{ modalidadLabel(r) }}
+            </span>
+          </dd>
+        </div>
+        <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
           <dt>Próxima fecha</dt>
           <dd>{{ r.proximaFecha }}</dd>
         </div>
       </dl>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="verDetalle(r)">
+        <button type="button" class="btn btn-secondary" (click)="abrirDetalle(r)">
           Ver detalle
+        </button>
+        <button
+          *ngIf="esCancelable(r)"
+          type="button"
+          class="btn btn-danger"
+          (click)="abrirDetalle(r); irACancelar()"
+        >
+          Cancelar reserva
         </button>
       </div>
     </li>
   </ul>
 </div>
 
-<dialog #detalleDialog class="detalle-dialog" (close)="reservaSeleccionada = null">
-  <div class="card card-pad detalle-card" *ngIf="reservaSeleccionada as r">
-    <header class="detalle-head">
-      <h3>{{ r.actividad }}</h3>
-      <span class="reserva-badge" [class.badge-individual]="r.modalidad === 'INDIVIDUAL'">
-        {{ modalidadLabel(r.modalidad) }}
-      </span>
-    </header>
+<!-- ===== MODAL ===== -->
+<div class="modal-backdrop" *ngIf="reservaSeleccionada" (click)="cerrarModal()">
+  <div class="modal-card card card-pad" (click)="$event.stopPropagation()" *ngIf="reservaSeleccionada as r">
 
-    <dl class="reserva-info">
-      <div class="reserva-info-row">
-        <dt>Día</dt>
-        <dd>{{ r.diaSemana }}</dd>
+    <!-- Paso: detalle -->
+    <ng-container *ngIf="modalPaso === 'detalle'">
+      <div class="modal-head">
+        <h3>{{ r.actividad }}</h3>
+        <span class="estado-badge" [class.badge-cancelada]="r.estado === 'CANCELADA'">
+          {{ estadoLabel(r) }}
+        </span>
       </div>
-      <div class="reserva-info-row">
-        <dt>Horario</dt>
-        <dd>{{ r.horaInicio }} – {{ r.horaFin }}</dd>
-      </div>
-      <div class="reserva-info-row" *ngIf="r.proximaFecha">
-        <dt>Próxima fecha</dt>
-        <dd>{{ r.proximaFecha }}</dd>
-      </div>
-      <div class="reserva-info-row">
-        <dt>Estado</dt>
-        <dd>{{ r.estado === 'VIGENTE' ? 'Vigente' : 'En período de gracia' }}</dd>
-      </div>
-    </dl>
 
-    <div class="form-actions">
-      <button type="button" class="btn btn-primary" (click)="cerrarDetalle()">Cerrar</button>
-    </div>
+      <dl class="reserva-info">
+        <div class="reserva-info-row">
+          <dt>Sede</dt>
+          <dd>{{ r.sede }}</dd>
+        </div>
+        <div class="reserva-info-row">
+          <dt>Día</dt>
+          <dd>{{ r.diaSemana }}</dd>
+        </div>
+        <div class="reserva-info-row">
+          <dt>Horario</dt>
+          <dd>{{ r.horaInicio }} – {{ r.horaFin }}</dd>
+        </div>
+        <div class="reserva-info-row">
+          <dt>Modalidad</dt>
+          <dd>{{ modalidadLabel(r) }}</dd>
+        </div>
+        <div class="reserva-info-row">
+          <dt>Tipo de pago</dt>
+          <dd>{{ tipoPagoLabel(r) }}</dd>
+        </div>
+        <div class="reserva-info-row" *ngIf="r.montoAbonado">
+          <dt>Monto abonado</dt>
+          <dd>${{ r.montoAbonado | number }}</dd>
+        </div>
+        <div class="reserva-info-row">
+          <dt>Fecha de reserva</dt>
+          <dd>{{ r.fechaReserva }}</dd>
+        </div>
+        <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
+          <dt>Próxima clase</dt>
+          <dd>{{ r.proximaFecha }}</dd>
+        </div>
+      </dl>
+
+      <div class="form-actions">
+        <button *ngIf="esCancelable(r)" class="btn btn-danger" type="button" (click)="irACancelar()">
+          Cancelar reserva
+        </button>
+        <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </ng-container>
+
+    <!-- Paso: confirmar cancelación -->
+    <ng-container *ngIf="modalPaso === 'confirmar-cancelacion'">
+      <h3 class="modal-titulo">Cancelar reserva</h3>
+
+      <div class="aviso-cancelacion">
+        <p>{{ mensajeCancelacionPreview(r) }}</p>
+      </div>
+
+      <p class="error-text" *ngIf="errorCancelacion">{{ errorCancelacion }}</p>
+
+      <div class="form-actions">
+        <button class="btn btn-danger" type="button" [disabled]="isCancelando" (click)="confirmarCancelacion()">
+          {{ isCancelando ? 'Cancelando…' : 'Confirmar cancelación' }}
+        </button>
+        <button class="btn btn-secondary" type="button" (click)="modalPaso = 'detalle'">Volver</button>
+      </div>
+    </ng-container>
+
+    <!-- Paso: resultado cancelación -->
+    <ng-container *ngIf="modalPaso === 'resultado-cancelacion' && resultadoCancelacion as rc">
+      <div class="resultado-ok">
+        <span class="resultado-icono">✓</span>
+        <h3>Reserva cancelada</h3>
+        <p class="help">{{ rc.message }}</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="button" (click)="cerrarModal()">Aceptar</button>
+      </div>
+    </ng-container>
+
   </div>
-</dialog>
+</div>
