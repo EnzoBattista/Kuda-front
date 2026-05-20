@@ -77,7 +77,7 @@ export class UsuariosListComponent implements OnInit {
 
   tipoInscripcionLabel(usuario: UsuarioListado): string {
     if (usuario.rol?.nombre !== 'CLIENTE') return '—';
-    return this.gestion.tipoInscripcionMock(usuario.email) === 'ABONADO'
+    return this.gestion.tipoInscripcion(usuario.email) === 'ABONADO'
       ? 'Abonado'
       : 'No abonado';
   }

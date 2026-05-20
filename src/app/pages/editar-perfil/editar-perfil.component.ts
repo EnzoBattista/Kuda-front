@@ -40,6 +40,8 @@ export class EditarPerfilComponent implements OnInit {
   });
 
   isSubmitting = false;
+  isLoading = true;
+  loadError = '';
   submitError = '';
   successMessage = '';
 
@@ -49,12 +51,34 @@ export class EditarPerfilComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    const usuario = this.auth.getCurrentUser();
-    if (!usuario) {
+    if (!this.auth.getCurrentUser()) {
       void this.router.navigateByUrl('/login');
       return;
     }
 
+    this.auth.cargarPerfilCliente().subscribe({
+      next: (usuario) => {
+        if (!usuario) {
+          void this.router.navigateByUrl('/login');
+          return;
+        }
+        this.poblarFormulario(usuario);
+        this.isLoading = false;
+      },
+      error: () => {
+        this.isLoading = false;
+        this.loadError = 'No se pudo cargar tu perfil. Intentá nuevamente.';
+      },
+    });
+  }
+
+  private poblarFormulario(usuario: {
+    nombre: string;
+    apellido: string;
+    genero?: string;
+    fechaNacimiento?: string;
+    telefono?: string;
+  }): void {
     const genero = (usuario.genero ?? 'otro') as 'femenino' | 'masculino' | 'otro';
     this.form.setValue({
       nombre: usuario.nombre,

@@ -1,5 +1,13 @@
 :host { display: block; }
 
+.success-banner {
+  margin-bottom: 1rem;
+  border: 1px solid #b8e6c8;
+  background: #e8f8ee;
+  color: #1a5c32;
+  font-weight: 700;
+}
+
 .reservas-head { margin-bottom: 1rem; }
 
 /* Filtros */

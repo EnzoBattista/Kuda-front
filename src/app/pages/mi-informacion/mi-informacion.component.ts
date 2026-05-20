@@ -19,8 +19,20 @@ export class MiInformacionComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.usuario = this.auth.getCurrentUser();
-    if (!this.usuario) void this.router.navigateByUrl('/login');
+    if (!this.auth.getCurrentUser()) {
+      void this.router.navigateByUrl('/login');
+      return;
+    }
+
+    this.auth.cargarPerfilCliente().subscribe({
+      next: (usuario) => {
+        if (!usuario) {
+          void this.router.navigateByUrl('/login');
+          return;
+        }
+        this.usuario = usuario;
+      },
+    });
   }
 
   get generoLabel(): string {

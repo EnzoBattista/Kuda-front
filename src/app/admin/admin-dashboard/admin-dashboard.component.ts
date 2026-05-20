@@ -53,8 +53,9 @@ export class AdminDashboardComponent {
   }
 
   logout(): void {
-    this.authService.logout();
-    void this.router.navigateByUrl('/');
+    this.authService.logout().subscribe({
+      complete: () => void this.router.navigateByUrl('/login'),
+    });
   }
 
   setTab(tab: typeof this.tab): void {

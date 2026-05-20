@@ -10,10 +10,16 @@ import {
   CreateClaseDto,
   UpdateClaseDto,
 } from '../models/clase.model';
+import { environment } from '../../environments/environment';
+
+/** Solo clases vigentes (baja lógica del back: activa === true). */
+export function isClaseActiva(clase: Pick<Clase, 'activa'>): boolean {
+  return clase.activa === true;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ClasesService {
-  private readonly apiUrl = 'http://localhost:3001/api/clases';
+  private readonly apiUrl = `${environment.apiUrl}/clases`;
   private readonly noCacheHeaders = new HttpHeaders({
     'Cache-Control': 'no-cache',
     Pragma: 'no-cache',
@@ -25,18 +31,22 @@ export class ClasesService {
     return this.http
       .get<Clase[]>(this.apiUrl, { headers: this.noCacheHeaders })
       .pipe(
-      map((list) => (list ?? []).map((c) => this.normalizeClase(c))),
-      catchError((err) => throwError(() => this.toHuError(err))),
-    );
+        map((list) =>
+          (list ?? [])
+            .map((c) => this.normalizeClase(c))
+            .filter(isClaseActiva),
+        ),
+        catchError((err) => throwError(() => this.toHuError(err))),
+      );
   }
 
   getById(id: number): Observable<Clase> {
     return this.http
       .get<Clase>(`${this.apiUrl}/${id}`, { headers: this.noCacheHeaders })
       .pipe(
-      map((c) => this.normalizeClase(c)),
-      catchError((err) => throwError(() => this.toHuError(err))),
-    );
+        map((c) => this.normalizeClase(c)),
+        catchError((err) => throwError(() => this.toHuError(err))),
+      );
   }
 
   create(data: CreateClaseDto): Observable<{ message: string; clase: Clase }> {
@@ -100,6 +110,7 @@ export class ClasesService {
   private normalizeClase(raw: Clase): Clase {
     return {
       ...raw,
+      activa: raw.activa === true,
       cupo: Number(raw.cupo ?? 0),
       hora_inicio: formatHora(raw.hora_inicio),
       hora_fin: formatHora(raw.hora_fin),

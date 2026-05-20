@@ -54,7 +54,8 @@ export class NuevaPasswordComponent implements OnInit {
     this.auth.nuevaPassword(this.token, password.value, confirmPassword.value).subscribe({
       next: (resp) => {
         this.isSubmitting = false;
-        this.successMessage = resp?.message ?? 'Tu contraseña fue actualizada. Ya podés iniciar sesión.';
+        this.successMessage =
+          resp?.message ?? 'Su contraseña ha sido restablecida con éxito';
         this.form.reset();
       },
       error: (err) => {

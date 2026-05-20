@@ -1,54 +1,36 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Plan } from '../../models/plan.model';
-import { PlanService } from '../../services/plan.service';
-import { PagoService } from '../../services/pago.service';
+import { RouterLink } from '@angular/router';
+import { Actividad } from '../../models/actividad.model';
+import { ActividadesService } from '../../services/actividades.service';
 
 @Component({
   selector: 'app-catalog-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './catalog-list.component.html',
   styleUrls: ['./catalog-list.component.css'],
 })
 export class CatalogListComponent implements OnInit {
-  planes: Plan[] = [];
-  pagoError = '';
+  actividades: Actividad[] = [];
+  isLoading = false;
+  loadError = '';
 
-  constructor(
-    private readonly planService: PlanService,
-    private readonly pagoService: PagoService
-  ) {
-  }
+  constructor(private readonly actividadesService: ActividadesService) {}
 
   ngOnInit(): void {
-    this.planService.getPlanes().subscribe({
+    this.isLoading = true;
+    this.loadError = '';
+    this.actividadesService.getActivas().subscribe({
       next: (data) => {
-        this.planes = data;
+        this.actividades = data ?? [];
+        this.isLoading = false;
       },
       error: () => {
-        this.planes = [];
+        this.actividades = [];
+        this.loadError = 'No se pudieron cargar las actividades. Intentá nuevamente.';
+        this.isLoading = false;
       },
     });
-  }
-
-  pagarPlan(plan: Plan): void {
-    this.pagoError = '';
-    this.pagoService
-      .createPreference({
-        tituloPlan: plan.nombre,
-        precio: Number(plan.precio),
-      })
-      .subscribe({
-        next: (response) => {
-          if (response?.init_point) {
-            window.location.href = response.init_point;
-          }
-        },
-        error: () => {
-          this.pagoError = 'No se pudo iniciar el pago en este momento.';
-        },
-      });
   }
 }

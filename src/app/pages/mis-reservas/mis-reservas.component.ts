@@ -4,6 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import {
+  MSG_RESERVA_CANCELADA,
   ReservaHistorial,
   ReservasService,
   ResultadoCancelacion,
@@ -29,10 +30,12 @@ export class MisReservasComponent implements OnInit {
 
   isLoading = true;
   errorMsg = '';
+  bannerSuccess = '';
+  bannerError = '';
 
-  // Modal de detalle
   reservaSeleccionada: ReservaHistorial | null = null;
-  modalPaso: 'detalle' | 'confirmar-cancelacion' | 'resultado-cancelacion' = 'detalle';
+  modalPaso: 'detalle' | 'confirmar-cancelacion' | 'resultado-cancelacion' =
+    'detalle';
   resultadoCancelacion: ResultadoCancelacion | null = null;
   isCancelando = false;
   errorCancelacion = '';
@@ -40,6 +43,13 @@ export class MisReservasComponent implements OnInit {
   constructor(private readonly reservasService: ReservasService) {}
 
   ngOnInit(): void {
+    this.cargarReservas();
+    this.filtros.valueChanges.subscribe(() => this.aplicarFiltros());
+  }
+
+  cargarReservas(): void {
+    this.isLoading = true;
+    this.errorMsg = '';
     this.reservasService.getMisReservas().subscribe({
       next: (data) => {
         this.reservas = data ?? [];
@@ -48,13 +58,13 @@ export class MisReservasComponent implements OnInit {
         this.aplicarFiltros();
         this.isLoading = false;
       },
-      error: () => {
-        this.errorMsg = 'No pudimos cargar tus reservas. Intentá nuevamente más tarde.';
+      error: (err) => {
+        this.errorMsg =
+          err?.error?.message ??
+          'No se pudieron cargar tus reservas. Intentá nuevamente más tarde.';
         this.isLoading = false;
       },
     });
-
-    this.filtros.valueChanges.subscribe(() => this.aplicarFiltros());
   }
 
   private aplicarFiltros(): void {
@@ -62,7 +72,7 @@ export class MisReservasComponent implements OnInit {
     this.reservasFiltradas = this.reservas.filter(
       (r) =>
         (!actividad || r.actividad === actividad) &&
-        (!sede || r.sede === sede)
+        (!sede || r.sede === sede),
     );
   }
 
@@ -75,8 +85,6 @@ export class MisReservasComponent implements OnInit {
     return Boolean(actividad || sede);
   }
 
-  // === Modal ===
-
   abrirDetalle(reserva: ReservaHistorial): void {
     this.reservaSeleccionada = reserva;
     this.modalPaso = 'detalle';
@@ -85,8 +93,17 @@ export class MisReservasComponent implements OnInit {
     this.isCancelando = false;
   }
 
+  abrirCancelacion(reserva: ReservaHistorial): void {
+    this.reservaSeleccionada = reserva;
+    this.modalPaso = 'confirmar-cancelacion';
+    this.resultadoCancelacion = null;
+    this.errorCancelacion = '';
+    this.isCancelando = false;
+  }
+
   cerrarModal(): void {
     this.reservaSeleccionada = null;
+    this.modalPaso = 'detalle';
   }
 
   irACancelar(): void {
@@ -98,25 +115,29 @@ export class MisReservasComponent implements OnInit {
     if (!this.reservaSeleccionada) return;
     this.isCancelando = true;
     this.errorCancelacion = '';
+    this.bannerError = '';
 
-    this.reservasService.cancelarReserva(this.reservaSeleccionada.id).subscribe({
-      next: (resultado) => {
-        this.isCancelando = false;
-        this.resultadoCancelacion = resultado;
-        this.modalPaso = 'resultado-cancelacion';
-        // Actualizar estado en la lista local
-        const idx = this.reservas.findIndex((r) => r.id === this.reservaSeleccionada?.id);
-        if (idx !== -1) this.reservas[idx].estado = 'CANCELADA';
-        this.aplicarFiltros();
-      },
-      error: (err) => {
-        this.isCancelando = false;
-        this.errorCancelacion = err?.error?.message ?? 'No se pudo cancelar la reserva.';
-      },
-    });
+    this.reservasService
+      .cancelarReserva(this.reservaSeleccionada.id)
+      .subscribe({
+        next: (resultado) => {
+          this.isCancelando = false;
+          this.resultadoCancelacion = resultado;
+          this.modalPaso = 'resultado-cancelacion';
+          this.bannerSuccess = MSG_RESERVA_CANCELADA;
+          this.cerrarModal();
+          this.cargarReservas();
+        },
+        error: (err) => {
+          this.isCancelando = false;
+          const msg =
+            err?.error?.message ??
+            'No se pudo cancelar la reserva.';
+          this.errorCancelacion = msg;
+          this.bannerError = msg;
+        },
+      });
   }
-
-  // === Helpers de display ===
 
   modalidadLabel(r: ReservaHistorial): string {
     return r.modalidad === 'ABONADO' ? 'Abonado' : 'Clase individual';
@@ -138,7 +159,10 @@ export class MisReservasComponent implements OnInit {
   }
 
   esCancelable(r: ReservaHistorial): boolean {
-    return r.estado === 'ACTIVA';
+    if (r.estado !== 'ACTIVA') {
+      return false;
+    }
+    return this.horasHasta(r) > 0;
   }
 
   horasHasta(r: ReservaHistorial): number {

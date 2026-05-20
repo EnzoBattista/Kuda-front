@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of, tap, throwError, delay } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, of, tap, throwError } from 'rxjs';
+import { catchError, finalize, map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface RegisterRequest {
   nombre: string;
@@ -46,24 +48,36 @@ export interface ActualizarPerfilRequest {
   fechaNacimiento?: string;
 }
 
+const MSG_RECUPERACION_OK =
+  'Se ha enviado un enlace de recuperación a su email';
+const MSG_EMAIL_NO_REGISTRADO =
+  'El email ingresado no pertenece a ninguna cuenta registrada';
+const MSG_RESET_OK = 'Su contraseña ha sido restablecida con éxito';
+const MSG_PASSWORDS_MISMATCH = 'Las contraseñas no coinciden';
+const MSG_TOKEN_EXPIRADO = 'El enlace de recuperación ha expirado';
+const MSG_TOKEN_INVALIDO = 'El enlace de recuperación es inválido';
+
+interface ClientePerfilResponse {
+  email?: string;
+  nombre?: string;
+  apellido?: string;
+  telefono?: string;
+  genero?: string;
+  fechaNacimiento?: string;
+  dni?: string;
+  activo?: boolean;
+  rol_id?: number;
+  rol?: { id: number; nombre: string };
+}
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-  private readonly apiUrl = 'http://localhost:3001/api/auth';
+  private readonly apiUrl = `${environment.apiUrl}/auth`;
+  private readonly clientesUrl = `${environment.apiUrl}/clientes`;
   private readonly tokenKey = 'kuda_token';
   private readonly userKey = 'kuda_user';
-
-  /**
-   * MOCK (Regla de Oro 1): el back no expone el flujo de "recuperar contraseña".
-   * Se mantiene un set de emails como si estuvieran registrados para validar
-   * el escenario "email no registrado" sin tocar el backend.
-   */
-  private readonly emailsRegistradosMock = new Set<string>([
-    'admin@cef.com',
-    'recepcion@cef.com',
-    'cliente@cef.com',
-  ]);
 
   constructor(private readonly http: HttpClient) {}
 
@@ -73,7 +87,7 @@ export class AuthService {
 
   confirmarCuenta(token: string): Observable<{ message: string }> {
     return this.http.get<{ message: string }>(
-      `${this.apiUrl}/confirmar/${encodeURIComponent(token)}`
+      `${this.apiUrl}/confirmar/${encodeURIComponent(token)}`,
     );
   }
 
@@ -82,19 +96,24 @@ export class AuthService {
       tap((resp) => {
         if (resp?.token) this.setToken(resp.token);
         if (resp?.usuario) this.setUser(resp.usuario);
-      })
+      }),
     );
   }
 
-  logout(): void {
+  /** POST /api/auth/logout y limpieza de sesión local (siempre, vía finalize). */
+  logout(): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/logout`, {}).pipe(
+      catchError(() => of(undefined)),
+      finalize(() => this.clearSession()),
+      map(() => undefined),
+    );
+  }
+
+  private clearSession(): void {
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.userKey);
   }
 
-  /**
-   * Cambia la contraseña del usuario logueado.
-   * REAL: usa `POST /api/auth/cambiar-password` (el back ya valida actual/nueva).
-   */
   cambiarPassword(
     passwordActual: string,
     passwordNueva: string,
@@ -108,83 +127,105 @@ export class AuthService {
   }
 
   /**
-   * MOCK (Regla de Oro 1): el back no expone `PUT /api/auth/me` para que un cliente
-   * edite su propio perfil. Persistimos en localStorage para mantener la UX coherente.
-   * Aplica la validación de edad > 14 años pedida por la HU "Modificar cliente".
+   * Carga datos de cliente desde API (género, fecha de nacimiento).
+   * Si falla (p. ej. sin permiso), devuelve el usuario en sesión.
    */
+  cargarPerfilCliente(): Observable<CurrentUser | null> {
+    const actual = this.getCurrentUser();
+    if (!actual) {
+      return of(null);
+    }
+
+    return this.http
+      .get<ClientePerfilResponse>(
+        `${this.clientesUrl}/${encodeURIComponent(actual.email)}`,
+      )
+      .pipe(
+        map((resp) => this.mergePerfilResponse(actual, resp)),
+        catchError(() => of(actual)),
+      );
+  }
+
+  /** PUT /api/clientes/:email — usuario + campos de cliente en un solo body. */
   actualizarPerfil(data: ActualizarPerfilRequest): Observable<CurrentUser> {
     if (data.fechaNacimiento && this.calcularEdad(data.fechaNacimiento) <= 14) {
       return throwError(() => ({
         error: { message: 'Modificación fallida - Debe ser mayor de 14 años' },
-      })).pipe(delay(300));
+      }));
     }
 
     const actual = this.getCurrentUser();
     if (!actual) {
-      return throwError(() => ({ error: { message: 'Sesión no válida' } })).pipe(delay(300));
+      return throwError(() => ({ error: { message: 'Sesión no válida' } }));
     }
 
-    const actualizado: CurrentUser = {
-      ...actual,
+    const body: Record<string, string | undefined> = {
       nombre: data.nombre.trim(),
       apellido: data.apellido.trim(),
-      telefono: data.telefono?.trim() || actual.telefono,
-      genero: data.genero ?? actual.genero,
-      fechaNacimiento: data.fechaNacimiento ?? actual.fechaNacimiento,
+      genero: data.genero,
+      fechaNacimiento: data.fechaNacimiento,
     };
-
-    return of(actualizado).pipe(
-      delay(500),
-      tap((u) => this.setUser(u)),
-    );
-  }
-
-  /**
-   * MOCK (Regla de Oro 1): el back no expone "solicitar recuperación".
-   * Devuelve el mensaje exacto pedido por la HU cuando el email pertenece al set
-   * mockeado; sino, devuelve el error literal de la HU.
-   */
-  recuperarPassword(email: string): Observable<{ message: string }> {
-    const normalizado = email.trim().toLowerCase();
-    if (!this.emailsRegistradosMock.has(normalizado)) {
-      return throwError(() => ({
-        error: { message: 'El email ingresado no pertenece a ninguna cuenta registrada' },
-      })).pipe(delay(400));
+    const tel = data.telefono?.trim();
+    if (tel) {
+      body['telefono'] = tel;
     }
-    return of({ message: 'Se ha enviado un enlace de recuperación a su email' }).pipe(delay(500));
+
+    return this.http
+      .put<ClientePerfilResponse>(
+        `${this.clientesUrl}/${encodeURIComponent(actual.email)}`,
+        body,
+      )
+      .pipe(
+        map((resp) => this.mergePerfilResponse(actual, resp)),
+        tap((u) => this.setUser(u)),
+        catchError((err) =>
+          throwError(() => ({
+            error: {
+              message: mapActualizarPerfilError(err),
+            },
+          })),
+        ),
+      );
   }
 
-  /**
-   * MOCK (Regla de Oro 1): el back no expone "restablecer con token".
-   * Tokens que incluyan "expirado" o "invalido" disparan los escenarios fallidos
-   * de la HU. Los demás se consideran válidos.
-   */
+  /** POST /api/auth/olvide-password */
+  recuperarPassword(email: string): Observable<{ message: string }> {
+    return this.http
+      .post<{ message: string }>(`${this.apiUrl}/olvide-password`, {
+        email: email.trim(),
+      })
+      .pipe(
+        map(() => ({ message: MSG_RECUPERACION_OK })),
+        catchError((err) =>
+          throwError(() => ({ error: { message: mapRecuperarPasswordError(err) } })),
+        ),
+      );
+  }
+
+  /** POST /api/auth/reset-password */
   nuevaPassword(
     token: string,
     password: string,
     confirmPassword: string,
   ): Observable<{ message: string }> {
-    if (!token) {
-      return throwError(() => ({
-        error: { message: 'El enlace de recuperación es inválido' },
-      })).pipe(delay(300));
-    }
-    if (token.includes('expirado')) {
-      return throwError(() => ({
-        error: { message: 'El enlace de recuperación ha expirado' },
-      })).pipe(delay(300));
-    }
-    if (token.includes('invalido')) {
-      return throwError(() => ({
-        error: { message: 'El enlace de recuperación es inválido' },
-      })).pipe(delay(300));
-    }
     if (password !== confirmPassword) {
       return throwError(() => ({
-        error: { message: 'Las contraseñas no coinciden' },
-      })).pipe(delay(300));
+        error: { message: MSG_PASSWORDS_MISMATCH },
+      }));
     }
-    return of({ message: 'Su contraseña ha sido restablecida con éxito' }).pipe(delay(500));
+
+    return this.http
+      .post<{ message: string }>(`${this.apiUrl}/reset-password`, {
+        token,
+        passwordNueva: password,
+        confirmPassword,
+      })
+      .pipe(
+        map(() => ({ message: MSG_RESET_OK })),
+        catchError((err) =>
+          throwError(() => ({ error: { message: mapResetPasswordError(err) } })),
+        ),
+      );
   }
 
   getToken(): string | null {
@@ -229,6 +270,29 @@ export class AuthService {
     localStorage.setItem(this.userKey, JSON.stringify(user));
   }
 
+  private mergePerfilResponse(
+    base: CurrentUser,
+    resp: ClientePerfilResponse,
+  ): CurrentUser {
+    return {
+      ...base,
+      nombre: resp.nombre ?? base.nombre,
+      apellido: resp.apellido ?? base.apellido,
+      telefono: resp.telefono ?? base.telefono,
+      genero: resp.genero ?? base.genero,
+      fechaNacimiento: this.normalizarFecha(resp.fechaNacimiento) ?? base.fechaNacimiento,
+      dni: resp.dni ?? base.dni,
+      activo: resp.activo ?? base.activo,
+      rol_id: resp.rol_id ?? base.rol_id,
+      rol: resp.rol ?? base.rol,
+    };
+  }
+
+  private normalizarFecha(valor?: string): string | undefined {
+    if (!valor) return undefined;
+    return String(valor).slice(0, 10);
+  }
+
   private calcularEdad(fechaIso: string): number {
     const hoy = new Date();
     const nacimiento = new Date(fechaIso);
@@ -237,4 +301,60 @@ export class AuthService {
     if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
     return edad;
   }
+}
+
+function extractBackendMessage(err: unknown): string {
+  if (err instanceof HttpErrorResponse) {
+    const body = err.error;
+    if (typeof body === 'object' && body !== null && 'message' in body) {
+      return String((body as { message: string }).message);
+    }
+    return err.message;
+  }
+  return '';
+}
+
+function mapActualizarPerfilError(err: unknown): string {
+  const raw = extractBackendMessage(err);
+  if (raw.toLowerCase().includes('14 años') || raw.toLowerCase().includes('14 anos')) {
+    return 'Modificación fallida - Debe ser mayor de 14 años';
+  }
+  return raw || 'No se pudieron guardar los cambios. Intentá nuevamente.';
+}
+
+function mapRecuperarPasswordError(err: unknown): string {
+  if (err instanceof HttpErrorResponse && err.status === 404) {
+    return MSG_EMAIL_NO_REGISTRADO;
+  }
+  const raw = extractBackendMessage(err);
+  if (
+    raw.toLowerCase().includes('no pertenece') ||
+    raw.toLowerCase().includes('no existe')
+  ) {
+    return MSG_EMAIL_NO_REGISTRADO;
+  }
+  return raw || 'No se pudo procesar la solicitud. Intentá nuevamente.';
+}
+
+function mapResetPasswordError(err: unknown): string {
+  const raw = extractBackendMessage(err).toLowerCase();
+
+  if (raw.includes('expirado')) {
+    return MSG_TOKEN_EXPIRADO;
+  }
+  if (
+    raw.includes('inválido') ||
+    raw.includes('invalido') ||
+    raw.includes('incorrecto') ||
+    raw.includes('utilizado') ||
+    raw.includes('no coinciden')
+  ) {
+    if (raw.includes('no coinciden')) {
+      return MSG_PASSWORDS_MISMATCH;
+    }
+    return MSG_TOKEN_INVALIDO;
+  }
+
+  const original = extractBackendMessage(err);
+  return original || MSG_TOKEN_INVALIDO;
 }

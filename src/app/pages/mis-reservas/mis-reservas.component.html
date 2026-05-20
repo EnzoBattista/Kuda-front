@@ -4,6 +4,14 @@
     <p class="help">Historial cronológico de tus reservas en CEF Actividades.</p>
   </header>
 
+  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status">
+    {{ bannerSuccess }}
+  </div>
+
+  <div class="card card-pad" *ngIf="bannerError">
+    <p class="error-text">{{ bannerError }}</p>
+  </div>
+
   <!-- Filtros -->
   <form class="filtros-form" [formGroup]="filtros">
     <div class="filtros-row">
@@ -39,12 +47,25 @@
     <p class="error-text">{{ errorMsg }}</p>
   </div>
 
-  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && reservasFiltradas.length === 0">
-    <h3>No posee reservas registradas</h3>
-    <p class="help" *ngIf="hayFiltros()">Probá ajustar o limpiar los filtros.</p>
-    <p class="help" *ngIf="!hayFiltros()">Cuando reserves una clase, vas a verla acá.</p>
-    <div class="form-actions" *ngIf="!hayFiltros()">
+  <div
+    class="card card-pad empty-state"
+    *ngIf="!isLoading && !errorMsg && reservas.length === 0"
+  >
+    <p>No posee reservas</p>
+    <div class="form-actions">
       <a class="btn btn-primary" routerLink="/clases">Ver clases disponibles</a>
+    </div>
+  </div>
+
+  <div
+    class="card card-pad empty-state"
+    *ngIf="!isLoading && !errorMsg && reservas.length > 0 && reservasFiltradas.length === 0"
+  >
+    <p class="help">No hay reservas con los filtros seleccionados.</p>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="limpiarFiltros()">
+        Limpiar filtros
+      </button>
     </div>
   </div>
 
@@ -98,7 +119,7 @@
           *ngIf="esCancelable(r)"
           type="button"
           class="btn btn-danger"
-          (click)="abrirDetalle(r); irACancelar()"
+          (click)="abrirCancelacion(r)"
         >
           Cancelar reserva
         </button>
@@ -166,6 +187,10 @@
     <!-- Paso: confirmar cancelación -->
     <ng-container *ngIf="modalPaso === 'confirmar-cancelacion'">
       <h3 class="modal-titulo">Cancelar reserva</h3>
+
+      <p class="help">
+        ¿Estás seguro de que deseas cancelar esta reserva?
+      </p>
 
       <div class="aviso-cancelacion">
         <p>{{ mensajeCancelacionPreview(r) }}</p>
