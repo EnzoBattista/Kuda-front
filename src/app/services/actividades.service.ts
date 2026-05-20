@@ -9,10 +9,11 @@ import {
   ProfesorActividad,
   UpdateActividadDto,
 } from '../models/actividad.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ActividadesService {
-  private readonly apiUrl = 'http://localhost:3001/api/actividades';
+  private readonly apiUrl = `${environment.apiUrl}/actividades`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -88,6 +89,7 @@ export class ActividadesService {
   private normalizeActividad(raw: Actividad & { precio?: number | string }): Actividad {
     return {
       ...raw,
+      activa: raw.activa === true,
       precio: Number(raw.precio ?? 0),
       descripcion: raw.descripcion ?? null,
     };

@@ -4,6 +4,10 @@
     <p class="help">Explorá las clases y reservá tu lugar.</p>
   </header>
 
+  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status">
+    {{ bannerSuccess }}
+  </div>
+
   <!-- Filtros -->
   <form class="filtros-form" [formGroup]="filtros">
     <div class="filtros-row">
@@ -48,9 +52,12 @@
     <li class="card card-pad clase-card" *ngFor="let c of clasesFiltradas">
       <div class="clase-head">
         <h3 class="clase-nombre">{{ c.actividad }}</h3>
-        <span class="cupo-badge" [class.sin-cupo]="c.cupoDisponible === 0">
-          {{ c.cupoDisponible === 0 ? 'Sin cupo' : c.cupoDisponible + ' lugares' }}
-        </span>
+        <div class="clase-badges">
+          <span class="abono-badge" *ngIf="c.abonoActividadVigente">Abonado</span>
+          <span class="cupo-badge" [class.sin-cupo]="c.cupoDisponible === 0">
+            {{ c.cupoDisponible === 0 ? 'Sin cupo' : c.cupoDisponible + ' lugares' }}
+          </span>
+        </div>
       </div>
 
       <dl class="clase-info">
@@ -86,13 +93,19 @@
           Reservar
         </button>
         <button
-          *ngIf="c.cupoDisponible === 0"
+          *ngIf="c.cupoDisponible === 0 && !yaEnListaEspera(c.id)"
           class="btn btn-secondary"
           type="button"
           (click)="abrirEspera(c)"
         >
           Anotarse en lista de espera
         </button>
+        <p
+          *ngIf="c.cupoDisponible === 0 && yaEnListaEspera(c.id)"
+          class="help lista-espera-inscripto"
+        >
+          Ya estás en la lista de espera para esta clase
+        </p>
       </div>
     </li>
   </ul>
@@ -102,29 +115,36 @@
 <div class="modal-backdrop" *ngIf="claseSeleccionada && pasoModal !== 'espera' && pasoModal !== 'resultado-espera'" (click)="cerrarModal()">
   <div class="modal-card card card-pad" (click)="$event.stopPropagation()" *ngIf="claseSeleccionada as c">
 
-    <!-- Paso: selección de tipo de pago -->
-    <ng-container *ngIf="pasoModal === 'seleccion'">
+    <!-- Paso: modalidad (abonado vs individual) -->
+    <ng-container *ngIf="pasoModal === 'seleccion-modalidad'">
       <h3 class="modal-titulo">Reservar clase</h3>
       <p class="help">{{ c.actividad }} — {{ c.diaSemana }} {{ c.horaInicio }}</p>
+      <p class="help" *ngIf="c.abonoActividadVigente">
+        Ya tenés mensualidad activa en esta actividad. Podés reservar sin cargo adicional.
+      </p>
 
       <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
 
       <div class="opciones-pago">
-        <button class="opcion-btn btn btn-primary" type="button" (click)="seleccionarTipoPago('PAGO_COMPLETO')">
-          <strong>Pago completo</strong>
-          <span class="help">Abonás el total ahora</span>
+        <button
+          class="opcion-btn btn btn-primary"
+          type="button"
+          (click)="seleccionarModalidad('ABONADO')"
+          [disabled]="c.abonoActividadVigente"
+        >
+          <strong>Abonado (mensualidad)</strong>
+          <span class="help">Inscripción mensual a la actividad</span>
         </button>
         <button
-          *ngIf="puedeSenar(c)"
           class="opcion-btn btn btn-secondary"
           type="button"
-          (click)="seleccionarTipoPago('SEÑA')"
+          (click)="seleccionarModalidad('INDIVIDUAL')"
         >
-          <strong>Señar</strong>
-          <span class="help">Abonás una seña y el resto en el centro</span>
+          <strong>Clase individual</strong>
+          <span class="help">Una clase puntual (pago completo o seña)</span>
         </button>
-        <p class="help aviso-seña" *ngIf="!puedeSenar(c)">
-          La opción de señar no está disponible porque faltan menos de 24 horas para la clase.
+        <p class="help" *ngIf="c.abonoActividadVigente">
+          Ya sos abonado: elegí «Clase individual» para reservar sin volver a pagar.
         </p>
       </div>
 
@@ -133,9 +153,40 @@
       </div>
     </ng-container>
 
+    <!-- Paso: tipo de pago (solo no abonado) -->
+    <ng-container *ngIf="pasoModal === 'seleccion-pago'">
+      <h3 class="modal-titulo">Modalidad de pago</h3>
+      <p class="help">{{ c.actividad }} — {{ c.proximaFecha }}</p>
+
+      <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
+
+      <div class="opciones-pago">
+        <button class="opcion-btn btn btn-primary" type="button" (click)="seleccionarTipoPago('PAGO_COMPLETO')">
+          <strong>Pago Completo</strong>
+          <span class="help">Abonás el total ahora</span>
+        </button>
+        <button
+          *ngIf="puedePagarSena(c)"
+          class="opcion-btn btn btn-secondary"
+          type="button"
+          (click)="seleccionarTipoPago('SEÑA')"
+        >
+          <strong>Pagar Seña (50%)</strong>
+          <span class="help">Abonás el 50% ahora y el resto en el centro</span>
+        </button>
+        <p class="help aviso-seña" *ngIf="!puedePagarSena(c)">
+          Ya no se aceptan señas porque la clase comienza en menos de {{ horasMinimasSena }} horas.
+        </p>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" type="button" (click)="pasoModal = 'seleccion-modalidad'">Volver</button>
+      </div>
+    </ng-container>
+
     <!-- Paso: confirmación -->
     <ng-container *ngIf="pasoModal === 'confirmacion'">
-      <h3 class="modal-titulo">Confirmá tu reserva</h3>
+      <h3 class="modal-titulo">{{ confirmacionTitulo() }}</h3>
       <dl class="clase-info">
         <div class="clase-info-row">
           <dt>Actividad</dt>
@@ -150,8 +201,12 @@
           <dd>{{ c.sede }}</dd>
         </div>
         <div class="clase-info-row">
-          <dt>Modalidad de pago</dt>
-          <dd>{{ tipoPagoLabel(tipoPagoElegido) }}</dd>
+          <dt>Próxima fecha</dt>
+          <dd>{{ c.proximaFecha }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Pago</dt>
+          <dd>{{ confirmacionDetallePago() }}</dd>
         </div>
       </dl>
 
@@ -159,7 +214,13 @@
         <button class="btn btn-primary" type="button" [disabled]="isSubmitting" (click)="confirmarReserva()">
           {{ isSubmitting ? 'Reservando…' : 'Confirmar reserva' }}
         </button>
-        <button class="btn btn-secondary" type="button" (click)="pasoModal = 'seleccion'">Volver</button>
+        <button
+          class="btn btn-secondary"
+          type="button"
+          (click)="pasoModal = c.abonoActividadVigente ? 'seleccion-modalidad' : 'seleccion-pago'"
+        >
+          Volver
+        </button>
       </div>
     </ng-container>
 
@@ -191,7 +252,7 @@
 
       <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
 
-      <div class="opciones-pago">
+      <div class="opciones-pago" *ngIf="!yaEnListaEspera(c.id)">
         <button class="opcion-btn btn btn-primary" type="button" [disabled]="isSubmitting" (click)="confirmarEspera('ABONADO')">
           <strong>Como abonado</strong>
           <span class="help">Para el mes completo</span>
@@ -201,6 +262,9 @@
           <span class="help">Solo para esta fecha</span>
         </button>
       </div>
+      <p class="help" *ngIf="yaEnListaEspera(c.id)">
+        Ya estás en la lista de espera para esta clase.
+      </p>
 
       <div class="form-actions">
         <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cancelar</button>

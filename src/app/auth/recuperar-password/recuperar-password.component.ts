@@ -35,7 +35,8 @@ export class RecuperarPasswordComponent {
     this.auth.recuperarPassword(this.form.controls.email.value.trim()).subscribe({
       next: (resp) => {
         this.isSubmitting = false;
-        this.successMessage = resp?.message ?? 'Se ha enviado un enlace de recuperación a su email.';
+        this.successMessage =
+          resp?.message ?? 'Se ha enviado un enlace de recuperación a su email';
         this.form.reset();
       },
       error: (err) => {

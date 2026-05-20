@@ -62,7 +62,8 @@ export class ActividadesListComponent implements OnInit {
   cargarActividades(): void {
     this.isLoading = true;
     this.errorMsg = '';
-    this.actividadesService.getAll().subscribe({
+    /** Solo vigentes: el back da de baja con activa=false y sin ?activa=true devuelve también inactivas. */
+    this.actividadesService.getActivas().subscribe({
       next: (data) => {
         this.actividades = data ?? [];
         this.isLoading = false;
@@ -248,8 +249,10 @@ export class ActividadesListComponent implements OnInit {
 
     this.modalSubmitting = true;
     this.modalError = '';
-    this.actividadesService.delete(this.selectedActividad.id).subscribe({
+    const idEliminado = this.selectedActividad.id;
+    this.actividadesService.delete(idEliminado).subscribe({
       next: (res) => {
+        this.actividades = this.actividades.filter((a) => a.id !== idEliminado);
         this.bannerSuccess = res.message;
         this.cerrarModalEliminar();
         this.cargarActividades();

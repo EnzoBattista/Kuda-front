@@ -12,7 +12,7 @@ import { Clase } from '../../models/clase.model';
 import { Actividad } from '../../models/actividad.model';
 import { Sala } from '../../models/sala.model';
 import { Profesor, ProfesorService } from '../../services/profesor.service';
-import { ClasesService } from '../../services/clases.service';
+import { ClasesService, isClaseActiva } from '../../services/clases.service';
 import { ActividadesService } from '../../services/actividades.service';
 import { SalasService } from '../../services/salas.service';
 import { AuthService } from '../../services/auth.service';
@@ -132,7 +132,7 @@ export class ClasesListComponent implements OnInit {
         if (loadId !== this.clasesLoadId) {
           return;
         }
-        const base = data ?? [];
+        const base = (data ?? []).filter(isClaseActiva);
         if (base.length === 0) {
           this.clases = [];
           this.isLoading = false;
@@ -148,14 +148,16 @@ export class ClasesListComponent implements OnInit {
             if (loadId !== this.clasesLoadId) {
               return;
             }
-            this.clases = detalles.map((d) => this.toListItem(d));
+            this.clases = detalles
+              .filter(isClaseActiva)
+              .map((d) => this.toListItem(d));
             this.isLoading = false;
           },
           error: () => {
             if (loadId !== this.clasesLoadId) {
               return;
             }
-            this.clases = base.map((c) => this.toListItem(c));
+            this.clases = base.filter(isClaseActiva).map((c) => this.toListItem(c));
             this.isLoading = false;
           },
         });
@@ -280,6 +282,10 @@ export class ClasesListComponent implements OnInit {
         this.actividades = actividades;
         this.salas = salas;
         this.profesores = profesores;
+        if (salas.length === 0) {
+          this.catalogosError =
+            'No se pudieron obtener las salas. Verificá que existan actividades cargadas e intentá de nuevo.';
+        }
         this.catalogosLoading = false;
         afterLoad?.();
       },
@@ -446,7 +452,9 @@ export class ClasesListComponent implements OnInit {
     const deletedId = this.selectedClase.id;
     this.clasesService.delete(deletedId).subscribe({
       next: (res) => {
-        this.clases = this.clases.filter((c) => c.id !== deletedId);
+        this.clases = this.clases.filter(
+          (c) => c.id !== deletedId && isClaseActiva(c),
+        );
         this.bannerSuccess = res.message;
         this.modalSubmitting = false;
         this.cerrarModalEliminar();

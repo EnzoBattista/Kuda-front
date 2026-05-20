@@ -22,6 +22,8 @@ export const routes: Routes = [
   { path: 'registro', component: RegisterComponent },
   { path: 'confirmar/:token', component: ConfirmComponent },
   { path: 'recuperar-password', component: RecuperarPasswordComponent },
+  /** Alias del enlace del email del backend: /recuperar-password/{token} */
+  { path: 'recuperar-password/:token', component: NuevaPasswordComponent },
   { path: 'nueva-password/:token', component: NuevaPasswordComponent },
   { path: 'catalogo', component: CatalogListComponent, canActivate: [authGuard] },
   { path: 'mi-informacion', component: MiInformacionComponent, canActivate: [authGuard] },

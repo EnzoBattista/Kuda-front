@@ -1,7 +1,13 @@
 <div class="container" style="padding-top: 2rem; max-width: 640px;">
-  <div class="card card-pad">
+  <div class="card card-pad" *ngIf="isLoading">
+    <p class="help">Cargando tu perfil…</p>
+  </div>
+
+  <div class="card card-pad" *ngIf="!isLoading">
     <h2>Modificar datos personales</h2>
     <p class="help">Actualizá tu nombre, apellido, género, fecha de nacimiento y teléfono.</p>
+
+    <p class="form-error" *ngIf="loadError">{{ loadError }}</p>
 
     <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
       <div class="form-row form-row-2">

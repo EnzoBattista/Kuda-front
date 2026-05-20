@@ -31,6 +31,45 @@
   margin: 0 0 0.75rem;
 }
 
+.catalog-empty {
+  margin: 0;
+  text-align: center;
+}
+
+.actividades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.actividad-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.actividad-nombre {
+  margin: 0;
+  color: var(--brand-blue);
+  font-size: 1.15rem;
+}
+
+.actividad-desc {
+  margin: 0;
+  color: var(--muted);
+  flex: 1;
+}
+
+.actividad-precio {
+  margin: 0;
+  font-weight: 800;
+}
+
+.actividad-card .btn {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+
 .form-error {
   margin: 0;
   color: var(--brand-red);

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Profesor {
   id: number;
@@ -20,7 +21,7 @@ export interface CreateProfesorDto {
 
 @Injectable({ providedIn: 'root' })
 export class ProfesorService {
-  private readonly apiUrl = 'http://localhost:3001/api/profesores';
+  private readonly apiUrl = `${environment.apiUrl}/profesores`;
 
   constructor(private readonly http: HttpClient) {}
 

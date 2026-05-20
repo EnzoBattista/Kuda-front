@@ -1,35 +1,37 @@
 <main class="catalog-main-content">
   <div class="catalog-head">
-    <h1>Actividades y gestión</h1>
+    <h1>Actividades</h1>
     <p class="catalog-subtitle">
-      Accedé a planes y pagos desde una UI optimizada para móvil.
+      Elegí una actividad y reservá tu lugar en las clases disponibles.
     </p>
   </div>
 
   <section class="table-block">
-    <h2>Planes Disponibles</h2>
-    <table class="socios-table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Precio</th>
-          <th>Duración (días)</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let plan of planes">
-          <td>{{ plan.nombre }}</td>
-          <td>${{ plan.precio }}</td>
-          <td>{{ plan.duracion_dias }}</td>
-          <td>
-            <button class="btn btn-primary" type="button" (click)="pagarPlan(plan)">
-              Pagar
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <p class="form-error" *ngIf="pagoError">{{ pagoError }}</p>
+    <div class="card card-pad empty-state" *ngIf="isLoading">
+      <p class="help">Cargando actividades…</p>
+    </div>
+
+    <p class="form-error" *ngIf="loadError">{{ loadError }}</p>
+
+    <p class="help catalog-empty" *ngIf="!isLoading && !loadError && actividades.length === 0">
+      Actualmente no hay actividades disponibles
+    </p>
+
+    <div class="actividades-grid" *ngIf="!isLoading && actividades.length > 0">
+      <article class="card card-pad actividad-card" *ngFor="let actividad of actividades">
+        <h2 class="actividad-nombre">{{ actividad.nombre }}</h2>
+        <p class="actividad-desc" *ngIf="actividad.descripcion">{{ actividad.descripcion }}</p>
+        <p class="actividad-precio" *ngIf="actividad.precio">
+          Desde ${{ actividad.precio | number:'1.0-0' }}
+        </p>
+        <a
+          class="btn btn-primary"
+          [routerLink]="['/clases']"
+          [queryParams]="{ actividad: actividad.nombre }"
+        >
+          Ver horarios / Inscribirse
+        </a>
+      </article>
+    </div>
   </section>
 </main>

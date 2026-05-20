@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface CreatePreferenceRequest {
   tituloPlan: string;
@@ -16,7 +17,7 @@ export interface CreatePreferenceResponse {
   providedIn: 'root',
 })
 export class PagoService {
-  private readonly apiUrl = 'http://localhost:3001/api/pagos/create-preference';
+  private readonly apiUrl = `${environment.apiUrl}/pagos/create-preference`;
 
   constructor(private readonly http: HttpClient) {}
 

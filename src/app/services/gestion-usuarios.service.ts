@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface UsuarioListado {
   email: string;
@@ -16,6 +17,7 @@ export interface UsuarioListado {
 export type RolFiltro = '' | 'ADMIN' | 'RECEPCIONISTA' | 'CLIENTE';
 export type EstadoFiltro = '' | 'ACTIVO' | 'INACTIVO';
 export type TipoInscripcionFiltro = '' | 'ABONADO' | 'NO_ABONADO';
+export type TipoInscripcion = 'ABONADO' | 'NO_ABONADO';
 
 export interface UsuariosFiltro {
   q?: string;
@@ -38,18 +40,24 @@ export interface ClienteExtraInfo {
   fechaNacimiento?: string;
 }
 
+interface InscripcionMensualListado {
+  cliente_email: string;
+  estado: string;
+}
+
+const ESTADOS_ABONO_ACTIVO = new Set(['VIGENTE', 'EN_GRACIA']);
+
 @Injectable({ providedIn: 'root' })
 export class GestionUsuariosService {
-  private readonly apiUrl = 'http://localhost:3001/api/usuarios';
-  private readonly clientesUrl = 'http://localhost:3001/api/clientes';
+  private readonly apiUrl = `${environment.apiUrl}/usuarios`;
+  private readonly clientesUrl = `${environment.apiUrl}/clientes`;
+  private readonly inscripcionesMensualesUrl = `${environment.apiUrl}/inscripciones-mensuales`;
+
+  /** Emails con al menos una mensualidad vigente o en gracia (última carga). */
+  private abonadosEmails = new Set<string>();
 
   constructor(private readonly http: HttpClient) {}
 
-  /**
-   * Listado consumiendo `GET /api/usuarios?rol=&activo=&q=` (real).
-   * El filtro `tipoInscripcion` se aplica client-side porque el back no tiene
-   * ese atributo (MOCK - Regla de Oro 1).
-   */
   getAll(filtros: UsuariosFiltro = {}): Observable<UsuarioListado[]> {
     let params = new HttpParams();
     if (filtros.q?.trim()) params = params.set('q', filtros.q.trim());
@@ -57,8 +65,16 @@ export class GestionUsuariosService {
     if (filtros.estado === 'ACTIVO') params = params.set('activo', 'true');
     if (filtros.estado === 'INACTIVO') params = params.set('activo', 'false');
 
-    return this.http.get<UsuarioListado[]>(this.apiUrl, { params }).pipe(
-      map((lista) => this.aplicarFiltroTipoInscripcionMock(lista, filtros.tipoInscripcion)),
+    const usuarios$ = this.http.get<UsuarioListado[]>(this.apiUrl, { params });
+    const abonados$ = this.cargarEmailsAbonados();
+
+    return forkJoin({ usuarios: usuarios$, abonados: abonados$ }).pipe(
+      tap(({ abonados }) => {
+        this.abonadosEmails = abonados;
+      }),
+      map(({ usuarios }) =>
+        this.aplicarFiltroTipoInscripcion(usuarios ?? [], filtros.tipoInscripcion),
+      ),
     );
   }
 
@@ -67,17 +83,40 @@ export class GestionUsuariosService {
   }
 
   update(email: string, data: ActualizarUsuarioDto): Observable<UsuarioListado> {
-    return this.http.put<UsuarioListado>(
+    const usuarioBody = {
+      nombre: data.nombre,
+      apellido: data.apellido,
+      dni: data.dni,
+      telefono: data.telefono,
+    };
+
+    const putUsuario = this.http.put<UsuarioListado>(
       `${this.apiUrl}/${encodeURIComponent(email)}`,
-      data,
+      usuarioBody,
+    );
+
+    const tieneCamposCliente =
+      data.genero !== undefined || data.fechaNacimiento !== undefined;
+
+    if (!tieneCamposCliente) {
+      return putUsuario;
+    }
+
+    const clienteBody: Record<string, string> = {};
+    if (data.genero !== undefined) clienteBody['genero'] = data.genero;
+    if (data.fechaNacimiento !== undefined) {
+      clienteBody['fechaNacimiento'] = data.fechaNacimiento;
+    }
+
+    const putCliente = this.http
+      .put<unknown>(`${this.clientesUrl}/${encodeURIComponent(email)}`, clienteBody)
+      .pipe(catchError(() => of(null)));
+
+    return forkJoin({ usuario: putUsuario, cliente: putCliente }).pipe(
+      map(({ usuario }) => usuario),
     );
   }
 
-  /**
-   * Trae los campos extra que viven en el modelo `Cliente` (género y fecha de nacimiento)
-   * para pre-poblar el formulario de edición. Si el usuario no es CLIENTE el endpoint
-   * devuelve 404 → devolvemos `null` para que el componente muestre el form vacío.
-   */
   getClienteExtraInfo(email: string): Observable<ClienteExtraInfo | null> {
     return this.http
       .get<ClienteExtraInfo>(`${this.clientesUrl}/${encodeURIComponent(email)}`)
@@ -90,30 +129,49 @@ export class GestionUsuariosService {
       );
   }
 
-  /**
-   * MOCK (Regla de Oro 1): el back no valida unicidad de DNI al editar.
-   * Se compara contra la lista que ya tiene cargada el componente.
-   */
+  tipoInscripcion(email: string): TipoInscripcion {
+    return this.esAbonado(email) ? 'ABONADO' : 'NO_ABONADO';
+  }
+
+  esAbonado(email: string): boolean {
+    return this.abonadosEmails.has(email.trim().toLowerCase());
+  }
+
   dniEstaTomadoPorOtro(dni: string, emailEditado: string, lista: UsuarioListado[]): boolean {
     const target = dni.trim();
     if (!target) return false;
     return lista.some((u) => u.dni === target && u.email !== emailEditado);
   }
 
-  /**
-   * MOCK (Regla de Oro 1): distribución determinística según hash del email.
-   * Permite probar visualmente el filtro "Tipo de inscripción" de la HU.
-   */
-  tipoInscripcionMock(email: string): 'ABONADO' | 'NO_ABONADO' {
-    const hash = email.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    return hash % 2 === 0 ? 'ABONADO' : 'NO_ABONADO';
+  private cargarEmailsAbonados(): Observable<Set<string>> {
+    return this.http
+      .get<InscripcionMensualListado[]>(this.inscripcionesMensualesUrl)
+      .pipe(
+        map((list) => this.buildAbonadosSet(list ?? [])),
+        catchError(() => of(new Set<string>())),
+      );
   }
 
-  private aplicarFiltroTipoInscripcionMock(
+  private buildAbonadosSet(inscripciones: InscripcionMensualListado[]): Set<string> {
+    const emails = new Set<string>();
+
+    for (const ins of inscripciones) {
+      if (!ESTADOS_ABONO_ACTIVO.has(ins.estado)) continue;
+      const email = ins.cliente_email?.trim().toLowerCase();
+      if (email) emails.add(email);
+    }
+
+    return emails;
+  }
+
+  private aplicarFiltroTipoInscripcion(
     lista: UsuarioListado[],
     tipo?: TipoInscripcionFiltro,
   ): UsuarioListado[] {
     if (!tipo) return lista;
-    return lista.filter((u) => this.tipoInscripcionMock(u.email) === tipo);
+    return lista.filter((u) => {
+      if (u.rol?.nombre !== 'CLIENTE') return false;
+      return this.tipoInscripcion(u.email) === tipo;
+    });
   }
 }

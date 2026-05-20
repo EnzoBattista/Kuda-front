@@ -1,15 +1,26 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import {
   ClaseDisponible,
+  HORAS_MINIMAS_SEÑA,
+  MSG_RESERVA_CONFIRMADA,
+  ModalidadInscripcion,
   ReservasService,
   TipoListaEspera,
   TipoPago,
 } from '../../services/reservas.service';
+import { AuthService } from '../../services/auth.service';
 
-type PasoModal = 'seleccion' | 'confirmacion' | 'resultado' | 'espera' | 'resultado-espera';
+type PasoModal =
+  | 'seleccion-modalidad'
+  | 'seleccion-pago'
+  | 'confirmacion'
+  | 'resultado'
+  | 'espera'
+  | 'resultado-espera';
 
 @Component({
   selector: 'app-clases-disponibles',
@@ -31,33 +42,35 @@ export class ClasesDisponiblesComponent implements OnInit {
 
   isLoading = true;
   errorMsg = '';
+  bannerSuccess = '';
 
-  // Estado del modal de reserva
+  readonly horasMinimasSena = HORAS_MINIMAS_SEÑA;
+
   claseSeleccionada: ClaseDisponible | null = null;
-  pasoModal: PasoModal = 'seleccion';
+  pasoModal: PasoModal = 'seleccion-modalidad';
+  modalidadElegida: ModalidadInscripcion = 'INDIVIDUAL';
   tipoPagoElegido: TipoPago = 'PAGO_COMPLETO';
   isSubmitting = false;
   resultadoMsg = '';
   errorModalMsg = '';
 
-  constructor(private readonly reservasService: ReservasService) {}
+  private readonly clasesEnListaEspera = new Set<number>();
+
+  constructor(
+    private readonly reservasService: ReservasService,
+    private readonly authService: AuthService,
+    private readonly route: ActivatedRoute,
+  ) {}
 
   ngOnInit(): void {
-    this.reservasService.getClasesDisponibles().subscribe({
-      next: (data) => {
-        this.clases = data ?? [];
-        this.actividades = [...new Set(this.clases.map((c) => c.actividad))].sort();
-        this.sedes = [...new Set(this.clases.map((c) => c.sede))].sort();
-        this.aplicarFiltros();
-        this.isLoading = false;
-      },
-      error: () => {
-        this.errorMsg = 'No pudimos cargar las clases. Intentá nuevamente.';
-        this.isLoading = false;
-      },
-    });
-
+    this.cargarListaEsperaLocal();
+    this.recargarClases();
     this.filtros.valueChanges.subscribe(() => this.aplicarFiltros());
+
+    const actividadQuery = this.route.snapshot.queryParamMap.get('actividad');
+    if (actividadQuery) {
+      this.filtros.patchValue({ actividad: actividadQuery });
+    }
   }
 
   private aplicarFiltros(): void {
@@ -65,7 +78,7 @@ export class ClasesDisponiblesComponent implements OnInit {
     this.clasesFiltradas = this.clases.filter(
       (c) =>
         (!actividad || c.actividad === actividad) &&
-        (!sede || c.sede === sede)
+        (!sede || c.sede === sede),
     );
   }
 
@@ -79,22 +92,45 @@ export class ClasesDisponiblesComponent implements OnInit {
   }
 
   horasHasta(clase: ClaseDisponible): number {
-    return this.reservasService.horasHastaClase(clase.proximaFecha, clase.horaInicio);
+    return this.reservasService.horasHastaClase(
+      clase.proximaFecha,
+      clase.horaInicio,
+    );
   }
 
-  puedeSenar(clase: ClaseDisponible): boolean {
-    return this.horasHasta(clase) > 24;
+  puedePagarSena(clase: ClaseDisponible): boolean {
+    return this.reservasService.puedePagarSeña(
+      clase.proximaFecha,
+      clase.horaInicio,
+    );
   }
-
-  // === Flujo de reserva ===
 
   abrirReserva(clase: ClaseDisponible): void {
+    this.bannerSuccess = '';
     this.claseSeleccionada = clase;
+    this.modalidadElegida = 'INDIVIDUAL';
     this.tipoPagoElegido = 'PAGO_COMPLETO';
-    this.pasoModal = 'seleccion';
+    this.pasoModal = 'seleccion-modalidad';
     this.resultadoMsg = '';
     this.errorModalMsg = '';
     this.isSubmitting = false;
+  }
+
+  seleccionarModalidad(modalidad: ModalidadInscripcion): void {
+    this.modalidadElegida = modalidad;
+    this.errorModalMsg = '';
+
+    if (modalidad === 'ABONADO') {
+      this.pasoModal = 'confirmacion';
+      return;
+    }
+
+    if (this.claseSeleccionada?.abonoActividadVigente) {
+      this.pasoModal = 'confirmacion';
+      return;
+    }
+
+    this.pasoModal = 'seleccion-pago';
   }
 
   seleccionarTipoPago(tipo: TipoPago): void {
@@ -107,29 +143,58 @@ export class ClasesDisponiblesComponent implements OnInit {
     this.isSubmitting = true;
     this.errorModalMsg = '';
 
-    this.reservasService
-      .reservarClase(this.claseSeleccionada.id, this.tipoPagoElegido)
-      .subscribe({
-        next: (res) => {
-          this.isSubmitting = false;
-          this.resultadoMsg = res.message;
-          this.pasoModal = 'resultado';
-        },
-        error: (err) => {
-          this.isSubmitting = false;
-          this.errorModalMsg = err?.error?.message ?? 'No se pudo confirmar la reserva.';
-          this.pasoModal = 'seleccion';
-        },
-      });
+    const clase = this.claseSeleccionada;
+    const obs =
+      this.modalidadElegida === 'ABONADO'
+        ? this.reservasService.inscribirMensual(clase)
+        : this.reservasService.reservarClase(clase, this.tipoPagoElegido);
+
+    obs.subscribe({
+      next: (res) => this.onReservaExitosa(res),
+      error: (err) => {
+        this.isSubmitting = false;
+        this.errorModalMsg =
+          err?.error?.message ?? 'No se pudo confirmar la reserva.';
+        if (this.modalidadElegida === 'ABONADO') {
+          this.pasoModal = 'confirmacion';
+        } else if (clase.abonoActividadVigente) {
+          this.pasoModal = 'confirmacion';
+        } else {
+          this.pasoModal = 'seleccion-pago';
+        }
+      },
+    });
+  }
+
+  private onReservaExitosa(res: {
+    message: string;
+    redirectUrl?: string;
+  }): void {
+    this.isSubmitting = false;
+    this.resultadoMsg = res.message;
+    this.pasoModal = 'resultado';
+
+    if (res.redirectUrl) {
+      window.location.href = res.redirectUrl;
+      return;
+    }
+
+    this.bannerSuccess = MSG_RESERVA_CONFIRMADA;
+    this.recargarClases();
   }
 
   cerrarModal(): void {
     this.claseSeleccionada = null;
   }
 
-  // === Flujo de lista de espera ===
+  yaEnListaEspera(claseId: number): boolean {
+    return this.clasesEnListaEspera.has(claseId);
+  }
 
   abrirEspera(clase: ClaseDisponible): void {
+    if (this.yaEnListaEspera(clase.id)) {
+      return;
+    }
     this.claseSeleccionada = clase;
     this.pasoModal = 'espera';
     this.resultadoMsg = '';
@@ -139,25 +204,101 @@ export class ClasesDisponiblesComponent implements OnInit {
 
   confirmarEspera(tipo: TipoListaEspera): void {
     if (!this.claseSeleccionada) return;
+    if (this.yaEnListaEspera(this.claseSeleccionada.id)) {
+      return;
+    }
     this.isSubmitting = true;
     this.errorModalMsg = '';
 
     this.reservasService
-      .anotarseListaEspera(this.claseSeleccionada.id, tipo)
+      .anotarseListaEspera(this.claseSeleccionada, tipo)
       .subscribe({
         next: (res) => {
           this.isSubmitting = false;
+          this.marcarListaEspera(this.claseSeleccionada!.id);
           this.resultadoMsg = res.message;
           this.pasoModal = 'resultado-espera';
         },
-        error: () => {
+        error: (err) => {
           this.isSubmitting = false;
-          this.errorModalMsg = 'No se pudo registrar la lista de espera.';
+          this.errorModalMsg =
+            err?.error?.message ??
+            'No se pudo registrar la lista de espera.';
         },
       });
   }
 
+  confirmacionTitulo(): string {
+    if (this.modalidadElegida === 'ABONADO') {
+      return 'Confirmá tu inscripción mensual';
+    }
+    if (this.claseSeleccionada?.abonoActividadVigente) {
+      return 'Confirmá tu reserva (abonado)';
+    }
+    return 'Confirmá tu reserva';
+  }
+
+  confirmacionDetallePago(): string {
+    if (this.modalidadElegida === 'ABONADO') {
+      const precio = this.claseSeleccionada?.precioActividad ?? 0;
+      return `Mensualidad — $${precio}`;
+    }
+    if (this.claseSeleccionada?.abonoActividadVigente) {
+      return 'Sin cargo adicional (ya sos abonado de esta actividad)';
+    }
+    return this.tipoPagoLabel(this.tipoPagoElegido);
+  }
+
   tipoPagoLabel(tipo: TipoPago): string {
-    return tipo === 'PAGO_COMPLETO' ? 'Pago completo' : 'Señar';
+    return tipo === 'PAGO_COMPLETO' ? 'Pago Completo' : 'Pagar Seña (50%)';
+  }
+
+  private recargarClases(): void {
+    this.isLoading = true;
+    this.errorMsg = '';
+    this.reservasService.getClasesDisponibles().subscribe({
+      next: (data) => {
+        this.clases = data ?? [];
+        this.actividades = [...new Set(this.clases.map((c) => c.actividad))].sort();
+        this.sedes = [...new Set(this.clases.map((c) => c.sede))].sort();
+        const actividadQuery = this.route.snapshot.queryParamMap.get('actividad');
+        if (actividadQuery && this.actividades.includes(actividadQuery)) {
+          this.filtros.patchValue({ actividad: actividadQuery }, { emitEvent: false });
+        }
+        this.aplicarFiltros();
+        this.isLoading = false;
+      },
+      error: () => {
+        this.errorMsg = 'No pudimos cargar las clases. Intentá nuevamente.';
+        this.isLoading = false;
+      },
+    });
+  }
+
+  private listaEsperaStorageKey(): string | null {
+    const email = this.authService.getCurrentUser()?.email?.trim().toLowerCase();
+    return email ? `kuda_lista_espera_${email}` : null;
+  }
+
+  private cargarListaEsperaLocal(): void {
+    const key = this.listaEsperaStorageKey();
+    if (!key) return;
+    try {
+      const raw = localStorage.getItem(key);
+      const ids: number[] = raw ? JSON.parse(raw) : [];
+      ids.forEach((id) => this.clasesEnListaEspera.add(Number(id)));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private marcarListaEspera(claseId: number): void {
+    this.clasesEnListaEspera.add(claseId);
+    const key = this.listaEsperaStorageKey();
+    if (!key) return;
+    localStorage.setItem(
+      key,
+      JSON.stringify([...this.clasesEnListaEspera]),
+    );
   }
 }
