@@ -57,7 +57,7 @@ const MSG_PASSWORDS_MISMATCH = 'Las contraseñas no coinciden';
 const MSG_TOKEN_EXPIRADO = 'El enlace de recuperación ha expirado';
 const MSG_TOKEN_INVALIDO = 'El enlace de recuperación es inválido';
 
-interface ClientePerfilResponse {
+interface PerfilFlat {
   email?: string;
   nombre?: string;
   apellido?: string;
@@ -69,6 +69,16 @@ interface ClientePerfilResponse {
   rol_id?: number;
   rol?: { id: number; nombre: string };
 }
+
+/**
+ * GET /clientes/:email devuelve `{ ...cliente, usuario: { ...usuario } }`.
+ * PUT /clientes/:email devuelve `{ message, cliente: { ...usuario, ...cliente } }`.
+ * Login devuelve `{ usuario, token }`.
+ */
+type ClientePerfilResponse = PerfilFlat & {
+  usuario?: PerfilFlat;
+  cliente?: PerfilFlat & { usuario?: PerfilFlat };
+};
 
 @Injectable({
   providedIn: 'root',
@@ -274,18 +284,30 @@ export class AuthService {
     base: CurrentUser,
     resp: ClientePerfilResponse,
   ): CurrentUser {
+    const flat = this.aplanarPerfil(resp);
     return {
       ...base,
-      nombre: resp.nombre ?? base.nombre,
-      apellido: resp.apellido ?? base.apellido,
-      telefono: resp.telefono ?? base.telefono,
-      genero: resp.genero ?? base.genero,
-      fechaNacimiento: this.normalizarFecha(resp.fechaNacimiento) ?? base.fechaNacimiento,
-      dni: resp.dni ?? base.dni,
-      activo: resp.activo ?? base.activo,
-      rol_id: resp.rol_id ?? base.rol_id,
-      rol: resp.rol ?? base.rol,
+      nombre: flat.nombre ?? base.nombre,
+      apellido: flat.apellido ?? base.apellido,
+      telefono: flat.telefono ?? base.telefono,
+      genero: flat.genero ?? base.genero,
+      fechaNacimiento: this.normalizarFecha(flat.fechaNacimiento) ?? base.fechaNacimiento,
+      dni: flat.dni ?? base.dni,
+      activo: flat.activo ?? base.activo,
+      rol_id: flat.rol_id ?? base.rol_id,
+      rol: flat.rol ?? base.rol,
     };
+  }
+
+  /** Aplana las distintas formas de respuesta (GET/PUT/login) a un objeto plano. */
+  private aplanarPerfil(resp: ClientePerfilResponse): PerfilFlat {
+    if (resp.cliente) {
+      return this.aplanarPerfil(resp.cliente);
+    }
+    if (resp.usuario) {
+      return { ...resp, ...resp.usuario };
+    }
+    return resp;
   }
 
   private normalizarFecha(valor?: string): string | undefined {
