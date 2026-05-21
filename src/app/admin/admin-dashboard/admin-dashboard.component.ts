@@ -52,7 +52,7 @@ export class AdminDashboardComponent {
   filtroEmpleadosQ = '';
   filtroEmpleadosEstado: '' | 'ACTIVO' | 'INACTIVO' = '';
 
-  createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '' };
+  createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
   createEmpleadoError = '';
   createEmpleadoSuccess = '';
 
@@ -215,13 +215,17 @@ export class AdminDashboardComponent {
     this.createEmpleadoError = '';
     this.createEmpleadoSuccess = '';
     const f = this.createEmpleadoForm;
-    if (!f.nombre || !f.apellido || !f.dni || !f.email) {
+    if (!f.nombre || !f.apellido || !f.dni || !f.email || !f.telefono || !f.password) {
       this.createEmpleadoError = 'Completá todos los campos.';
+      return;
+    }
+    if (f.password.length < 8) {
+      this.createEmpleadoError = 'La contraseña debe tener al menos 8 caracteres.';
       return;
     }
     this.gestionUsuariosService.createEmpleado(f).subscribe({
       next: () => {
-        this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '' };
+        this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
         this.createEmpleadoSuccess = 'Recepcionista registrado exitosamente.';
         this.refreshEmpleados();
       },

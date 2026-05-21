@@ -15,7 +15,7 @@
       <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Usuarios</button>
       <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
       <button (click)="setTab('profesores')" [class.active]="tab === 'profesores'">Profesores</button>
-      <button (click)="setTab('empleados')" [class.active]="tab === 'empleados'">Empleados</button>
+      <button (click)="setTab('empleados')" [class.active]="tab === 'empleados'">Recepcionistas</button>
     </div>
   </div>
 
@@ -40,19 +40,19 @@
     <!-- Formulario de registro -->
     <div class="form-section">
       <h4 class="form-section-title">Registrar nuevo profesor</h4>
-      <div class="grid grid-2">
-        <label>
-          <span>Nombre</span>
-          <input [(ngModel)]="createProfesor.nombre" />
-        </label>
-        <label>
-          <span>Apellido</span>
-          <input [(ngModel)]="createProfesor.apellido" />
-        </label>
-        <label>
-          <span>DNI</span>
-          <input [(ngModel)]="createProfesor.dni" />
-        </label>
+      <div class="form-row form-row-2">
+        <div class="field">
+          <div class="label">Nombre</div>
+          <input class="control" [(ngModel)]="createProfesor.nombre" />
+        </div>
+        <div class="field">
+          <div class="label">Apellido</div>
+          <input class="control" [(ngModel)]="createProfesor.apellido" />
+        </div>
+        <div class="field">
+          <div class="label">DNI</div>
+          <input class="control" [(ngModel)]="createProfesor.dni" />
+        </div>
       </div>
 
       <div class="field" *ngIf="!loadingActividades && actividades.length > 0">
@@ -141,7 +141,7 @@
   <!-- EMPLEADOS -->
   <section *ngIf="tab === 'empleados'" class="card usuarios-section">
     <div class="card-head">
-      <h3>Empleados</h3>
+      <h3>Recepcionistas</h3>
       <div class="card-head-actions">
         <button (click)="refreshEmpleados()">Refrescar</button>
       </div>
@@ -155,23 +155,31 @@
       <h4 class="form-section-title">Registrar recepcionista</h4>
       <p class="error" *ngIf="createEmpleadoError">{{ createEmpleadoError }}</p>
       <p class="success-msg" *ngIf="createEmpleadoSuccess">{{ createEmpleadoSuccess }}</p>
-      <div class="grid grid-2">
-        <label>
-          <span>Nombre</span>
-          <input [(ngModel)]="createEmpleadoForm.nombre" />
-        </label>
-        <label>
-          <span>Apellido</span>
-          <input [(ngModel)]="createEmpleadoForm.apellido" />
-        </label>
-        <label>
-          <span>DNI</span>
-          <input [(ngModel)]="createEmpleadoForm.dni" />
-        </label>
-        <label>
-          <span>Email</span>
-          <input type="email" [(ngModel)]="createEmpleadoForm.email" />
-        </label>
+      <div class="form-row form-row-2">
+        <div class="field">
+          <div class="label">Nombre</div>
+          <input class="control" [(ngModel)]="createEmpleadoForm.nombre" />
+        </div>
+        <div class="field">
+          <div class="label">Apellido</div>
+          <input class="control" [(ngModel)]="createEmpleadoForm.apellido" />
+        </div>
+        <div class="field">
+          <div class="label">DNI</div>
+          <input class="control" [(ngModel)]="createEmpleadoForm.dni" />
+        </div>
+        <div class="field">
+          <div class="label">Email</div>
+          <input class="control" type="email" [(ngModel)]="createEmpleadoForm.email" />
+        </div>
+        <div class="field">
+          <div class="label">Teléfono</div>
+          <input class="control" [(ngModel)]="createEmpleadoForm.telefono" />
+        </div>
+        <div class="field">
+          <div class="label">Contraseña</div>
+          <input class="control" type="password" [(ngModel)]="createEmpleadoForm.password" />
+        </div>
       </div>
       <div class="form-section-actions">
         <button class="btn btn-primary" (click)="onCreateEmpleado()">+ Registrar recepcionista</button>
@@ -233,7 +241,7 @@
   <!-- Modal: detalle de empleado -->
   <div class="modal-overlay" *ngIf="empleadoDetalle" (click)="empleadoDetalle = null">
     <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
-      <h4 class="modal-title">Detalle del empleado</h4>
+      <h4 class="modal-title">Detalle del recepcionista</h4>
       <div class="info-grid">
         <div class="info-item">
           <span class="info-label">Nombre</span>

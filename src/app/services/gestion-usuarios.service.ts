@@ -52,6 +52,7 @@ export class GestionUsuariosService {
   private readonly apiUrl = `${environment.apiUrl}/usuarios`;
   private readonly clientesUrl = `${environment.apiUrl}/clientes`;
   private readonly inscripcionesMensualesUrl = `${environment.apiUrl}/inscripciones-mensuales`;
+  private readonly recepcionistasUrl = `${environment.apiUrl}/recepcionistas`;
 
   /** Emails con al menos una mensualidad vigente o en gracia (última carga). */
   private abonadosEmails = new Set<string>();
@@ -122,8 +123,10 @@ export class GestionUsuariosService {
     apellido: string;
     dni: string;
     email: string;
+    telefono: string;
+    password: string;
   }): Observable<unknown> {
-    return this.http.post<unknown>(this.apiUrl, { ...data, rol: 'RECEPCIONISTA' });
+    return this.http.post<unknown>(this.recepcionistasUrl, data);
   }
 
   getClienteExtraInfo(email: string): Observable<ClienteExtraInfo | null> {

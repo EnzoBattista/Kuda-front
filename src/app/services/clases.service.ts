@@ -31,11 +31,17 @@ export class ClasesService {
     return this.http
       .get<Clase[]>(this.apiUrl, { headers: this.noCacheHeaders })
       .pipe(
-        map((list) =>
-          (list ?? [])
-            .map((c) => this.normalizeClase(c))
-            .filter(isClaseActiva),
-        ),
+        map((response: any) => {
+          let arr = [];
+          if (Array.isArray(response)) {
+            arr = response;
+          } else if (response && Array.isArray(response.data)) {
+            arr = response.data;
+          } else if (response && Array.isArray(response.clases)) {
+            arr = response.clases;
+          }
+          return arr.map((c: any) => this.normalizeClase(c)).filter(isClaseActiva);
+        }),
         catchError((err) => throwError(() => this.toHuError(err))),
       );
   }

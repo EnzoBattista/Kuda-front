@@ -29,7 +29,7 @@
 
 .current-user {
   font-size: 0.9rem;
-  color: var(--light-text-color);
+  color: var(--muted);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -68,7 +68,7 @@
 }
 
 .tabs button {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   background: #fff;
   border-radius: 10px;
   padding: 0.55rem 0.8rem;
@@ -82,14 +82,7 @@
   color: #fff;
 }
 
-.card {
-  margin-top: 1rem;
-  background: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: 0 6px 18px var(--shadow-color);
-  padding: 1rem;
-}
+
 
 .usuarios-section {
   padding: 1.5rem !important;
@@ -151,13 +144,13 @@
 label {
   display: grid;
   gap: 0.35rem;
-  color: var(--light-text-color);
+  color: var(--muted);
   font-weight: 700;
 }
 
 input,
 select {
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(15, 23, 42, 0.25);
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
   font-size: 1rem;
@@ -170,7 +163,7 @@ select {
 
 .actions button {
   width: 100%;
-  background: var(--primary-color);
+  background: var(--brand-blue-600);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -180,7 +173,7 @@ select {
 }
 
 .table {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   margin-top: 0.75rem;
 }
 
@@ -189,13 +182,13 @@ select {
   grid-template-columns: 90px 1fr 1fr 1fr 120px 160px;
   gap: 0.75rem;
   padding: 0.6rem 0.25rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
   align-items: center;
 }
 
 .row.head {
   font-weight: 900;
-  color: var(--text-color);
+  color: var(--text);
 }
 
 .row .right {
@@ -213,14 +206,14 @@ select {
 }
 
 .muted {
-  color: var(--light-text-color);
+  color: var(--muted);
   margin: 0.5rem 0 0;
 }
 
 /* ─── Formulario de registro dentro de sección ───────────────────────────── */
 
 .form-section {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--border);
   margin-top: 0.75rem;
   padding-top: 1rem;
 }
@@ -229,7 +222,7 @@ select {
   margin: 0 0 0.75rem;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-color);
+  color: var(--text);
 }
 
 .form-section-actions {
@@ -258,7 +251,7 @@ select {
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
-  color: var(--text-color);
+  color: var(--text);
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -398,7 +391,7 @@ select {
 .info-grid {
   display: grid;
   gap: 0;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -409,7 +402,7 @@ select {
   align-items: center;
   padding: 0.85rem 1rem;
   gap: 1rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border);
 }
 
 .info-item:last-child {

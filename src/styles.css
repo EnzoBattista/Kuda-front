@@ -285,6 +285,7 @@ p {
   border-radius: var(--radius-sm);
   padding: 0.7rem 0.85rem;
   font-size: 1rem;
+  border-color: #0f172a22;
 }
 
 .control:focus {
