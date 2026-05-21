@@ -17,7 +17,8 @@ import { ActividadesService } from '../../services/actividades.service';
 import { SalasService } from '../../services/salas.service';
 import { AuthService } from '../../services/auth.service';
 import {
-  CUPO_CLASE_RANGO_MSG,
+  CUPO_CLASE_MAX_DEFAULT,
+  cupoClaseRangoMsg,
   cupoClaseRangoValidator,
 } from '../../validators/cupo-clase.validator';
 
@@ -53,7 +54,18 @@ export class ClasesListComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   readonly diasClase = DIAS_CLASE;
-  readonly cupoRangoMsg = CUPO_CLASE_RANGO_MSG;
+
+  get cupoRangoMsg(): string {
+    return cupoClaseRangoMsg(this.maxCupoSalaSeleccionada);
+  }
+
+  /** Máximo permitido para el cupo de la clase: el cupo de la sala seleccionada. */
+  get maxCupoSalaSeleccionada(): number {
+    const salaId = Number(this.claseForm?.get('salaId')?.value ?? 0);
+    if (!salaId) return CUPO_CLASE_MAX_DEFAULT;
+    const sala = this.salas.find((s) => s.id === salaId);
+    return Number(sala?.cupo ?? CUPO_CLASE_MAX_DEFAULT);
+  }
 
   clases: ClaseListItem[] = [];
   isLoading = false;
@@ -88,7 +100,7 @@ export class ClasesListComponent implements OnInit {
     horario_fin: ['10:00', Validators.required],
     cupo_maximo: [
       10,
-      [Validators.required, cupoClaseRangoValidator()],
+      [Validators.required, cupoClaseRangoValidator(() => this.maxCupoSalaSeleccionada)],
     ],
   });
 
@@ -98,6 +110,9 @@ export class ClasesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarClases();
+    this.claseForm.get('salaId')?.valueChanges.subscribe(() => {
+      this.claseForm.get('cupo_maximo')?.updateValueAndValidity({ emitEvent: false });
+    });
   }
 
   get isAdmin(): boolean {

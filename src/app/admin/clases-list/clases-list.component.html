@@ -165,7 +165,7 @@
           type="number"
           formControlName="cupo_maximo"
           min="1"
-          max="50"
+          [attr.max]="maxCupoSalaSeleccionada"
           [attr.aria-invalid]="cupoRangoInvalido ? true : null"
         />
         <p class="error-text" *ngIf="cupoRangoInvalido">{{ cupoRangoMsg }}</p>
