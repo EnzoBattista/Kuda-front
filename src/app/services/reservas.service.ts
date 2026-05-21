@@ -28,6 +28,8 @@ export type ModalidadInscripcion = 'ABONADO' | 'INDIVIDUAL';
 
 export interface ReservaHistorial {
   id: number;
+  /** Id de clase; usado para completar sala cuando el API no la envía. */
+  claseId?: number;
   actividad: string;
   sede: string;
   diaSemana: string;
@@ -64,6 +66,8 @@ export interface ResultadoCancelacion {
   bono?: number;
   /** Mensaje técnico del backend (opcional). */
   detalle?: string;
+  /** El back respondió 409: la reserva ya estaba cancelada. */
+  yaCancelada?: boolean;
 }
 
 export interface ResultadoReserva {
@@ -84,7 +88,7 @@ interface ReservaApiDto {
     cupo: number;
     actividad: string | null;
     profesor: string | null;
-    sala: string | null;
+    sala: string | { identificador?: string; nombre?: string } | null;
   } | null;
 }
 
@@ -103,7 +107,17 @@ interface InscripcionIndividualApi {
   modalidad: 'COMPLETO' | 'SEÑA';
   monto_pagado: number | string;
   monto_total?: number | string;
-  reservas?: { id: number }[];
+  reservas?: { id: number; fecha_exacta?: string; estado?: string }[];
+  actividad?: { id: number; nombre: string };
+  clase?: {
+    id: number;
+    hora_inicio: string;
+    hora_fin: string;
+    cupo?: number;
+    dia_semana?: string;
+    actividad?: { nombre: string };
+    sala?: { identificador: string };
+  };
 }
 
 interface InscripcionMensualApi {
@@ -114,6 +128,13 @@ interface InscripcionMensualApi {
   periodo_fin: string;
   estado: string;
   monto: number | string;
+  actividad?: { nombre: string };
+  clase?: {
+    id: number;
+    hora_inicio: string;
+    hora_fin: string;
+    sala?: { identificador: string };
+  };
   reservas?: { id: number; fecha_exacta?: string; estado?: string }[];
 }
 
@@ -160,31 +181,295 @@ export class ReservasService {
           params: historialParams,
         })
         .pipe(map((body) => parseHistorialReservasResponse(body))),
-      individuales: this.http.get<InscripcionIndividualApi[]>(
-        this.inscripcionesIndUrl,
-        { headers: this.noCacheHeaders, params },
-      ),
-      mensuales: this.http.get<InscripcionMensualApi[]>(
-        this.inscripcionesMenUrl,
-        { headers: this.noCacheHeaders, params },
-      ),
+      individuales: this.http
+        .get<InscripcionIndividualApi[]>(this.inscripcionesIndUrl, {
+          headers: this.noCacheHeaders,
+          params,
+        })
+        .pipe(catchError(() => of([]))),
+      mensuales: this.http
+        .get<InscripcionMensualApi[]>(this.inscripcionesMenUrl, {
+          headers: this.noCacheHeaders,
+          params,
+        })
+        .pipe(catchError(() => of([]))),
     }).pipe(
-      map(({ activas, historial, individuales, mensuales }) => {
-        const hoy = new Date().toISOString().slice(0, 10);
-        const idsActivas = new Set(activas.map((r) => r.id));
-        const pasadas = historial.reservas.filter((r) => !idsActivas.has(r.id));
-        const todas = [...activas, ...pasadas];
-        const mapped = todas.map((r) =>
-          this.mapReservaDto(r, individuales ?? [], mensuales ?? [], hoy),
+      switchMap(({ activas, historial, individuales, mensuales }) => {
+        const hoy = fechaHoyLocal();
+        const extras = this.construirReservasDesdeInscripciones(
+          individuales,
+          activas,
+          historial.reservas,
+          hoy,
         );
-        return mapped.sort(
-          (a, b) =>
-            new Date(b.proximaFecha ?? b.fechaReserva).getTime() -
-            new Date(a.proximaFecha ?? a.fechaReserva).getTime(),
+
+        const faltanId = extras.filter((e) => e.ins && !e.dto.id);
+        const ensamblar = (dtosExtra: ReservaApiDto[]) =>
+          this.enrichSedesReservas(
+            this.ensamblarMisReservas(
+              activas,
+              dtosExtra,
+              historial,
+              individuales,
+              mensuales,
+              hoy,
+            ),
+          );
+
+        if (faltanId.length === 0) {
+          return ensamblar(extras.map((x) => x.dto));
+        }
+
+        return forkJoin(
+          faltanId.map((item) =>
+            this.buscarReservaIdPorClase(
+              email,
+              item.ins!.clase_id,
+              item.fecha,
+            ).pipe(
+              map((id) => ({
+                ...item,
+                dto: { ...item.dto, id: id || item.dto.id },
+              })),
+            ),
+          ),
+        ).pipe(
+          switchMap((resueltos) => {
+            const mapaExtra = new Map(
+              resueltos.map((r) => [`${r.ins!.clase_id}-${r.fecha}`, r.dto]),
+            );
+            const dtosExtra = extras.map((e) => {
+              const key = e.ins ? `${e.ins.clase_id}-${e.fecha}` : '';
+              return mapaExtra.get(key) ?? e.dto;
+            });
+            return ensamblar(dtosExtra);
+          }),
         );
       }),
       catchError((err) => throwError(() => this.toHttpError(err))),
     );
+  }
+
+  /** Guarda el id de reserva tras crear inscripción (útil si GET /reservas aún no la lista). */
+  recordarReservaCreada(claseId: number, fecha: string, reservaId: number): void {
+    if (!reservaId) return;
+    try {
+      sessionStorage.setItem(
+        `kuda_reserva_${claseId}_${fecha.slice(0, 10)}`,
+        String(reservaId),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private ensamblarMisReservas(
+    activas: ReservaApiDto[],
+    extras: ReservaApiDto[],
+    historial: HistorialReservasResponse,
+    individuales: InscripcionIndividualApi[],
+    mensuales: InscripcionMensualApi[],
+    hoy: string,
+  ): ReservaHistorial[] {
+    const extrasSinDuplicar = extras.filter(
+      (e) => !this.existeReservaEnHistorial(historial.reservas, e),
+    );
+    const activasCompletas = [...activas, ...extrasSinDuplicar];
+    const idsActivas = new Set(
+      activasCompletas.filter((r) => r.id > 0).map((r) => r.id),
+    );
+    const pasadas = historial.reservas.filter((r) => {
+      if (r.id > 0 && idsActivas.has(r.id)) return false;
+      return !activasCompletas.some(
+        (a) =>
+          a.clase?.id === r.clase?.id &&
+          String(a.fecha_exacta).slice(0, 10) ===
+            String(r.fecha_exacta).slice(0, 10),
+      );
+    });
+    const todas = [...activasCompletas, ...pasadas];
+    const mapped = todas.map((r) =>
+      this.mapReservaDto(r, individuales, mensuales, hoy),
+    );
+    return mapped.sort(
+      (a, b) =>
+        new Date(b.proximaFecha ?? b.fechaReserva).getTime() -
+        new Date(a.proximaFecha ?? a.fechaReserva).getTime(),
+    );
+  }
+
+  /**
+   * El GET /reservas solo devuelve fecha_exacta >= hoy (UTC). Complementamos con
+   * inscripciones individuales futuras para no perder reservas recién creadas.
+   */
+  private existeReservaEnHistorial(
+    historial: ReservaApiDto[],
+    reserva: ReservaApiDto,
+  ): boolean {
+    const fecha = String(reserva.fecha_exacta).slice(0, 10);
+    const claseId = reserva.clase?.id;
+    if (!claseId) return false;
+    return historial.some(
+      (h) =>
+        h.clase?.id === claseId &&
+        String(h.fecha_exacta).slice(0, 10) === fecha,
+    );
+  }
+
+  private construirReservasDesdeInscripciones(
+    individuales: InscripcionIndividualApi[],
+    activas: ReservaApiDto[],
+    historial: ReservaApiDto[],
+    hoy: string,
+  ): { dto: ReservaApiDto; ins?: InscripcionIndividualApi; fecha: string }[] {
+    const extras: {
+      dto: ReservaApiDto;
+      ins?: InscripcionIndividualApi;
+      fecha: string;
+    }[] = [];
+
+    for (const ins of individuales) {
+      const fecha = String(ins.fecha).slice(0, 10);
+      if (fecha < hoy) continue;
+
+      const yaListada = activas.some(
+        (a) =>
+          a.clase?.id === ins.clase_id &&
+          String(a.fecha_exacta).slice(0, 10) === fecha,
+      );
+      const yaEnHistorial = historial.some(
+        (h) =>
+          h.clase?.id === ins.clase_id &&
+          String(h.fecha_exacta).slice(0, 10) === fecha,
+      );
+      if (yaListada || yaEnHistorial) continue;
+
+      const reservaId = this.resolverReservaIdLocal(ins, activas, fecha);
+      const clase = ins.clase;
+      const salaExtra = extraerSalaDto(clase?.sala);
+
+      extras.push({
+        ins,
+        fecha,
+        dto: {
+          id: reservaId,
+          fecha_exacta: fecha,
+          estado: 'ACTIVA',
+          asistio: null,
+          clase: {
+            id: clase?.id ?? ins.clase_id,
+            hora_inicio: clase?.hora_inicio ?? '00:00',
+            hora_fin: clase?.hora_fin ?? '00:00',
+            cupo: Number(clase?.cupo ?? 0),
+            actividad:
+              ins.actividad?.nombre ?? clase?.actividad?.nombre ?? null,
+            profesor: null,
+            sala: salaExtra === '—' ? null : salaExtra,
+          },
+        },
+      });
+    }
+
+    return extras;
+  }
+
+  private resolverReservaIdLocal(
+    ins: InscripcionIndividualApi,
+    activas: ReservaApiDto[],
+    fecha: string,
+  ): number {
+    const enActivas = activas.find(
+      (a) =>
+        a.clase?.id === ins.clase_id &&
+        String(a.fecha_exacta).slice(0, 10) === fecha,
+    );
+    if (enActivas) return enActivas.id;
+
+    const enIns = ins.reservas?.find(
+      (r) => r.estado === 'ACTIVA' || !r.estado,
+    );
+    if (enIns?.id) return enIns.id;
+
+    try {
+      const stored = sessionStorage.getItem(
+        `kuda_reserva_${ins.clase_id}_${fecha}`,
+      );
+      if (stored) return Number(stored);
+    } catch {
+      /* ignore */
+    }
+
+    return 0;
+  }
+
+  /**
+   * GET /reservas devuelve sala null (el DTO del back usa sala.nombre inexistente).
+   * Completamos con GET /clases/:id, igual que en clases disponibles.
+   */
+  private enrichSedesReservas(
+    reservas: ReservaHistorial[],
+  ): Observable<ReservaHistorial[]> {
+    const ids = [
+      ...new Set(
+        reservas
+          .filter((r) => r.sede === '—' && r.claseId)
+          .map((r) => r.claseId as number),
+      ),
+    ];
+    if (ids.length === 0) {
+      return of(reservas);
+    }
+
+    return forkJoin(
+      ids.map((id) =>
+        this.http
+          .get<Clase>(`${this.clasesUrl}/${id}`, {
+            headers: this.noCacheHeaders,
+          })
+          .pipe(
+            map((c) => ({
+              id,
+              sede: c.sala?.identificador ?? '—',
+            })),
+            catchError(() => of({ id, sede: '—' })),
+          ),
+      ),
+    ).pipe(
+      map((filas) => {
+        const porClase = new Map(filas.map((f) => [f.id, f.sede]));
+        return reservas.map((r) =>
+          r.sede === '—' && r.claseId && porClase.has(r.claseId)
+            ? { ...r, sede: porClase.get(r.claseId)! }
+            : r,
+        );
+      }),
+    );
+  }
+
+  private buscarReservaIdPorClase(
+    email: string,
+    claseId: number,
+    fecha: string,
+  ): Observable<number> {
+    const params = new HttpParams()
+      .set('cliente_email', email)
+      .set('clase_id', String(claseId));
+
+    return this.http
+      .get<unknown>(this.reservasUrl, {
+        headers: this.noCacheHeaders,
+        params,
+      })
+      .pipe(
+        map((body) => {
+          const list = parseReservasActivasResponse(body);
+          const match = list.find(
+            (r) => String(r.fecha_exacta).slice(0, 10) === fecha,
+          );
+          return match?.id ?? 0;
+        }),
+        catchError(() => of(0)),
+      );
   }
 
   getMensualesActivas(): Observable<InscripcionMensualApi[]> {
@@ -352,8 +637,29 @@ export class ReservasService {
           bono: r.vale?.monto ? Number(r.vale.monto) : undefined,
           detalle: r.mensaje ?? r.message,
         })),
-        catchError((err) => throwError(() => this.toHttpError(err))),
+        catchError((err) => {
+          const normalizado = this.toHttpError(err);
+          const msg = normalizado.error.message ?? '';
+          if (/ya está cancelada/i.test(msg)) {
+            return of({
+              message: msg,
+              reembolso: false,
+              yaCancelada: true,
+            } as ResultadoCancelacion);
+          }
+          return throwError(() => normalizado);
+        }),
       );
+  }
+
+  olvidarReservaLocal(claseId: number, fecha: string): void {
+    try {
+      sessionStorage.removeItem(
+        `kuda_reserva_${claseId}_${fecha.slice(0, 10)}`,
+      );
+    } catch {
+      /* ignore */
+    }
   }
 
   anotarseListaEspera(
@@ -465,14 +771,18 @@ export class ReservasService {
     return this.http
       .post<InscripcionIndividualApi>(this.inscripcionesIndUrl, body)
       .pipe(
-        switchMap((inscripcion) =>
-          this.finalizarConPagoOpcional(
+        switchMap((inscripcion) => {
+          const reservaId = inscripcion.reservas?.[0]?.id ?? 0;
+          if (reservaId) {
+            this.recordarReservaCreada(clase.id, clase.proximaFecha, reservaId);
+          }
+          return this.finalizarConPagoOpcional(
             clase,
             Number(inscripcion.monto_pagado ?? 0),
-            inscripcion.reservas?.[0]?.id ?? inscripcion.id,
+            reservaId || inscripcion.id,
             tipoPago,
-          ),
-        ),
+          );
+        }),
         catchError((err) => throwError(() => this.toHttpError(err))),
       );
   }
@@ -613,10 +923,20 @@ export class ReservasService {
       estado = 'COMPLETADA';
     }
 
+    const claseId =
+      clase?.id ?? individual?.clase_id ?? mensual?.clase_id;
+    const sede =
+      extraerSalaDto(clase?.sala) !== '—'
+        ? extraerSalaDto(clase?.sala)
+        : extraerSalaDto(individual?.clase?.sala) !== '—'
+          ? extraerSalaDto(individual?.clase?.sala)
+          : extraerSalaDto(mensual?.clase?.sala);
+
     return {
       id: dto.id,
+      claseId,
       actividad: clase?.actividad ?? '—',
-      sede: typeof clase?.sala === 'string' ? clase.sala : '—',
+      sede,
       diaSemana: diaDesdeFecha(fecha),
       horaInicio,
       horaFin,
@@ -662,6 +982,14 @@ export class ReservasService {
 }
 
 /** El back devuelve `{ message, data: [] }` cuando no hay reservas, no un array vacío. */
+function extraerSalaDto(
+  sala: string | { identificador?: string; nombre?: string } | null | undefined,
+): string {
+  if (!sala) return '—';
+  if (typeof sala === 'string') return sala || '—';
+  return sala.identificador ?? sala.nombre ?? '—';
+}
+
 function parseReservasActivasResponse(body: unknown): ReservaApiDto[] {
   if (Array.isArray(body)) {
     return body;
@@ -673,6 +1001,14 @@ function parseReservasActivasResponse(body: unknown): ReservaApiDto[] {
     }
   }
   return [];
+}
+
+function fechaHoyLocal(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function parseHistorialReservasResponse(body: unknown): HistorialReservasResponse {

@@ -168,11 +168,20 @@ export class ClasesDisponiblesComponent implements OnInit {
 
   private onReservaExitosa(res: {
     message: string;
+    reservaId?: number;
     redirectUrl?: string;
   }): void {
     this.isSubmitting = false;
     this.resultadoMsg = res.message;
     this.pasoModal = 'resultado';
+
+    if (this.claseSeleccionada && res.reservaId) {
+      this.reservasService.recordarReservaCreada(
+        this.claseSeleccionada.id,
+        this.claseSeleccionada.proximaFecha,
+        res.reservaId,
+      );
+    }
 
     if (res.redirectUrl) {
       window.location.href = res.redirectUrl;

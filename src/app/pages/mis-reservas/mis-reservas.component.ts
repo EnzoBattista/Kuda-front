@@ -115,26 +115,38 @@ export class MisReservasComponent implements OnInit {
     this.errorCancelacion = '';
     this.bannerError = '';
 
-    this.reservasService
-      .cancelarReserva(this.reservaSeleccionada.id)
-      .subscribe({
-        next: (resultado) => {
-          this.isCancelando = false;
-          this.resultadoCancelacion = resultado;
-          this.modalPaso = 'resultado-cancelacion';
-          this.bannerSuccess = MSG_RESERVA_CANCELADA;
+    const seleccionada = this.reservaSeleccionada;
+    this.reservasService.cancelarReserva(seleccionada.id).subscribe({
+      next: (resultado) => {
+        this.isCancelando = false;
+        if (resultado.yaCancelada) {
+          this.limpiarCacheReserva(seleccionada);
           this.cerrarModal();
+          this.bannerError = '';
           this.cargarReservas();
-        },
-        error: (err) => {
-          this.isCancelando = false;
-          const msg =
-            err?.error?.message ??
-            'No se pudo cancelar la reserva.';
-          this.errorCancelacion = msg;
-          this.bannerError = msg;
-        },
-      });
+          return;
+        }
+        this.limpiarCacheReserva(seleccionada);
+        this.resultadoCancelacion = resultado;
+        this.modalPaso = 'resultado-cancelacion';
+        this.bannerSuccess = MSG_RESERVA_CANCELADA;
+        this.cerrarModal();
+        this.cargarReservas();
+      },
+      error: (err) => {
+        this.isCancelando = false;
+        const msg =
+          err?.error?.message ?? 'No se pudo cancelar la reserva.';
+        this.errorCancelacion = msg;
+        this.bannerError = msg;
+      },
+    });
+  }
+
+  private limpiarCacheReserva(r: ReservaHistorial): void {
+    if (r.claseId && r.proximaFecha) {
+      this.reservasService.olvidarReservaLocal(r.claseId, r.proximaFecha);
+    }
   }
 
   modalidadLabel(r: ReservaHistorial): string {
