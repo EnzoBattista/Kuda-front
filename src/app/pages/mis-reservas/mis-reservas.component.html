@@ -23,7 +23,7 @@
         </select>
       </div>
       <div class="field">
-        <div class="label">Sede</div>
+        <div class="label">Sala</div>
         <select class="control" formControlName="sede">
           <option value="">Todas</option>
           <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
@@ -86,7 +86,7 @@
 
       <dl class="reserva-info">
         <div class="reserva-info-row">
-          <dt>Sede</dt>
+          <dt>Sala</dt>
           <dd>{{ r.sede }}</dd>
         </div>
         <div class="reserva-info-row">
@@ -143,7 +143,7 @@
 
       <dl class="reserva-info">
         <div class="reserva-info-row">
-          <dt>Sede</dt>
+          <dt>Sala</dt>
           <dd>{{ r.sede }}</dd>
         </div>
         <div class="reserva-info-row">
