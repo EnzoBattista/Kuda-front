@@ -1,65 +1,76 @@
-<div class="container" style="padding-top: 1.25rem;">
-  <div class="card card-pad">
-    <h2>Ingresar</h2>
-    <p class="help">Accedé con tu email y contraseña.</p>
+<div class="login-page">
 
-    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
-      <div class="field">
-        <div class="label">Email</div>
-        <input
-          class="control"
-          type="email"
-          formControlName="email"
-          autocomplete="email"
-          inputmode="email"
-          [attr.aria-invalid]="
-            form.controls.email.touched && form.controls.email.invalid
-              ? 'true'
-              : 'false'
-          "
-        />
-        <div class="error-text" *ngIf="form.controls.email.touched && form.controls.email.hasError('required')">
-          El email es obligatorio.
-        </div>
-        <div class="error-text" *ngIf="form.controls.email.touched && form.controls.email.hasError('email')">
-          Ingresá un email válido.
-        </div>
-      </div>
-
-      <div class="field">
-        <div class="label">Contraseña</div>
-        <input
-          class="control"
-          type="password"
-          formControlName="password"
-          autocomplete="current-password"
-          [attr.aria-invalid]="
-            form.controls.password.touched && form.controls.password.invalid
-              ? 'true'
-              : 'false'
-          "
-        />
-        <div class="error-text" *ngIf="form.controls.password.touched && form.controls.password.hasError('required')">
-          La contraseña es obligatoria.
-        </div>
-        <div class="error-text" *ngIf="form.controls.password.touched && form.controls.password.hasError('minlength')">
-          Debe tener al menos 8 caracteres.
-        </div>
-      </div>
-
-      <div class="error-text" *ngIf="submitError">{{ submitError }}</div>
-
-      <div class="form-actions">
-        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting || form.invalid">
-          {{ isSubmitting ? 'Ingresando…' : 'Ingresar' }}
-        </button>
-        <a class="help" routerLink="/recuperar-password">¿Olvidaste tu contraseña?</a>
-      </div>
-    </form>
-
-    <p class="help" style="margin-top: 1rem;">
-      ¿No tenés cuenta? <a routerLink="/registro"><strong>Registrate</strong></a>
-    </p>
+  <!-- Fondo aurora -->
+  <div class="aurora-bg" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
   </div>
-</div>
 
+  <!-- Formulario (estructura original intacta) -->
+  <div class="container login-container">
+    <div class="card card-pad login-card">
+      <h2>Ingresar</h2>
+      <p class="help">Accedé con tu email y contraseña.</p>
+
+      <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="field">
+          <div class="label">Email</div>
+          <input
+            class="control"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            inputmode="email"
+            [attr.aria-invalid]="
+              form.controls.email.touched && form.controls.email.invalid
+                ? 'true'
+                : 'false'
+            "
+          />
+          <div class="error-text" *ngIf="form.controls.email.touched && form.controls.email.hasError('required')">
+            El email es obligatorio.
+          </div>
+          <div class="error-text" *ngIf="form.controls.email.touched && form.controls.email.hasError('email')">
+            Ingresá un email válido.
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Contraseña</div>
+          <input
+            class="control"
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+            [attr.aria-invalid]="
+              form.controls.password.touched && form.controls.password.invalid
+                ? 'true'
+                : 'false'
+            "
+          />
+          <div class="error-text" *ngIf="form.controls.password.touched && form.controls.password.hasError('required')">
+            La contraseña es obligatoria.
+          </div>
+          <div class="error-text" *ngIf="form.controls.password.touched && form.controls.password.hasError('minlength')">
+            Debe tener al menos 8 caracteres.
+          </div>
+        </div>
+
+        <div class="error-text" *ngIf="submitError">{{ submitError }}</div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit" [disabled]="isSubmitting || form.invalid">
+            {{ isSubmitting ? 'Ingresando…' : 'Ingresar' }}
+          </button>
+          <a class="help" routerLink="/recuperar-password">¿Olvidaste tu contraseña?</a>
+        </div>
+      </form>
+
+      <p class="help" style="margin-top: 1rem;">
+        ¿No tenés cuenta? <a routerLink="/registro"><strong>Registrate</strong></a>
+      </p>
+    </div>
+  </div>
+
+</div>
