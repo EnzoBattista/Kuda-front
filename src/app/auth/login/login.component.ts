@@ -55,9 +55,12 @@ export class LoginComponent {
       },
       error: (err) => {
         this.isSubmitting = false;
-        this.submitError =
-          err?.error?.message ??
-          'No se pudo iniciar sesión. Verificá tus datos.';
+        const msg = err?.error?.message?.toLowerCase() || '';
+        if (msg.includes('confirm')) {
+          this.submitError = 'La cuenta aún no fue confirmada. Revisá tu casilla de email para activar el registro.';
+        } else {
+          this.submitError = 'Datos de inicio de sesión incorrectos';
+        }
       },
     });
   }
