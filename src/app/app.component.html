@@ -14,8 +14,8 @@
         <ng-container *ngIf="!auth.isStaff()">
           <a class="nav-link" routerLink="/clases" routerLinkActive="nav-link-active">Clases</a>
           <a class="nav-link" routerLink="/mis-reservas" routerLinkActive="nav-link-active">Mis reservas</a>
-          <a class="nav-link" routerLink="/mi-informacion" routerLinkActive="nav-link-active">Mi información</a>
         </ng-container>
+        <a class="nav-link" routerLink="/mi-informacion" routerLinkActive="nav-link-active">Mi información</a>
         <button class="nav-link nav-logout" (click)="logout()">Cerrar sesión</button>
       </ng-container>
       <ng-template #noLogueado>

@@ -41,7 +41,7 @@ export class ActividadesListComponent implements OnInit {
   profesoresLoading = false;
   profesoresEmptyHu = false;
 
-  readonly precioHuError = 'el precio debe ser mayor a cero';
+  readonly precioHuError = 'El precio debe ser mayor a cero';
 
   ngOnInit(): void {
     this.cargarActividades();

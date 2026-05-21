@@ -20,6 +20,7 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
 })
 export class RegisterComponent {
   isSubmitting = false;
+  submitted = false;
   submitError = '';
   successMessage = '';
 
@@ -68,11 +69,19 @@ export class RegisterComponent {
   constructor(private readonly auth: AuthService) {}
 
   onSubmit(): void {
+    this.submitted = true;
     this.submitError = '';
     this.successMessage = '';
 
-    this.form.markAllAsTouched();
-    if (this.form.invalid || this.isUnder14()) return;
+    if (this.isUnder14()) {
+      this.submitError = 'Registro fallido - Se debe ser mayor de 14 años.';
+      return;
+    }
+    if (this.form.hasError('passwordsMismatch')) {
+      this.submitError = 'Registro fallido - Las contraseñas no coinciden.';
+      return;
+    }
+    if (this.form.invalid) return;
 
     this.isSubmitting = true;
 

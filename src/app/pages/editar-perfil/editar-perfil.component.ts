@@ -40,6 +40,7 @@ export class EditarPerfilComponent implements OnInit {
   });
 
   isSubmitting = false;
+  submitted = false;
   isLoading = true;
   loadError = '';
   submitError = '';
@@ -90,9 +91,9 @@ export class EditarPerfilComponent implements OnInit {
   }
 
   onSubmit(): void {
+    this.submitted = true;
     this.submitError = '';
     this.successMessage = '';
-    this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
     this.isSubmitting = true;

@@ -38,16 +38,17 @@ export class CambiarPasswordComponent {
   );
 
   isSubmitting = false;
+  submitted = false;
   submitError = '';
   successMessage = '';
 
   constructor(private readonly auth: AuthService) {}
 
   onSubmit(): void {
+    this.submitted = true;
     this.submitError = '';
     this.successMessage = '';
 
-    this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
     this.isSubmitting = true;

@@ -116,7 +116,7 @@ export function mapActividadSuccess(backendMessage: string): string {
     'Actividad actualizada con éxito': 'Actividad modificada con éxito',
     'Actividad dada de baja exitosamente': 'Actividad eliminada con éxito',
     'Precio de actividad actualizado con éxito':
-      'el precio fue actualizado correctamente',
+      'El precio fue actualizado correctamente',
   };
   return successMap[msg] ?? msg;
 }
@@ -133,7 +133,7 @@ export function mapActividadError(err: HttpErrorResponse): string {
       'No se puede eliminar una actividad con clientes inscriptos',
     'No se puede eliminar la actividad porque tiene clases con inscripciones individuales futuras':
       'No se puede eliminar una actividad con clientes inscriptos',
-    'El precio es inválido o negativo': 'el precio debe ser mayor a cero',
+    'El precio es inválido o negativo': 'El precio debe ser mayor a cero',
   };
 
   if (errorMap[raw]) {

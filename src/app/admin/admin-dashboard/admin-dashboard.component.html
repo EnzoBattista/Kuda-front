@@ -15,22 +15,21 @@
       <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Usuarios</button>
       <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
       <button (click)="setTab('profesores')" [class.active]="tab === 'profesores'">Profesores</button>
+      <button (click)="setTab('empleados')" [class.active]="tab === 'empleados'">Empleados</button>
     </div>
   </div>
 
   <app-actividades-list *ngIf="tab === 'actividades'"></app-actividades-list>
 
-  <!-- USUARIOS (HU "Listar usuarios" + "Filtrar usuarios" + atajo a "Editar usuario") -->
   <app-usuarios-list *ngIf="tab === 'usuarios'"></app-usuarios-list>
 
   <app-clases-list *ngIf="tab === 'clases'"></app-clases-list>
 
   <!-- PROFESORES -->
-  <section *ngIf="tab === 'profesores'" class="card">
+  <section *ngIf="tab === 'profesores'" class="card usuarios-section">
     <div class="card-head">
       <h3>Profesores</h3>
       <div class="card-head-actions">
-        <button class="btn-action" (click)="onCreateProfesor()">+ Registrar profesor</button>
         <button (click)="refreshProfesores()">Refrescar</button>
       </div>
     </div>
@@ -38,38 +37,220 @@
     <p class="error" *ngIf="error.profesores">{{ error.profesores }}</p>
     <p class="muted" *ngIf="loading.profesores">Cargando…</p>
 
-    <div class="grid grid-2">
-      <label>
-        <span>Nombre</span>
-        <input [(ngModel)]="createProfesor.nombre" />
-      </label>
-      <label>
-        <span>Apellido</span>
-        <input [(ngModel)]="createProfesor.apellido" />
-      </label>
-      <label>
-        <span>DNI</span>
-        <input [(ngModel)]="createProfesor.dni" />
-      </label>
-      <label>
-        <span>Actividades (IDs, separados por coma)</span>
-        <input placeholder="Ej: 1,2,3" [(ngModel)]="createProfesor.actividadesCsv" />
-      </label>
+    <!-- Formulario de registro -->
+    <div class="form-section">
+      <h4 class="form-section-title">Registrar nuevo profesor</h4>
+      <div class="grid grid-2">
+        <label>
+          <span>Nombre</span>
+          <input [(ngModel)]="createProfesor.nombre" />
+        </label>
+        <label>
+          <span>Apellido</span>
+          <input [(ngModel)]="createProfesor.apellido" />
+        </label>
+        <label>
+          <span>DNI</span>
+          <input [(ngModel)]="createProfesor.dni" />
+        </label>
+      </div>
+
+      <div class="field" *ngIf="!loadingActividades && actividades.length > 0">
+        <div class="label">Actividades que dicta</div>
+        <div class="checkboxes-grid">
+          <label class="checkbox-label" *ngFor="let act of actividades">
+            <input
+              type="checkbox"
+              [checked]="isActividadSeleccionada(act.id)"
+              (change)="toggleActividad(act.id)"
+            />
+            {{ act.nombre }}
+          </label>
+        </div>
+      </div>
+      <p class="muted" *ngIf="loadingActividades">Cargando actividades…</p>
+      <p class="muted" *ngIf="!loadingActividades && actividades.length === 0">Sin actividades disponibles para asignar.</p>
+
+      <div class="form-section-actions">
+        <button class="btn btn-primary" (click)="onCreateProfesor()">+ Registrar profesor</button>
+      </div>
     </div>
 
-    <div class="table">
-      <div class="row head">
-        <div>ID</div>
-        <div>Apellido</div>
+    <!-- Filtro de búsqueda -->
+    <div class="usuarios-filtros">
+      <div class="filtros-row filtros-row-1col">
+        <div class="field">
+          <div class="label">Buscar</div>
+          <input
+            class="control"
+            type="search"
+            [(ngModel)]="filtroProfesorQ"
+            placeholder="Nombre, apellido o DNI"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de profesores -->
+    <p class="muted" *ngIf="!loading.profesores && !error.profesores && profesoresFiltrados.length === 0">
+      No hay profesores registrados.
+    </p>
+    <div class="table" *ngIf="!loading.profesores && profesoresFiltrados.length > 0">
+      <div class="row row-prof head">
         <div>Nombre</div>
         <div>DNI</div>
+        <div>Actividades</div>
+        <div></div>
       </div>
-      <div class="row" *ngFor="let p of profesores">
-        <div>{{ p.id }}</div>
-        <div>{{ p.apellido }}</div>
-        <div>{{ p.nombre }}</div>
+      <div class="row row-prof" *ngFor="let p of profesoresFiltrados">
+        <div>{{ p.nombre }} {{ p.apellido }}</div>
         <div>{{ p.dni }}</div>
+        <div>{{ actividadesProfesorLabel(p) }}</div>
+        <div class="right">
+          <button class="btn-tabla" (click)="profesorDetalle = p">Ver detalle</button>
+        </div>
       </div>
     </div>
   </section>
+
+  <!-- Modal: detalle de profesor -->
+  <div class="modal-overlay " *ngIf="profesorDetalle" (click)="profesorDetalle = null">
+    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+      <h4 class="modal-title">Detalle del profesor</h4>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Nombre</span>
+          <span class="info-value">{{ profesorDetalle.nombre }} {{ profesorDetalle.apellido }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">DNI</span>
+          <span class="info-value">{{ profesorDetalle.dni }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Actividades</span>
+          <span class="info-value">{{ actividadesProfesorLabel(profesorDetalle) }}</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-tabla" (click)="profesorDetalle = null">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPLEADOS -->
+  <section *ngIf="tab === 'empleados'" class="card usuarios-section">
+    <div class="card-head">
+      <h3>Empleados</h3>
+      <div class="card-head-actions">
+        <button (click)="refreshEmpleados()">Refrescar</button>
+      </div>
+    </div>
+
+    <p class="error" *ngIf="error.empleados">{{ error.empleados }}</p>
+    <p class="muted" *ngIf="loading.empleados">Cargando…</p>
+
+    <!-- Formulario de registro de recepcionista -->
+    <div class="form-section">
+      <h4 class="form-section-title">Registrar recepcionista</h4>
+      <p class="error" *ngIf="createEmpleadoError">{{ createEmpleadoError }}</p>
+      <p class="success-msg" *ngIf="createEmpleadoSuccess">{{ createEmpleadoSuccess }}</p>
+      <div class="grid grid-2">
+        <label>
+          <span>Nombre</span>
+          <input [(ngModel)]="createEmpleadoForm.nombre" />
+        </label>
+        <label>
+          <span>Apellido</span>
+          <input [(ngModel)]="createEmpleadoForm.apellido" />
+        </label>
+        <label>
+          <span>DNI</span>
+          <input [(ngModel)]="createEmpleadoForm.dni" />
+        </label>
+        <label>
+          <span>Email</span>
+          <input type="email" [(ngModel)]="createEmpleadoForm.email" />
+        </label>
+      </div>
+      <div class="form-section-actions">
+        <button class="btn btn-primary" (click)="onCreateEmpleado()">+ Registrar recepcionista</button>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="usuarios-filtros">
+      <div class="filtros-row filtros-row-2col">
+        <div class="field">
+          <div class="label">Buscar</div>
+          <input
+            class="control"
+            type="search"
+            [(ngModel)]="filtroEmpleadosQ"
+            placeholder="Nombre, apellido, DNI o email"
+            autocomplete="off"
+          />
+        </div>
+        <div class="field">
+          <div class="label">Estado</div>
+          <select class="control" [(ngModel)]="filtroEmpleadosEstado">
+            <option value="">Todos</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="INACTIVO">Inactivo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de empleados -->
+    <p class="muted" *ngIf="!loading.empleados && !error.empleados && empleadosFiltrados.length === 0">
+      No se han encontrado recepcionistas.
+    </p>
+    <div class="table" *ngIf="!loading.empleados && empleadosFiltrados.length > 0">
+      <div class="row row-emp head">
+        <div>Nombre</div>
+        <div>Email</div>
+        <div>DNI</div>
+        <div>Estado</div>
+        <div></div>
+      </div>
+      <div class="row row-emp" *ngFor="let u of empleadosFiltrados">
+        <div>{{ u.nombre }} {{ u.apellido }}</div>
+        <div>{{ u.email }}</div>
+        <div>{{ u.dni }}</div>
+        <div>
+          <span class="badge" [class.badge-inactivo]="!u.activo">
+            {{ u.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+        <div class="right">
+          <button class="btn-tabla" (click)="empleadoDetalle = u">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal: detalle de empleado -->
+  <div class="modal-overlay" *ngIf="empleadoDetalle" (click)="empleadoDetalle = null">
+    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+      <h4 class="modal-title">Detalle del empleado</h4>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Nombre</span>
+          <span class="info-value">{{ empleadoDetalle.nombre }} {{ empleadoDetalle.apellido }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">DNI</span>
+          <span class="info-value">{{ empleadoDetalle.dni }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Email</span>
+          <span class="info-value">{{ empleadoDetalle.email }}</span>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="empleadoDetalle = null">Cerrar</button>
+      </div>
+    </div>
+  </div>
 </div>
