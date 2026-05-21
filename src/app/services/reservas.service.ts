@@ -148,14 +148,18 @@ export class ReservasService {
     const historialParams = params.set('limit', '100').set('page', '1');
 
     return forkJoin({
-      activas: this.http.get<ReservaApiDto[]>(this.reservasUrl, {
-        headers: this.noCacheHeaders,
-        params,
-      }),
-      historial: this.http.get<HistorialReservasResponse>(
-        `${this.reservasUrl}/historial`,
-        { headers: this.noCacheHeaders, params: historialParams },
-      ),
+      activas: this.http
+        .get<unknown>(this.reservasUrl, {
+          headers: this.noCacheHeaders,
+          params,
+        })
+        .pipe(map((body) => parseReservasActivasResponse(body))),
+      historial: this.http
+        .get<unknown>(`${this.reservasUrl}/historial`, {
+          headers: this.noCacheHeaders,
+          params: historialParams,
+        })
+        .pipe(map((body) => parseHistorialReservasResponse(body))),
       individuales: this.http.get<InscripcionIndividualApi[]>(
         this.inscripcionesIndUrl,
         { headers: this.noCacheHeaders, params },
@@ -167,11 +171,9 @@ export class ReservasService {
     }).pipe(
       map(({ activas, historial, individuales, mensuales }) => {
         const hoy = new Date().toISOString().slice(0, 10);
-        const idsActivas = new Set((activas ?? []).map((r) => r.id));
-        const pasadas = (historial?.reservas ?? []).filter(
-          (r) => !idsActivas.has(r.id),
-        );
-        const todas = [...(activas ?? []), ...pasadas];
+        const idsActivas = new Set(activas.map((r) => r.id));
+        const pasadas = historial.reservas.filter((r) => !idsActivas.has(r.id));
+        const todas = [...activas, ...pasadas];
         const mapped = todas.map((r) =>
           this.mapReservaDto(r, individuales ?? [], mensuales ?? [], hoy),
         );
@@ -311,10 +313,12 @@ export class ReservasService {
 
     return forkJoin({
       mensuales: this.getMensualesActivas(),
-      activas: this.http.get<ReservaApiDto[]>(this.reservasUrl, {
-        headers: this.noCacheHeaders,
-        params: new HttpParams().set('cliente_email', email),
-      }),
+      activas: this.http
+        .get<unknown>(this.reservasUrl, {
+          headers: this.noCacheHeaders,
+          params: new HttpParams().set('cliente_email', email),
+        })
+        .pipe(map((body) => parseReservasActivasResponse(body))),
     }).pipe(
       switchMap(({ mensuales, activas }) => {
         const abono = this.buscarAbonoVigente(
@@ -324,7 +328,7 @@ export class ReservasService {
         );
 
         if (abono) {
-          return this.confirmarReservaConAbono(clase, activas ?? [], abono);
+          return this.confirmarReservaConAbono(clase, activas, abono);
         }
 
         return this.crearInscripcionIndividual(clase, tipoPago, email);
@@ -516,10 +520,12 @@ export class ReservasService {
         `${this.clasesUrl}/${clase.id}`,
         { headers: this.noCacheHeaders },
       ),
-      ocupacion: this.http.get<ReservaApiDto[]>(this.reservasUrl, {
-        headers: this.noCacheHeaders,
-        params,
-      }),
+      ocupacion: this.http
+        .get<unknown>(this.reservasUrl, {
+          headers: this.noCacheHeaders,
+          params,
+        })
+        .pipe(map((body) => parseReservasActivasResponse(body))),
     }).pipe(
       map(({ detalle, ocupacion }) => {
         const proximaFecha =
@@ -653,6 +659,43 @@ export class ReservasService {
     }
     return { error: { message: 'Ocurrió un error inesperado' } };
   }
+}
+
+/** El back devuelve `{ message, data: [] }` cuando no hay reservas, no un array vacío. */
+function parseReservasActivasResponse(body: unknown): ReservaApiDto[] {
+  if (Array.isArray(body)) {
+    return body;
+  }
+  if (body && typeof body === 'object') {
+    const data = (body as { data?: unknown }).data;
+    if (Array.isArray(data)) {
+      return data as ReservaApiDto[];
+    }
+  }
+  return [];
+}
+
+function parseHistorialReservasResponse(body: unknown): HistorialReservasResponse {
+  if (body && typeof body === 'object') {
+    const raw = body as HistorialReservasResponse & { data?: ReservaApiDto[] };
+    if (Array.isArray(raw.reservas)) {
+      return {
+        total: raw.total ?? raw.reservas.length,
+        pagina: raw.pagina ?? 1,
+        paginas: raw.paginas ?? 1,
+        reservas: raw.reservas,
+      };
+    }
+    if (Array.isArray(raw.data)) {
+      return {
+        total: 0,
+        pagina: 1,
+        paginas: 0,
+        reservas: raw.data,
+      };
+    }
+  }
+  return { total: 0, pagina: 1, paginas: 0, reservas: [] };
 }
 
 function formatHora(value: string): string {

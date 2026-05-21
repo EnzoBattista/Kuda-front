@@ -58,10 +58,8 @@ export class MisReservasComponent implements OnInit {
         this.aplicarFiltros();
         this.isLoading = false;
       },
-      error: (err) => {
-        this.errorMsg =
-          err?.error?.message ??
-          'No se pudieron cargar tus reservas. Intentá nuevamente más tarde.';
+      error: (err: unknown) => {
+        this.errorMsg = this.mensajeErrorCarga(err);
         this.isLoading = false;
       },
     });
@@ -168,6 +166,16 @@ export class MisReservasComponent implements OnInit {
   horasHasta(r: ReservaHistorial): number {
     if (!r.proximaFecha) return -1;
     return this.reservasService.horasHastaClase(r.proximaFecha, r.horaInicio);
+  }
+
+  private mensajeErrorCarga(err: unknown): string {
+    if (err && typeof err === 'object' && 'error' in err) {
+      const nested = (err as { error?: { message?: string } }).error;
+      if (nested?.message) {
+        return nested.message;
+      }
+    }
+    return 'No se pudieron cargar tus reservas. Intentá nuevamente más tarde.';
   }
 
   mensajeCancelacionPreview(r: ReservaHistorial): string {
