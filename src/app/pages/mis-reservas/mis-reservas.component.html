@@ -53,7 +53,7 @@
   >
     <p>No posee reservas</p>
     <div class="form-actions">
-      <a class="btn btn-primary" routerLink="/clases">Ver clases disponibles</a>
+      <a class="btn btn-primary" routerLink="/clases">Ver Clases</a>
     </div>
   </div>
 
@@ -61,7 +61,7 @@
     class="card card-pad empty-state"
     *ngIf="!isLoading && !errorMsg && reservas.length > 0 && reservasFiltradas.length === 0"
   >
-    <p class="help">No hay reservas con los filtros seleccionados.</p>
+    <p class="help">{{ filtros.controls.sede.value ? 'No se encontraron reservas' : 'No se han encontrado reservas' }}</p>
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" (click)="limpiarFiltros()">
         Limpiar filtros
@@ -121,7 +121,7 @@
           class="btn btn-danger"
           (click)="abrirCancelacion(r)"
         >
-          Cancelar reserva
+          Cancelar Reserva
         </button>
       </div>
     </li>
@@ -178,7 +178,7 @@
 
       <div class="form-actions">
         <button *ngIf="esCancelable(r)" class="btn btn-danger" type="button" (click)="irACancelar()">
-          Cancelar reserva
+          Cancelar Reserva
         </button>
         <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cerrar</button>
       </div>

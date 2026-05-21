@@ -28,8 +28,8 @@ export class SalasService {
   constructor(private readonly http: HttpClient) {}
 
   getDisponibles(): Observable<Sala[]> {
-    return this.http.get<Sala[]>(this.apiUrl).pipe(
-      map((list) => this.filtrarActivas(list ?? [])),
+    return this.http.get<Sala[] | { data?: Sala[] }>(this.apiUrl).pipe(
+      map((res) => this.filtrarActivas(this.toArray(res))),
       switchMap((salas) =>
         salas.length > 0 ? of(this.ordenarSalas(salas)) : this.resolverSinEndpoint(),
       ),
@@ -42,21 +42,33 @@ export class SalasService {
     );
   }
 
+  private toArray<T>(res: T[] | { data?: T[] } | null | undefined): T[] {
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray((res as { data?: T[] }).data)) {
+      return (res as { data: T[] }).data;
+    }
+    return [];
+  }
+
   /**
    * Sin GET /api/salas: extrae salas de clases/inscripciones o, si hace falta,
    * detecta ids válidos con POST de validación (sin crear clase).
    */
   private resolverSinEndpoint(): Observable<Sala[]> {
     return forkJoin({
-      clases: this.http.get<Clase[]>(this.clasesUrl).pipe(catchError(() => of([]))),
+      clases: this.http
+        .get<Clase[] | { data?: Clase[] }>(this.clasesUrl)
+        .pipe(catchError(() => of([] as Clase[]))),
       mensuales: this.http
-        .get<InscripcionConClase[]>(`${environment.apiUrl}/inscripciones-mensuales`)
-        .pipe(catchError(() => of([]))),
+        .get<InscripcionConClase[] | { data?: InscripcionConClase[] }>(
+          `${environment.apiUrl}/inscripciones-mensuales`,
+        )
+        .pipe(catchError(() => of([] as InscripcionConClase[]))),
     }).pipe(
       map(({ clases, mensuales }) =>
         this.unirSalas(
-          this.extraerSalasDeClases(clases ?? []),
-          this.extraerSalasDeInscripciones(mensuales ?? []),
+          this.extraerSalasDeClases(this.toArray(clases)),
+          this.extraerSalasDeInscripciones(this.toArray(mensuales)),
         ),
       ),
       switchMap((salas) =>

@@ -99,19 +99,33 @@ export class RegisterComponent {
     };
 
     this.auth.register(req).subscribe({
-      next: (resp) => {
+      next: () => {
         this.isSubmitting = false;
         this.successMessage =
-          resp?.message ??
-          'Registrado. Revisá tu email para confirmar tu cuenta.';
+          'Se ha enviado un enlace de confirmación a su casilla de email. Tiene 48hs para confirmar su registro.';
       },
       error: (err) => {
         this.isSubmitting = false;
-        this.submitError =
-          err?.error?.message ??
-          'No se pudo registrar. Verificá los datos.';
+        this.submitError = this.mapRegisterError(err?.error?.message ?? '');
       },
     });
+  }
+
+  private mapRegisterError(msg: string): string {
+    const lower = (msg ?? '').toLowerCase();
+    if (lower.includes('email') && (lower.includes('registrado') || lower.includes('uso'))) {
+      return 'Registro fallido - El email ya se encuentra registrado.';
+    }
+    if (lower.includes('contraseña') && lower.includes('8')) {
+      return 'Registro fallido - La contraseña debe tener al menos 8 caracteres.';
+    }
+    if (lower.includes('14') || lower.includes('mayor de edad') || lower.includes('menor')) {
+      return 'Registro fallido - Se debe ser mayor de 14 años.';
+    }
+    if (lower.includes('coinciden')) {
+      return 'Registro fallido - Las contraseñas no coinciden.';
+    }
+    return msg || 'No se pudo registrar. Verificá los datos.';
   }
 
   onFichaMedicaSelected(event: Event): void {

@@ -18,7 +18,9 @@ export type EstadoHistorial = 'ACTIVA' | 'CANCELADA' | 'COMPLETADA' | 'EN_ESPERA
 export type TipoPago = 'PAGO_COMPLETO' | 'SEÑA';
 export type TipoListaEspera = 'ABONADO' | 'INDIVIDUAL';
 
-export const MSG_RESERVA_CONFIRMADA = 'Reserva confirmada';
+export const MSG_RESERVA_CONFIRMADA = 'Reserva confirmada. Tu pago fue registrado exitosamente.';
+export const MSG_RESERVA_CONFIRMADA_SEÑA = 'Reserva confirmada. Tu seña fue registrada exitosamente';
+export const MSG_RESERVA_INCOMPLETA = 'Reserva incompleta. Hubo un problema con el pago.';
 export const MSG_RESERVA_CANCELADA = 'Reserva cancelada con éxito';
 export const HORAS_MINIMAS_SEÑA = 10;
 
@@ -464,6 +466,7 @@ export class ReservasService {
             clase,
             Number(inscripcion.monto_pagado ?? 0),
             inscripcion.reservas?.[0]?.id ?? inscripcion.id,
+            tipoPago,
           ),
         ),
         catchError((err) => throwError(() => this.toHttpError(err))),
@@ -474,10 +477,14 @@ export class ReservasService {
     clase: ClaseDisponible,
     monto: number,
     reservaId: number,
+    tipoPago: TipoPago = 'PAGO_COMPLETO',
   ): Observable<ResultadoReserva> {
+    const okMessage =
+      tipoPago === 'SEÑA' ? MSG_RESERVA_CONFIRMADA_SEÑA : MSG_RESERVA_CONFIRMADA;
+
     if (monto <= 0) {
       return of({
-        message: MSG_RESERVA_CONFIRMADA,
+        message: okMessage,
         reservaId,
       });
     }
@@ -485,13 +492,13 @@ export class ReservasService {
     const titulo = `${clase.actividad} — ${clase.proximaFecha}`;
     return this.pagoService.createPreference({ tituloPlan: titulo, precio: monto }).pipe(
       map((pref) => ({
-        message: MSG_RESERVA_CONFIRMADA,
+        message: okMessage,
         reservaId,
         redirectUrl: pref.init_point,
       })),
       catchError(() =>
         of({
-          message: MSG_RESERVA_CONFIRMADA,
+          message: MSG_RESERVA_INCOMPLETA,
           reservaId,
         }),
       ),

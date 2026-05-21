@@ -40,6 +40,8 @@
     <!-- Formulario de registro -->
     <div class="form-section">
       <h4 class="form-section-title">Registrar nuevo profesor</h4>
+      <p class="error" *ngIf="createProfesorError">{{ createProfesorError }}</p>
+      <p class="success-msg" *ngIf="createProfesorSuccess">{{ createProfesorSuccess }}</p>
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Nombre</div>
@@ -72,7 +74,7 @@
       <p class="muted" *ngIf="!loadingActividades && actividades.length === 0">Sin actividades disponibles para asignar.</p>
 
       <div class="form-section-actions">
-        <button class="btn btn-primary" (click)="onCreateProfesor()">+ Registrar profesor</button>
+        <button class="btn btn-primary" (click)="onCreateProfesor()">Registrar Profesor</button>
       </div>
     </div>
 
@@ -94,7 +96,7 @@
 
     <!-- Tabla de profesores -->
     <p class="muted" *ngIf="!loading.profesores && !error.profesores && profesoresFiltrados.length === 0">
-      No hay profesores registrados.
+      No hay profesores registrados actualmente en el sistema
     </p>
     <div class="table" *ngIf="!loading.profesores && profesoresFiltrados.length > 0">
       <div class="row row-prof head">
@@ -182,7 +184,7 @@
         </div>
       </div>
       <div class="form-section-actions">
-        <button class="btn btn-primary" (click)="onCreateEmpleado()">+ Registrar recepcionista</button>
+        <button class="btn btn-primary" (click)="onCreateEmpleado()">Registrar Empleado</button>
       </div>
     </div>
 

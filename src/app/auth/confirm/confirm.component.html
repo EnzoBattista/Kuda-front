@@ -2,13 +2,24 @@
   <div class="confirm-card">
     <h2>Confirmación de cuenta</h2>
 
-    <p *ngIf="isLoading">Confirmando…</p>
-
-    <p *ngIf="!isLoading" [class.error]="isError" [class.success]="!isError">
-      {{ message }}
+    <p *ngIf="!confirmado && !errorMessage && !tokenAusente" class="help">
+      Presioná el botón para finalizar tu registro.
     </p>
+
+    <p *ngIf="successMessage" class="success">{{ successMessage }}</p>
+    <p *ngIf="errorMessage" class="error">{{ errorMessage }}</p>
+
+    <div class="form-actions" *ngIf="!confirmado && !tokenAusente">
+      <button
+        class="btn btn-primary"
+        type="button"
+        (click)="onConfirmar()"
+        [disabled]="isSubmitting"
+      >
+        {{ isSubmitting ? 'Confirmando…' : 'Confirmar registro' }}
+      </button>
+    </div>
 
     <a routerLink="/login" class="btn-link">Ir a iniciar sesión</a>
   </div>
 </div>
-

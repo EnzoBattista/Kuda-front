@@ -269,7 +269,7 @@ export class ClasesDisponiblesComponent implements OnInit {
         this.isLoading = false;
       },
       error: () => {
-        this.errorMsg = 'No pudimos cargar las clases. Intentá nuevamente.';
+        this.errorMsg = 'No existen clases para mostrar';
         this.isLoading = false;
       },
     });

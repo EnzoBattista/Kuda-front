@@ -140,7 +140,7 @@ export class MisReservasComponent implements OnInit {
   }
 
   modalidadLabel(r: ReservaHistorial): string {
-    return r.modalidad === 'ABONADO' ? 'Abonado' : 'Clase individual';
+    return r.modalidad === 'ABONADO' ? 'Abonado' : 'Clase Individual';
   }
 
   estadoLabel(r: ReservaHistorial): string {

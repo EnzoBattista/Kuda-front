@@ -63,22 +63,23 @@ export class ClasesService {
           message: mapClaseSuccess(r.message, 'crear'),
           clase: this.normalizeClase(r.clase),
         })),
-        catchError((err) => throwError(() => this.toHuError(err))),
+        catchError((err) => throwError(() => this.toHuError(err, 'crear'))),
       );
   }
 
   update(
     id: number,
     data: UpdateClaseDto,
+    huboEspera = false,
   ): Observable<{ message: string; clase: Clase }> {
     return this.http
       .put<{ message: string; clase: Clase }>(`${this.apiUrl}/${id}`, data)
       .pipe(
         map((r) => ({
-          message: mapClaseSuccess(r.message, 'modificar'),
+          message: mapClaseSuccess(r.message, 'modificar', huboEspera),
           clase: this.normalizeClase(r.clase),
         })),
-        catchError((err) => throwError(() => this.toHuError(err))),
+        catchError((err) => throwError(() => this.toHuError(err, 'modificar'))),
       );
   }
 
@@ -87,7 +88,7 @@ export class ClasesService {
       map((r) => ({
         message: mapClaseSuccess(r.message, 'eliminar', conInscriptos),
       })),
-      catchError((err) => throwError(() => this.toHuError(err))),
+      catchError((err) => throwError(() => this.toHuError(err, 'eliminar'))),
     );
   }
 
@@ -109,7 +110,7 @@ export class ClasesService {
           ...r,
           message: mapClaseSuccess(r.message, 'cancelar', conInscriptos),
         })),
-        catchError((err) => throwError(() => this.toHuError(err))),
+        catchError((err) => throwError(() => this.toHuError(err, 'cancelar'))),
       );
   }
 
@@ -123,10 +124,13 @@ export class ClasesService {
     };
   }
 
-  private toHuError(err: unknown): { message: string; status?: number } {
+  private toHuError(
+    err: unknown,
+    tipo: 'eliminar' | 'cancelar' | 'crear' | 'modificar' = 'eliminar',
+  ): { message: string; status?: number } {
     if (err instanceof HttpErrorResponse) {
       return {
-        message: mapClaseError(err),
+        message: mapClaseError(err, tipo),
         status: err.status,
       };
     }
@@ -165,10 +169,10 @@ export function mapClaseSuccess(
 
   if (tipo === 'cancelar') {
     if (conInscriptos) {
-      return 'Clase cancelada con éxito. Se ha notificado a los clientes inscriptos';
+      return 'La clase fue cancelada exitosamente. Se le reintegrara a cada cliente afectado la clase correspondiente';
     }
     if (msg.includes('cancelad')) {
-      return 'Clase cancelada con éxito';
+      return 'La clase fue cancelada exitosamente';
     }
   }
 
@@ -179,13 +183,19 @@ export function mapClaseSuccess(
   }
 
   if (tipo === 'modificar' && msg.includes('modificad')) {
+    if (conInscriptos) {
+      return 'Clase modificada con éxito. Se notifico a los usuarios en la lista de espera';
+    }
     return 'Clase modificada con éxito';
   }
 
   return msg;
 }
 
-export function mapClaseError(err: HttpErrorResponse): string {
+export function mapClaseError(
+  err: HttpErrorResponse,
+  tipo: 'eliminar' | 'cancelar' | 'crear' | 'modificar' = 'eliminar',
+): string {
   const raw =
     typeof err.error === 'object' && err.error !== null && 'message' in err.error
       ? String((err.error as { message: string }).message)
@@ -204,11 +214,40 @@ export function mapClaseError(err: HttpErrorResponse): string {
     return errorMap[raw];
   }
 
+  const lower = (raw ?? '').toLowerCase();
+
   if (
     raw.includes('inscripciones mensuales activas') ||
     raw.includes('inscripciones individuales futuras')
   ) {
     return 'No se puede eliminar la clase porque tiene clientes inscriptos';
+  }
+
+  if (tipo === 'crear' || tipo === 'modificar') {
+    if (lower.includes('sala') && (lower.includes('ocupada') || lower.includes('ocupado'))) {
+      if (tipo === 'crear') {
+        return 'La sala se encuentra ocupada para ese día y horario';
+      }
+      return 'No se pudo modificar la clase. La sala esta ocupada en el dia y horario seleccionado';
+    }
+    if (lower.includes('profesor') && (lower.includes('ocupado') || lower.includes('ya tiene'))) {
+      if (tipo === 'crear') {
+        return 'El profesor se encuentra ocupado para ese día y horario';
+      }
+      return 'No se pudo modificar la clase. El profesor ya tiene una clase en el dia y horario seleccionado';
+    }
+    if (lower.includes('cupo') && (lower.includes('inscriptos') || lower.includes('inscripciones'))) {
+      if (tipo === 'crear') {
+        return 'El cupo máximo debe ser mayor o igual al cupo mínimo (10)';
+      }
+      return 'No se pudo modificar la clase. El cupo debe ser mayor o igual a la cantidad de inscriptos';
+    }
+    if (lower.includes('cupo') && (lower.includes('10') || lower.includes('mínimo') || lower.includes('minimo'))) {
+      if (tipo === 'crear') {
+        return 'El cupo máximo debe ser mayor o igual al cupo mínimo (10)';
+      }
+      return 'No se pudo modificar la clase. El cupo debe ser mayor o igual a 10';
+    }
   }
 
   return raw || 'Ocurrió un error inesperado';

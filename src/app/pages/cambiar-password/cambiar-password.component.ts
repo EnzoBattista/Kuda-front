@@ -51,8 +51,14 @@ export class CambiarPasswordComponent {
 
     if (this.form.invalid) return;
 
-    this.isSubmitting = true;
     const { passwordActual, passwordNueva, confirmPassword } = this.form.controls;
+
+    if (passwordActual.value === passwordNueva.value) {
+      this.submitError = 'La nueva contraseña debe ser distinta a la actual';
+      return;
+    }
+
+    this.isSubmitting = true;
 
     this.auth
       .cambiarPassword(passwordActual.value, passwordNueva.value, confirmPassword.value)
@@ -77,6 +83,12 @@ export class CambiarPasswordComponent {
     const lower = msg.toLowerCase();
     if (lower.includes('actual') && lower.includes('incorrecta')) {
       return 'La contraseña actual es incorrecta';
+    }
+    if (
+      (lower.includes('distinta') || lower.includes('igual') || lower.includes('misma')) &&
+      lower.includes('actual')
+    ) {
+      return 'La nueva contraseña debe ser distinta a la actual';
     }
     if (lower.includes('coinciden')) {
       return 'Las contraseñas no coinciden';

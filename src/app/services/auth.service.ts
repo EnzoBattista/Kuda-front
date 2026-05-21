@@ -49,7 +49,7 @@ export interface ActualizarPerfilRequest {
 }
 
 const MSG_RECUPERACION_OK =
-  'Se ha enviado un enlace de recuperación a su email';
+  'Se ha enviado un enlace de recuperación a su email. Tiene 48hs para restablecerla.';
 const MSG_EMAIL_NO_REGISTRADO =
   'El email ingresado no pertenece a ninguna cuenta registrada';
 const MSG_RESET_OK = 'Su contraseña ha sido restablecida con éxito';

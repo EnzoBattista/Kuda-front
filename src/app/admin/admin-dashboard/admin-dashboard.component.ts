@@ -56,6 +56,9 @@ export class AdminDashboardComponent {
   createEmpleadoError = '';
   createEmpleadoSuccess = '';
 
+  createProfesorError = '';
+  createProfesorSuccess = '';
+
   // ─── Shared ───────────────────────────────────────────────────────────────
   loading = { profesores: false, empleados: false };
   error = { profesores: '', empleados: '' };
@@ -153,9 +156,11 @@ export class AdminDashboardComponent {
 
   onCreateProfesor(): void {
     this.error.profesores = '';
+    this.createProfesorError = '';
+    this.createProfesorSuccess = '';
     const p = this.createProfesor;
     if (!p.nombre || !p.apellido || !p.dni) {
-      this.error.profesores = 'Completá nombre, apellido y DNI.';
+      this.createProfesorError = 'Completá nombre, apellido y DNI.';
       return;
     }
 
@@ -169,12 +174,24 @@ export class AdminDashboardComponent {
       .subscribe({
         next: () => {
           this.createProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
+          this.createProfesorSuccess = 'Profesor registrado con éxito';
           this.refreshProfesores();
         },
         error: (err) => {
-          this.error.profesores = err?.error?.message ?? 'No se pudo registrar el profesor.';
+          this.createProfesorError = this.mapProfesorError(err?.error?.message ?? '');
         },
       });
+  }
+
+  private mapProfesorError(msg: string): string {
+    const lower = (msg ?? '').toLowerCase();
+    if (
+      (lower.includes('dni') || lower.includes('documento')) &&
+      (lower.includes('ya') || lower.includes('existe') || lower.includes('registrado'))
+    ) {
+      return 'El profesor con este número de documento ya se encuentra registrado';
+    }
+    return msg || 'No se pudo registrar el profesor.';
   }
 
   // ─── Empleados ────────────────────────────────────────────────────────────
@@ -226,13 +243,23 @@ export class AdminDashboardComponent {
     this.gestionUsuariosService.createEmpleado(f).subscribe({
       next: () => {
         this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
-        this.createEmpleadoSuccess = 'Recepcionista registrado exitosamente.';
+        this.createEmpleadoSuccess = 'Recepcionista registrado con éxito';
         this.refreshEmpleados();
       },
       error: (err) => {
-        this.createEmpleadoError =
-          err?.error?.message ?? 'No se pudo registrar el recepcionista.';
+        this.createEmpleadoError = this.mapEmpleadoError(err?.error?.message ?? '');
       },
     });
+  }
+
+  private mapEmpleadoError(msg: string): string {
+    const lower = (msg ?? '').toLowerCase();
+    if (
+      (lower.includes('email') || lower.includes('correo')) &&
+      (lower.includes('uso') || lower.includes('registrado') || lower.includes('existe'))
+    ) {
+      return 'El correo electrónico ya está en uso por otro usuario';
+    }
+    return msg || 'No se pudo registrar el recepcionista.';
   }
 }
