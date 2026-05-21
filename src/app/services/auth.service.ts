@@ -54,16 +54,7 @@ export class AuthService {
   private readonly tokenKey = 'kuda_token';
   private readonly userKey = 'kuda_user';
 
-  /**
-   * MOCK (Regla de Oro 1): el back no expone el flujo de "recuperar contraseña".
-   * Se mantiene un set de emails como si estuvieran registrados para validar
-   * el escenario "email no registrado" sin tocar el backend.
-   */
-  private readonly emailsRegistradosMock = new Set<string>([
-    'admin@cef.com',
-    'recepcion@cef.com',
-    'cliente@cef.com',
-  ]);
+
 
   constructor(private readonly http: HttpClient) {}
 
@@ -139,52 +130,22 @@ export class AuthService {
     );
   }
 
-  /**
-   * MOCK (Regla de Oro 1): el back no expone "solicitar recuperación".
-   * Devuelve el mensaje exacto pedido por la HU cuando el email pertenece al set
-   * mockeado; sino, devuelve el error literal de la HU.
-   */
+  /** Solicita al backend que envíe el email de recuperación. */
   recuperarPassword(email: string): Observable<{ message: string }> {
-    const normalizado = email.trim().toLowerCase();
-    if (!this.emailsRegistradosMock.has(normalizado)) {
-      return throwError(() => ({
-        error: { message: 'El email ingresado no pertenece a ninguna cuenta registrada' },
-      })).pipe(delay(400));
-    }
-    return of({ message: 'Se ha enviado un enlace de recuperación a su email' }).pipe(delay(500));
+    return this.http.post<{ message: string }>(`${this.apiUrl}/olvide-password`, { email });
   }
 
-  /**
-   * MOCK (Regla de Oro 1): el back no expone "restablecer con token".
-   * Tokens que incluyan "expirado" o "invalido" disparan los escenarios fallidos
-   * de la HU. Los demás se consideran válidos.
-   */
+  /** Restablece la contraseña usando el token recibido por email. */
   nuevaPassword(
     token: string,
-    password: string,
+    passwordNueva: string,
     confirmPassword: string,
   ): Observable<{ message: string }> {
-    if (!token) {
-      return throwError(() => ({
-        error: { message: 'El enlace de recuperación es inválido' },
-      })).pipe(delay(300));
-    }
-    if (token.includes('expirado')) {
-      return throwError(() => ({
-        error: { message: 'El enlace de recuperación ha expirado' },
-      })).pipe(delay(300));
-    }
-    if (token.includes('invalido')) {
-      return throwError(() => ({
-        error: { message: 'El enlace de recuperación es inválido' },
-      })).pipe(delay(300));
-    }
-    if (password !== confirmPassword) {
-      return throwError(() => ({
-        error: { message: 'Las contraseñas no coinciden' },
-      })).pipe(delay(300));
-    }
-    return of({ message: 'Su contraseña ha sido restablecida con éxito' }).pipe(delay(500));
+    return this.http.post<{ message: string }>(`${this.apiUrl}/reset-password`, {
+      token,
+      passwordNueva,
+      confirmPassword,
+    });
   }
 
   getToken(): string | null {

@@ -2,6 +2,19 @@
    Acá sólo agregamos ajustes responsive del navbar para que el menú del cliente
    logueado (con más ítems) no se rompa en móvil. */
 
+/* ── Sticky footer ──────────────────────────────────────────────────────────
+   app-root es el único hijo de <body>. Lo convertimos en contenedor flex-column
+   que ocupa toda la pantalla. El footer queda siempre al pie con margin-top:auto. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+:host > .app-footer {
+  margin-top: auto;
+}
+
 .nav-link-active {
   background: rgba(30, 64, 175, 0.12);
   color: var(--brand-blue-700);
