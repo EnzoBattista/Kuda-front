@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import {
   CancelarClaseDto,
@@ -12,6 +12,11 @@ import {
 } from '../models/clase.model';
 import { environment } from '../../environments/environment';
 
+interface ReservaActivaApi {
+  fecha_exacta: string;
+  estado: string;
+}
+
 /** Solo clases vigentes (baja lógica del back: activa === true). */
 export function isClaseActiva(clase: Pick<Clase, 'activa'>): boolean {
   return clase.activa === true;
@@ -20,6 +25,7 @@ export function isClaseActiva(clase: Pick<Clase, 'activa'>): boolean {
 @Injectable({ providedIn: 'root' })
 export class ClasesService {
   private readonly apiUrl = `${environment.apiUrl}/clases`;
+  private readonly reservasUrl = `${environment.apiUrl}/reservas`;
   private readonly noCacheHeaders = new HttpHeaders({
     'Cache-Control': 'no-cache',
     Pragma: 'no-cache',
@@ -43,6 +49,31 @@ export class ClasesService {
           return arr.map((c: any) => this.normalizeClase(c)).filter(isClaseActiva);
         }),
         catchError((err) => throwError(() => this.toHuError(err))),
+      );
+  }
+
+  /** Reservas activas para una clase en la próxima fecha (ocupación real). */
+  getCupoOcupado(claseId: number, fecha: string): Observable<number> {
+    const params = new HttpParams().set('clase_id', String(claseId));
+    return this.http
+      .get<ReservaActivaApi[] | { message: string; data: ReservaActivaApi[] }>(
+        this.reservasUrl,
+        { headers: this.noCacheHeaders, params },
+      )
+      .pipe(
+        map((body) => {
+          const list = Array.isArray(body)
+            ? body
+            : Array.isArray(body?.data)
+              ? body.data
+              : [];
+          return list.filter(
+            (r) =>
+              r.estado === 'ACTIVA' &&
+              String(r.fecha_exacta).slice(0, 10) === fecha,
+          ).length;
+        }),
+        catchError(() => of(0)),
       );
   }
 

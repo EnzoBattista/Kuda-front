@@ -7,7 +7,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { Clase } from '../../models/clase.model';
 import { Actividad } from '../../models/actividad.model';
 import { Sala } from '../../models/sala.model';
@@ -143,14 +143,24 @@ export class ClasesListComponent implements OnInit {
           base.map((c) =>
             this.clasesService.getById(c.id).pipe(catchError(() => of(c))),
           ),
-        ).subscribe({
-          next: (detalles) => {
+        )
+          .pipe(
+            switchMap((detalles) => {
+              const activas = detalles.filter(isClaseActiva);
+              if (activas.length === 0) {
+                return of<ClaseListItem[]>([]);
+              }
+              return forkJoin(
+                activas.map((d) => this.enriquecerCupoOcupacion(d)),
+              );
+            }),
+          )
+          .subscribe({
+          next: (items) => {
             if (loadId !== this.clasesLoadId) {
               return;
             }
-            this.clases = detalles
-              .filter(isClaseActiva)
-              .map((d) => this.toListItem(d));
+            this.clases = items;
             this.isLoading = false;
           },
           error: () => {
@@ -180,7 +190,8 @@ export class ClasesListComponent implements OnInit {
     const fechaCanceladaProxima = Boolean(
       proximaFecha && locales?.has(proximaFecha),
     );
-    const cupoMaximo = clase.sala?.cupo ?? clase.cupo;
+    /** Cupo de la clase (ej. 10), no el máximo de la sala (ej. 50). */
+    const cupoMaximo = Number(clase.cupo ?? 0);
 
     return {
       ...clase,
@@ -189,6 +200,18 @@ export class ClasesListComponent implements OnInit {
       cupoMaximo,
       cupoOcupado: null,
     };
+  }
+
+  private enriquecerCupoOcupacion(clase: Clase) {
+    const item = this.toListItem(clase);
+    const fecha = item.proximaFecha;
+    if (!fecha) {
+      return of(item);
+    }
+    return this.clasesService.getCupoOcupado(clase.id, fecha).pipe(
+      map((ocupado) => ({ ...item, cupoOcupado: ocupado })),
+      catchError(() => of(item)),
+    );
   }
 
   private calcularProximaFecha(diaSemana: string): string | null {
@@ -512,8 +535,11 @@ export class ClasesListComponent implements OnInit {
   }
 
   cupoLabel(clase: ClaseListItem): string {
-    const ocupado = clase.cupoOcupado ?? '—';
-    const max = clase.cupoMaximo ?? clase.cupo;
+    const max = clase.cupoMaximo ?? Number(clase.cupo ?? 0);
+    const ocupado =
+      clase.cupoOcupado === null || clase.cupoOcupado === undefined
+        ? '—'
+        : clase.cupoOcupado;
     return `${ocupado} / ${max}`;
   }
 }
