@@ -16,9 +16,9 @@
           <input
             class="control"
             formControlName="nombre"
-            [attr.aria-invalid]="form.controls.nombre.touched && form.controls.nombre.invalid ? 'true' : 'false'"
+            [attr.aria-invalid]="submitted && form.controls.nombre.invalid ? 'true' : 'false'"
           />
-          <div class="error-text" *ngIf="form.controls.nombre.touched && form.controls.nombre.hasError('required')">
+          <div class="error-text" *ngIf="submitted && form.controls.nombre.hasError('required')">
             El nombre es obligatorio.
           </div>
         </div>
@@ -28,9 +28,9 @@
           <input
             class="control"
             formControlName="apellido"
-            [attr.aria-invalid]="form.controls.apellido.touched && form.controls.apellido.invalid ? 'true' : 'false'"
+            [attr.aria-invalid]="submitted && form.controls.apellido.invalid ? 'true' : 'false'"
           />
-          <div class="error-text" *ngIf="form.controls.apellido.touched && form.controls.apellido.hasError('required')">
+          <div class="error-text" *ngIf="submitted && form.controls.apellido.hasError('required')">
             El apellido es obligatorio.
           </div>
         </div>
@@ -53,12 +53,12 @@
             type="date"
             formControlName="fechaNacimiento"
             [max]="maxFechaNacimiento"
-            [attr.aria-invalid]="form.controls.fechaNacimiento.touched && form.controls.fechaNacimiento.invalid ? 'true' : 'false'"
+            [attr.aria-invalid]="submitted && form.controls.fechaNacimiento.invalid ? 'true' : 'false'"
           />
-          <div class="error-text" *ngIf="form.controls.fechaNacimiento.touched && form.controls.fechaNacimiento.hasError('required')">
+          <div class="error-text" *ngIf="submitted && form.controls.fechaNacimiento.hasError('required')">
             La fecha de nacimiento es obligatoria.
           </div>
-          <div class="error-text" *ngIf="form.controls.fechaNacimiento.touched && form.controls.fechaNacimiento.hasError('menorDeEdad')">
+          <div class="error-text" *ngIf="submitted && form.controls.fechaNacimiento.hasError('menorDeEdad')">
             El usuario debe ser mayor de 14 años
           </div>
         </div>
@@ -79,7 +79,7 @@
       </div>
 
       <div class="form-actions">
-        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting || form.invalid">
+        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting">
           {{ isSubmitting ? 'Guardando…' : 'Guardar cambios' }}
         </button>
         <a class="help" routerLink="/mi-informacion">Volver a mi información</a>

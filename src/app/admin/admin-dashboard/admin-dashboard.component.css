@@ -91,6 +91,10 @@
   padding: 1rem;
 }
 
+.usuarios-section {
+  padding: 1.5rem !important;
+}
+
 .card-head {
   display: flex;
   justify-content: space-between;
@@ -211,5 +215,216 @@ select {
 .muted {
   color: var(--light-text-color);
   margin: 0.5rem 0 0;
+}
+
+/* ─── Formulario de registro dentro de sección ───────────────────────────── */
+
+.form-section {
+  border-top: 1px solid var(--border-color);
+  margin-top: 0.75rem;
+  padding-top: 1rem;
+}
+
+.form-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.form-section-actions {
+  margin-top: 0.75rem;
+}
+
+.success-msg {
+  color: var(--brand-blue);
+  font-weight: 600;
+  margin: 0.25rem 0 0.5rem;
+}
+
+/* ─── Checkboxes de actividades ──────────────────────────────────────────── */
+
+.checkboxes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 0.4rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  accent-color: var(--brand-blue-600);
+  padding: 0;
+}
+
+/* ─── Filtros de sección (estilo igual que usuarios-list) ────────────────── */
+
+.sec-filtros {
+  margin: 1rem 0 0.5rem;
+}
+
+.filtros-row {
+  display: grid;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.filtros-row-1col {
+  grid-template-columns: 2fr;
+  max-width: 400px;
+}
+
+.filtros-row-2col {
+  grid-template-columns: 2fr 1fr;
+}
+
+@media (max-width: 560px) {
+  .filtros-row-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Grilla de filas específica por sección ────────────────────────────── */
+
+.row-prof {
+  grid-template-columns: 1.5fr 1.5fr 1fr 2.5fr;
+}
+
+.row-emp {
+  grid-template-columns: 1.5fr 2fr 1fr 100px 80px;
+}
+
+/* ─── Badge de estado (empleados) ────────────────────────────────────────── */
+
+.emp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.emp-badge.emp-badge-inactivo {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--brand-red);
+}
+
+/* ─── Botón de edición en tabla ──────────────────────────────────────────── */
+
+.btn-tabla {
+  background: var(--brand-blue-600);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.btn-tabla:hover {
+  background: var(--brand-blue-700);
+  text-decoration: none;
+}
+
+/* ─── Modal overlay ──────────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+@media (min-width: 600px) {
+  .modal-overlay {
+    align-items: center;
+  }
+}
+
+.modal-panel {
+  background-color: #fff;
+  width: 100%;
+  max-width: min(480px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.modal-actions {
+  margin-top: 0.25rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* ─── Info grid (igual que MiInformacionComponent) ───────────────────────── */
+
+.info-grid {
+  display: grid;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1rem;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-weight: 700;
+  color: var(--muted);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.info-value {
+  font-weight: 500;
+  text-align: right;
 }
 

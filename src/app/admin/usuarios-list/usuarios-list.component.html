@@ -50,7 +50,7 @@
   <p class="muted" *ngIf="isLoading">Cargando…</p>
   <p class="error" *ngIf="!isLoading && errorMsg">{{ errorMsg }}</p>
   <p class="muted" *ngIf="!isLoading && !errorMsg && usuarios.length === 0">
-    No se encontraron usuarios{{ hayFiltrosAplicados() ? ' con los filtros aplicados' : '' }}.
+    No se han encontrado usuarios.
   </p>
 
   <!-- Tabla -->

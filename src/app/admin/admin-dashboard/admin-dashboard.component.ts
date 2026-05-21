@@ -8,6 +8,9 @@ import { AuthService, CurrentUser } from '../../services/auth.service';
 import { UsuariosListComponent } from '../usuarios-list/usuarios-list.component';
 import { ActividadesListComponent } from '../actividades-list/actividades-list.component';
 import { ClasesListComponent } from '../clases-list/clases-list.component';
+import { ActividadesService } from '../../services/actividades.service';
+import { GestionUsuariosService, UsuarioListado } from '../../services/gestion-usuarios.service';
+import { Actividad } from '../../models/actividad.model';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -23,29 +26,46 @@ import { ClasesListComponent } from '../clases-list/clases-list.component';
   styleUrl: './admin-dashboard.component.css',
 })
 export class AdminDashboardComponent {
-  tab: 'actividades' | 'usuarios' | 'clases' | 'profesores' = 'usuarios';
+  tab: 'actividades' | 'usuarios' | 'clases' | 'profesores' | 'empleados' = 'usuarios';
 
+  // ─── Profesores ───────────────────────────────────────────────────────────
   profesores: Profesor[] = [];
-
-  loading = {
-    profesores: false,
-  };
-
-  error = {
-    profesores: '',
-  };
+  actividades: Actividad[] = [];
+  loadingActividades = false;
 
   createProfesor = {
     nombre: '',
     apellido: '',
     dni: '',
-    actividadesCsv: '',
+    actividadesSeleccionadas: [] as number[],
   };
+
+  filtroProfesorQ = '';
+
+  // ─── Detalle ──────────────────────────────────────────────────────────────
+  profesorDetalle: Profesor | null = null;
+  empleadoDetalle: UsuarioListado | null = null;
+
+  // ─── Empleados ────────────────────────────────────────────────────────────
+  empleados: UsuarioListado[] = [];
+
+  filtroEmpleadosQ = '';
+  filtroEmpleadosEstado: '' | 'ACTIVO' | 'INACTIVO' = '';
+
+  createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '' };
+  createEmpleadoError = '';
+  createEmpleadoSuccess = '';
+
+  // ─── Shared ───────────────────────────────────────────────────────────────
+  loading = { profesores: false, empleados: false };
+  error = { profesores: '', empleados: '' };
 
   currentUser: CurrentUser | null = null;
 
   constructor(
     private readonly profesorService: ProfesorService,
+    private readonly actividadesService: ActividadesService,
+    private readonly gestionUsuariosService: GestionUsuariosService,
     private readonly authService: AuthService,
     private readonly router: Router,
   ) {
@@ -61,10 +81,16 @@ export class AdminDashboardComponent {
   setTab(tab: typeof this.tab): void {
     this.tab = tab;
 
-    if (tab === 'profesores' && this.profesores.length === 0) {
-      this.refreshProfesores();
+    if (tab === 'profesores') {
+      if (this.profesores.length === 0) this.refreshProfesores();
+      if (this.actividades.length === 0) this.loadActividades();
+    }
+    if (tab === 'empleados' && this.empleados.length === 0) {
+      this.refreshEmpleados();
     }
   }
+
+  // ─── Profesores ───────────────────────────────────────────────────────────
 
   refreshProfesores(): void {
     this.loading.profesores = true;
@@ -86,6 +112,45 @@ export class AdminDashboardComponent {
     });
   }
 
+  private loadActividades(): void {
+    this.loadingActividades = true;
+    this.actividadesService.getActivas().subscribe({
+      next: (data) => {
+        this.actividades = data ?? [];
+        this.loadingActividades = false;
+      },
+      error: () => {
+        this.loadingActividades = false;
+      },
+    });
+  }
+
+  toggleActividad(id: number): void {
+    const sel = this.createProfesor.actividadesSeleccionadas;
+    const idx = sel.indexOf(id);
+    this.createProfesor.actividadesSeleccionadas =
+      idx === -1 ? [...sel, id] : sel.filter((a) => a !== id);
+  }
+
+  isActividadSeleccionada(id: number): boolean {
+    return this.createProfesor.actividadesSeleccionadas.includes(id);
+  }
+
+  actividadesProfesorLabel(p: Profesor): string {
+    return p.actividades?.map((a) => a.nombre).join(', ') || '—';
+  }
+
+  get profesoresFiltrados(): Profesor[] {
+    const q = this.filtroProfesorQ.trim().toLowerCase();
+    if (!q) return this.profesores;
+    return this.profesores.filter(
+      (p) =>
+        p.nombre.toLowerCase().includes(q) ||
+        p.apellido.toLowerCase().includes(q) ||
+        p.dni.toLowerCase().includes(q),
+    );
+  }
+
   onCreateProfesor(): void {
     this.error.profesores = '';
     const p = this.createProfesor;
@@ -94,34 +159,76 @@ export class AdminDashboardComponent {
       return;
     }
 
-    const actividades = p.actividadesCsv
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((s) => Number(s))
-      .filter((n) => Number.isFinite(n) && n > 0);
-
     this.profesorService
       .create({
         nombre: p.nombre,
         apellido: p.apellido,
         dni: p.dni,
-        actividades: actividades.length ? actividades : undefined,
+        actividades: p.actividadesSeleccionadas.length ? p.actividadesSeleccionadas : undefined,
       })
       .subscribe({
         next: () => {
-          this.createProfesor = {
-            nombre: '',
-            apellido: '',
-            dni: '',
-            actividadesCsv: '',
-          };
+          this.createProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
           this.refreshProfesores();
         },
         error: (err) => {
-          this.error.profesores =
-            err?.error?.message ?? 'No se pudo registrar el profesor.';
+          this.error.profesores = err?.error?.message ?? 'No se pudo registrar el profesor.';
         },
       });
+  }
+
+  // ─── Empleados ────────────────────────────────────────────────────────────
+
+  refreshEmpleados(): void {
+    this.loading.empleados = true;
+    this.error.empleados = '';
+    this.gestionUsuariosService.getAll({ rol: 'RECEPCIONISTA' }).subscribe({
+      next: (data) => {
+        this.empleados = data ?? [];
+        this.loading.empleados = false;
+      },
+      error: () => {
+        this.error.empleados = 'No se pudieron cargar los empleados.';
+        this.loading.empleados = false;
+      },
+    });
+  }
+
+  get empleadosFiltrados(): UsuarioListado[] {
+    let list = this.empleados;
+    const q = this.filtroEmpleadosQ.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (u) =>
+          u.nombre.toLowerCase().includes(q) ||
+          u.apellido.toLowerCase().includes(q) ||
+          u.email.toLowerCase().includes(q) ||
+          u.dni.toLowerCase().includes(q),
+      );
+    }
+    if (this.filtroEmpleadosEstado === 'ACTIVO') list = list.filter((u) => u.activo);
+    if (this.filtroEmpleadosEstado === 'INACTIVO') list = list.filter((u) => !u.activo);
+    return list;
+  }
+
+  onCreateEmpleado(): void {
+    this.createEmpleadoError = '';
+    this.createEmpleadoSuccess = '';
+    const f = this.createEmpleadoForm;
+    if (!f.nombre || !f.apellido || !f.dni || !f.email) {
+      this.createEmpleadoError = 'Completá todos los campos.';
+      return;
+    }
+    this.gestionUsuariosService.createEmpleado(f).subscribe({
+      next: () => {
+        this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '' };
+        this.createEmpleadoSuccess = 'Recepcionista registrado exitosamente.';
+        this.refreshEmpleados();
+      },
+      error: (err) => {
+        this.createEmpleadoError =
+          err?.error?.message ?? 'No se pudo registrar el recepcionista.';
+      },
+    });
   }
 }

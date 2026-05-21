@@ -117,6 +117,15 @@ export class GestionUsuariosService {
     );
   }
 
+  createEmpleado(data: {
+    nombre: string;
+    apellido: string;
+    dni: string;
+    email: string;
+  }): Observable<unknown> {
+    return this.http.post<unknown>(this.apiUrl, { ...data, rol: 'RECEPCIONISTA' });
+  }
+
   getClienteExtraInfo(email: string): Observable<ClienteExtraInfo | null> {
     return this.http
       .get<ClienteExtraInfo>(`${this.clientesUrl}/${encodeURIComponent(email)}`)
