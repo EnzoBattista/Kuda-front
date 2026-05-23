@@ -32,5 +32,9 @@ export class ProfesorService {
   create(data: CreateProfesorDto): Observable<unknown> {
     return this.http.post<unknown>(this.apiUrl, data);
   }
+
+  delete(id: number): Observable<unknown> {
+    return this.http.delete<unknown>(`${this.apiUrl}/${id}`);
+  }
 }
 

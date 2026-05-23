@@ -340,6 +340,24 @@ select {
   text-decoration: none;
 }
 
+.btn-tabla-danger {
+  background: var(--brand-red);
+}
+
+.btn-tabla-danger:hover {
+  background: var(--brand-red-700, #b91c1c);
+}
+
+.row .right {
+  gap: 0.5rem;
+}
+
+.modal-confirm-msg {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
 /* ─── Modal overlay ──────────────────────────────────────────────────────── */
 
 .modal-overlay {

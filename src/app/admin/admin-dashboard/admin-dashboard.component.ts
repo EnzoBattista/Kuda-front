@@ -46,6 +46,11 @@ export class AdminDashboardComponent {
   profesorDetalle: Profesor | null = null;
   empleadoDetalle: UsuarioListado | null = null;
 
+  // ─── Eliminar profesor ────────────────────────────────────────────────────
+  profesorAEliminar: Profesor | null = null;
+  eliminandoProfesor = false;
+  eliminarProfesorError = '';
+
   // ─── Empleados ────────────────────────────────────────────────────────────
   empleados: UsuarioListado[] = [];
 
@@ -181,6 +186,25 @@ export class AdminDashboardComponent {
           this.createProfesorError = this.mapProfesorError(err?.error?.message ?? '');
         },
       });
+  }
+
+  onConfirmarEliminarProfesor(): void {
+    if (!this.profesorAEliminar) return;
+    this.eliminandoProfesor = true;
+    this.eliminarProfesorError = '';
+    this.profesorService.delete(this.profesorAEliminar.id).subscribe({
+      next: () => {
+        this.profesorAEliminar = null;
+        this.eliminandoProfesor = false;
+        this.createProfesorSuccess = 'Profesor eliminado con éxito';
+        this.refreshProfesores();
+      },
+      error: (err) => {
+        this.eliminandoProfesor = false;
+        this.eliminarProfesorError =
+          err?.error?.message || 'No se pudo eliminar al profesor. Aun tiene clases pendientes';
+      },
+    });
   }
 
   private mapProfesorError(msg: string): string {

@@ -113,6 +113,17 @@ export class ClasesListComponent implements OnInit {
     this.claseForm.get('salaId')?.valueChanges.subscribe(() => {
       this.claseForm.get('cupo_maximo')?.updateValueAndValidity({ emitEvent: false });
     });
+    this.claseForm.get('actividadId')?.valueChanges.subscribe(() => {
+      this.claseForm.get('profesorId')?.setValue(null);
+    });
+  }
+
+  get profesoresPorActividad(): Profesor[] {
+    const actId = this.claseForm.get('actividadId')?.value;
+    if (!actId) return [];
+    return this.profesores.filter((p) =>
+      p.actividades?.some((a) => a.id === Number(actId))
+    );
   }
 
   get isAdmin(): boolean {

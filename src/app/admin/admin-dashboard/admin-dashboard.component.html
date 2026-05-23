@@ -111,6 +111,7 @@
         <div>{{ actividadesProfesorLabel(p) }}</div>
         <div class="right">
           <button class="btn-tabla" (click)="profesorDetalle = p">Ver detalle</button>
+          <button class="btn-tabla btn-tabla-danger" (click)="profesorAEliminar = p; eliminarProfesorError = ''">Eliminar</button>
         </div>
       </div>
     </div>
@@ -136,6 +137,25 @@
       </div>
       <div class="modal-actions">
         <button class="btn-tabla" (click)="profesorDetalle = null">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: confirmar eliminación de profesor -->
+  <div class="modal-overlay" *ngIf="profesorAEliminar" (click)="profesorAEliminar = null">
+    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+      <h4 class="modal-title">Eliminar profesor</h4>
+      <p class="modal-confirm-msg">
+        ¿Estás seguro que querés eliminar a
+        <strong>{{ profesorAEliminar.nombre }} {{ profesorAEliminar.apellido }}</strong>?
+        Esta acción no se puede deshacer.
+      </p>
+      <p class="error-text" *ngIf="eliminarProfesorError">{{ eliminarProfesorError }}</p>
+      <div class="modal-actions">
+        <button class="btn btn-danger" (click)="onConfirmarEliminarProfesor()" [disabled]="eliminandoProfesor">
+          {{ eliminandoProfesor ? 'Eliminando…' : 'Confirmar' }}
+        </button>
+        <button class="btn-tabla" (click)="profesorAEliminar = null" [disabled]="eliminandoProfesor">Cancelar</button>
       </div>
     </div>
   </div>

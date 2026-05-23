@@ -123,9 +123,12 @@
 
       <div class="field">
         <label class="label" for="clase-profesor">Profesor</label>
-        <select id="clase-profesor" class="control" formControlName="profesorId">
-          <option [ngValue]="null" disabled>Seleccionar profesor</option>
-          <option *ngFor="let p of profesores" [ngValue]="p.id">
+        <select id="clase-profesor" class="control" formControlName="profesorId"
+          [attr.disabled]="!claseForm.get('actividadId')?.value ? true : null">
+          <option [ngValue]="null" disabled>
+            {{ claseForm.get('actividadId')?.value ? 'Seleccionar profesor' : 'Primero seleccioná una actividad' }}
+          </option>
+          <option *ngFor="let p of profesoresPorActividad" [ngValue]="p.id">
             {{ labelProfesor(p) }}
           </option>
         </select>
