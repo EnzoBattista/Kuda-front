@@ -23,7 +23,6 @@ import {
 export class UsuariosListComponent implements OnInit {
   readonly filtros = new FormGroup({
     q: new FormControl<string>('', { nonNullable: true }),
-    rol: new FormControl<RolFiltro>('', { nonNullable: true }),
     estado: new FormControl<EstadoFiltro>('', { nonNullable: true }),
     tipoInscripcion: new FormControl<TipoInscripcionFiltro>('', { nonNullable: true }),
   });
@@ -44,6 +43,7 @@ export class UsuariosListComponent implements OnInit {
           this.isLoading = true;
           this.errorMsg = '';
           const valores: UsuariosFiltro = this.filtros.getRawValue();
+          valores.rol = 'CLIENTE';
           return this.gestion.getAll(valores).pipe(
             catchError(() => {
               this.errorMsg = 'No se pudieron cargar los usuarios. Intentá nuevamente.';
@@ -59,12 +59,12 @@ export class UsuariosListComponent implements OnInit {
   }
 
   limpiarFiltros(): void {
-    this.filtros.reset({ q: '', rol: '', estado: '', tipoInscripcion: '' });
+    this.filtros.reset({ q: '', estado: '', tipoInscripcion: '' });
   }
 
   hayFiltrosAplicados(): boolean {
     const v = this.filtros.getRawValue();
-    return Boolean(v.q?.trim() || v.rol || v.estado || v.tipoInscripcion);
+    return Boolean(v.q?.trim() || v.estado || v.tipoInscripcion);
   }
 
   rolLabel(usuario: UsuarioListado): string {

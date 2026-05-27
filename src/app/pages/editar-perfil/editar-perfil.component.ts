@@ -47,7 +47,7 @@ export class EditarPerfilComponent implements OnInit {
   successMessage = '';
 
   constructor(
-    private readonly auth: AuthService,
+    public readonly auth: AuthService,
     private readonly router: Router
   ) {}
 
@@ -94,6 +94,14 @@ export class EditarPerfilComponent implements OnInit {
     this.submitted = true;
     this.submitError = '';
     this.successMessage = '';
+    
+    if (this.auth.isAdministrativo()) {
+      this.form.controls.genero.clearValidators();
+      this.form.controls.fechaNacimiento.clearValidators();
+      this.form.controls.genero.updateValueAndValidity();
+      this.form.controls.fechaNacimiento.updateValueAndValidity();
+    }
+    
     if (this.form.invalid) return;
 
     this.isSubmitting = true;

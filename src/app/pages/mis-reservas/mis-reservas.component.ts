@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 
 import {
   MSG_RESERVA_CANCELADA,
@@ -35,7 +34,7 @@ interface CardItem {
 @Component({
   selector: 'app-mis-reservas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, FechaArPipe],
+  imports: [CommonModule, ReactiveFormsModule, FechaArPipe],
   templateUrl: './mis-reservas.component.html',
   styleUrl: './mis-reservas.component.css',
 })

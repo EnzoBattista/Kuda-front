@@ -172,19 +172,24 @@ export class AuthService {
     const body: Record<string, string | undefined> = {
       nombre: data.nombre.trim(),
       apellido: data.apellido.trim(),
-      genero: data.genero,
-      fechaNacimiento: data.fechaNacimiento,
     };
+    
+    if (!this.isAdministrativo()) {
+      body['genero'] = data.genero;
+      body['fechaNacimiento'] = data.fechaNacimiento;
+    }
+
     const tel = data.telefono?.trim();
     if (tel) {
       body['telefono'] = tel;
     }
 
+    const url = this.isAdministrativo() 
+      ? `${environment.apiUrl}/usuarios/${encodeURIComponent(actual.email)}`
+      : `${this.clientesUrl}/${encodeURIComponent(actual.email)}`;
+
     return this.http
-      .put<ClientePerfilResponse>(
-        `${this.clientesUrl}/${encodeURIComponent(actual.email)}`,
-        body,
-      )
+      .put<ClientePerfilResponse>(url, body)
       .pipe(
         map((resp) => this.mergePerfilResponse(actual, resp)),
         tap((u) => this.setUser(u)),

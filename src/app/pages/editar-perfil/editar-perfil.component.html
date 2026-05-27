@@ -5,7 +5,7 @@
 
   <div class="card card-pad" *ngIf="!isLoading">
     <h2>Modificar datos personales</h2>
-    <p class="help">Actualizá tu nombre, apellido, género, fecha de nacimiento y teléfono.</p>
+    <p class="help">Actualizá tu información personal.</p>
 
     <p class="form-error" *ngIf="loadError">{{ loadError }}</p>
 
@@ -36,7 +36,7 @@
         </div>
       </div>
 
-      <div class="form-row form-row-2">
+      <div class="form-row form-row-2" *ngIf="!auth.isAdministrativo()">
         <div class="field">
           <div class="label">Género</div>
           <select class="control" formControlName="genero">
