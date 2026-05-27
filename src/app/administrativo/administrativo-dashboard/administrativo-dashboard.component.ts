@@ -88,6 +88,10 @@ export class AdministrativoDashboardComponent {
     return this.authService.isDueno();
   }
 
+  get isAdministrativo(): boolean {
+    return this.authService.isAdministrativo();
+  }
+
   logout(): void {
     this.authService.logout().subscribe({
       complete: () => void this.router.navigateByUrl('/login'),
