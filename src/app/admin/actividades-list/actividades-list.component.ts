@@ -51,14 +51,6 @@ export class ActividadesListComponent implements OnInit {
     return this.authService.isAdmin();
   }
 
-  get precioInvalido(): boolean {
-    if (!this.showModalPrecio) {
-      return false;
-    }
-    const precio = Number(this.formPrecio);
-    return !Number.isFinite(precio) || precio <= 0;
-  }
-
   cargarActividades(): void {
     this.isLoading = true;
     this.errorMsg = '';
@@ -207,7 +199,14 @@ export class ActividadesListComponent implements OnInit {
   }
 
   submitPrecio(): void {
-    if (!this.selectedActividad || this.precioInvalido) {
+    if (!this.selectedActividad) {
+      return;
+    }
+
+    const precio = this.formPrecio;
+
+    if (precio === null || isNaN(precio) || precio <= 0) {
+      this.modalError = this.precioHuError;
       return;
     }
 

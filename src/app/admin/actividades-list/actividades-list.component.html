@@ -202,18 +202,15 @@
           class="control"
           type="number"
           name="precio"
-          min="0"
           step="0.01"
           [(ngModel)]="formPrecio"
-          [attr.aria-invalid]="precioInvalido ? true : null"
         />
       </div>
 
-      <p class="error-text" *ngIf="precioInvalido">{{ precioHuError }}</p>
-      <p class="error-text" *ngIf="modalError && !precioInvalido">{{ modalError }}</p>
+      <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || precioInvalido">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
           Guardar cambios
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalPrecio()" [disabled]="modalSubmitting">
