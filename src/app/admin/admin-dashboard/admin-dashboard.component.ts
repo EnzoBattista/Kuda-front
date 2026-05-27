@@ -42,6 +42,10 @@ export class AdminDashboardComponent {
 
   filtroProfesorQ = '';
 
+  // ─── Modales de alta ──────────────────────────────────────────────────────
+  showModalCrearProfesor = false;
+  showModalCrearEmpleado = false;
+
   // ─── Detalle ──────────────────────────────────────────────────────────────
   profesorDetalle: Profesor | null = null;
   empleadoDetalle: UsuarioListado | null = null;
@@ -163,6 +167,19 @@ export class AdminDashboardComponent {
     );
   }
 
+  abrirModalCrearProfesor(): void {
+    this.createProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
+    this.createProfesorError = '';
+    this.createProfesorSuccess = '';
+    if (this.actividades.length === 0) this.loadActividades();
+    this.showModalCrearProfesor = true;
+  }
+
+  cerrarModalCrearProfesor(): void {
+    this.showModalCrearProfesor = false;
+    this.createProfesorError = '';
+  }
+
   onCreateProfesor(): void {
     this.error.profesores = '';
     this.createProfesorError = '';
@@ -184,6 +201,7 @@ export class AdminDashboardComponent {
         next: () => {
           this.createProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
           this.createProfesorSuccess = 'Profesor registrado con éxito';
+          this.showModalCrearProfesor = false;
           this.refreshProfesores();
         },
         error: (err) => {
@@ -256,6 +274,18 @@ export class AdminDashboardComponent {
     return list;
   }
 
+  abrirModalCrearEmpleado(): void {
+    this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
+    this.createEmpleadoError = '';
+    this.createEmpleadoSuccess = '';
+    this.showModalCrearEmpleado = true;
+  }
+
+  cerrarModalCrearEmpleado(): void {
+    this.showModalCrearEmpleado = false;
+    this.createEmpleadoError = '';
+  }
+
   onCreateEmpleado(): void {
     this.createEmpleadoError = '';
     this.createEmpleadoSuccess = '';
@@ -272,6 +302,7 @@ export class AdminDashboardComponent {
       next: () => {
         this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
         this.createEmpleadoSuccess = 'Recepcionista registrado con éxito';
+        this.showModalCrearEmpleado = false;
         this.refreshEmpleados();
       },
       error: (err) => {

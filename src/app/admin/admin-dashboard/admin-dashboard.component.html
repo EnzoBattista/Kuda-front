@@ -30,53 +30,14 @@
     <div class="card-head">
       <h3>Profesores</h3>
       <div class="card-head-actions">
+        <button *ngIf="isAdmin" class="btn-action" (click)="abrirModalCrearProfesor()">Registrar profesor</button>
         <button (click)="refreshProfesores()">Refrescar</button>
       </div>
     </div>
 
     <p class="error" *ngIf="error.profesores">{{ error.profesores }}</p>
     <p class="muted" *ngIf="loading.profesores">Cargando…</p>
-
-    <!-- Formulario de registro -->
-    <div class="form-section" *ngIf="isAdmin">
-      <h4 class="form-section-title">Registrar nuevo profesor</h4>
-      <p class="error" *ngIf="createProfesorError">{{ createProfesorError }}</p>
-      <p class="success-msg" *ngIf="createProfesorSuccess">{{ createProfesorSuccess }}</p>
-      <div class="form-row form-row-2">
-        <div class="field">
-          <div class="label">Nombre</div>
-          <input class="control" [(ngModel)]="createProfesor.nombre" />
-        </div>
-        <div class="field">
-          <div class="label">Apellido</div>
-          <input class="control" [(ngModel)]="createProfesor.apellido" />
-        </div>
-        <div class="field">
-          <div class="label">DNI</div>
-          <input class="control" [(ngModel)]="createProfesor.dni" />
-        </div>
-      </div>
-
-      <div class="field" *ngIf="!loadingActividades && actividades.length > 0">
-        <div class="label">Actividades que dicta</div>
-        <div class="checkboxes-grid">
-          <label class="checkbox-label" *ngFor="let act of actividades">
-            <input
-              type="checkbox"
-              [checked]="isActividadSeleccionada(act.id)"
-              (change)="toggleActividad(act.id)"
-            />
-            {{ act.nombre }}
-          </label>
-        </div>
-      </div>
-      <p class="muted" *ngIf="loadingActividades">Cargando actividades…</p>
-      <p class="muted" *ngIf="!loadingActividades && actividades.length === 0">Sin actividades disponibles para asignar.</p>
-
-      <div class="form-section-actions">
-        <button class="btn btn-primary" (click)="onCreateProfesor()">Registrar Profesor</button>
-      </div>
-    </div>
+    <p class="success-msg" *ngIf="createProfesorSuccess">{{ createProfesorSuccess }}</p>
 
     <!-- Filtro de búsqueda -->
     <div class="usuarios-filtros">
@@ -165,48 +126,14 @@
     <div class="card-head">
       <h3>Recepcionistas</h3>
       <div class="card-head-actions">
+        <button class="btn-action" (click)="abrirModalCrearEmpleado()">Registrar recepcionista</button>
         <button (click)="refreshEmpleados()">Refrescar</button>
       </div>
     </div>
 
     <p class="error" *ngIf="error.empleados">{{ error.empleados }}</p>
     <p class="muted" *ngIf="loading.empleados">Cargando…</p>
-
-    <!-- Formulario de registro de recepcionista -->
-    <div class="form-section">
-      <h4 class="form-section-title">Registrar recepcionista</h4>
-      <p class="error" *ngIf="createEmpleadoError">{{ createEmpleadoError }}</p>
-      <p class="success-msg" *ngIf="createEmpleadoSuccess">{{ createEmpleadoSuccess }}</p>
-      <div class="form-row form-row-2">
-        <div class="field">
-          <div class="label">Nombre</div>
-          <input class="control" [(ngModel)]="createEmpleadoForm.nombre" />
-        </div>
-        <div class="field">
-          <div class="label">Apellido</div>
-          <input class="control" [(ngModel)]="createEmpleadoForm.apellido" />
-        </div>
-        <div class="field">
-          <div class="label">DNI</div>
-          <input class="control" [(ngModel)]="createEmpleadoForm.dni" />
-        </div>
-        <div class="field">
-          <div class="label">Email</div>
-          <input class="control" type="email" [(ngModel)]="createEmpleadoForm.email" />
-        </div>
-        <div class="field">
-          <div class="label">Teléfono</div>
-          <input class="control" [(ngModel)]="createEmpleadoForm.telefono" />
-        </div>
-        <div class="field">
-          <div class="label">Contraseña</div>
-          <input class="control" type="password" [(ngModel)]="createEmpleadoForm.password" />
-        </div>
-      </div>
-      <div class="form-section-actions">
-        <button class="btn btn-primary" (click)="onCreateEmpleado()">Registrar Empleado</button>
-      </div>
-    </div>
+    <p class="success-msg" *ngIf="createEmpleadoSuccess">{{ createEmpleadoSuccess }}</p>
 
     <!-- Filtros -->
     <div class="usuarios-filtros">
@@ -280,6 +207,90 @@
       </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" (click)="empleadoDetalle = null">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: crear profesor -->
+  <div class="modal-overlay" *ngIf="showModalCrearProfesor" (click)="cerrarModalCrearProfesor()">
+    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+      <h4 class="modal-title">Registrar nuevo profesor</h4>
+      <p class="error-text" *ngIf="createProfesorError">{{ createProfesorError }}</p>
+
+      <div class="form-row form-row-2">
+        <div class="field">
+          <div class="label">Nombre</div>
+          <input class="control" [(ngModel)]="createProfesor.nombre" />
+        </div>
+        <div class="field">
+          <div class="label">Apellido</div>
+          <input class="control" [(ngModel)]="createProfesor.apellido" />
+        </div>
+        <div class="field">
+          <div class="label">DNI</div>
+          <input class="control" [(ngModel)]="createProfesor.dni" />
+        </div>
+      </div>
+
+      <div class="field" *ngIf="!loadingActividades && actividades.length > 0">
+        <div class="label">Actividades que dicta</div>
+        <div class="checkboxes-grid">
+          <label class="checkbox-label" *ngFor="let act of actividades">
+            <input
+              type="checkbox"
+              [checked]="isActividadSeleccionada(act.id)"
+              (change)="toggleActividad(act.id)"
+            />
+            {{ act.nombre }}
+          </label>
+        </div>
+      </div>
+      <p class="muted" *ngIf="loadingActividades">Cargando actividades…</p>
+      <p class="muted" *ngIf="!loadingActividades && actividades.length === 0">Sin actividades disponibles para asignar.</p>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" (click)="onCreateProfesor()">Registrar profesor</button>
+        <button class="btn btn-secondary" (click)="cerrarModalCrearProfesor()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: crear recepcionista -->
+  <div class="modal-overlay" *ngIf="showModalCrearEmpleado" (click)="cerrarModalCrearEmpleado()">
+    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+      <h4 class="modal-title">Registrar recepcionista</h4>
+      <p class="error-text" *ngIf="createEmpleadoError">{{ createEmpleadoError }}</p>
+
+      <div class="form-row form-row-2">
+        <div class="field">
+          <div class="label">Nombre</div>
+          <input class="control" [(ngModel)]="createEmpleadoForm.nombre" />
+        </div>
+        <div class="field">
+          <div class="label">Apellido</div>
+          <input class="control" [(ngModel)]="createEmpleadoForm.apellido" />
+        </div>
+        <div class="field">
+          <div class="label">DNI</div>
+          <input class="control" [(ngModel)]="createEmpleadoForm.dni" />
+        </div>
+        <div class="field">
+          <div class="label">Email</div>
+          <input class="control" type="email" [(ngModel)]="createEmpleadoForm.email" />
+        </div>
+        <div class="field">
+          <div class="label">Teléfono</div>
+          <input class="control" [(ngModel)]="createEmpleadoForm.telefono" />
+        </div>
+        <div class="field">
+          <div class="label">Contraseña</div>
+          <input class="control" type="password" [(ngModel)]="createEmpleadoForm.password" />
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" (click)="onCreateEmpleado()">Registrar recepcionista</button>
+        <button class="btn btn-secondary" (click)="cerrarModalCrearEmpleado()">Cancelar</button>
       </div>
     </div>
   </div>
