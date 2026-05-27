@@ -31,7 +31,7 @@
     <div class="card-head">
       <h3>Profesores</h3>
       <div class="card-head-actions">
-        <button *ngIf="isDueno" class="btn-action" (click)="abrirModalCrearProfesor()">Registrar profesor</button>
+        <button *ngIf="isAdministrativo" class="btn-action" (click)="abrirModalCrearProfesor()">Registrar profesor</button>
       </div>
     </div>
 
@@ -75,7 +75,7 @@
         <div>{{ actividadesProfesorLabel(p) }}</div>
         <div class="right">
           <button class="btn-tabla" (click)="profesorDetalle = p">Ver detalle</button>
-          <button *ngIf="isDueno" class="btn-tabla btn-tabla-danger" (click)="profesorAEliminar = p; eliminarProfesorError = ''">Eliminar</button>
+          <button *ngIf="isAdministrativo" class="btn-tabla btn-tabla-danger" (click)="profesorAEliminar = p; eliminarProfesorError = ''">Eliminar</button>
         </div>
       </div>
     </div>
