@@ -75,7 +75,7 @@
         </div>
         <div class="clase-info-row">
           <dt>Próxima fecha</dt>
-          <dd>{{ c.proximaFecha }}</dd>
+          <dd>{{ c.proximaFecha | fechaAr }}</dd>
         </div>
         <div class="clase-info-row">
           <dt>Cupo</dt>
@@ -120,7 +120,7 @@
       <h3 class="modal-titulo">Reservar clase</h3>
       <p class="help">{{ c.actividad }} — {{ c.diaSemana }} {{ c.horaInicio }}</p>
       <p class="help" *ngIf="c.abonoActividadVigente">
-        Ya tenés mensualidad activa en esta actividad. Podés reservar sin cargo adicional.
+        Ya tenés mensualidad activa en esta actividad. No podés reservar clases individualmente.
       </p>
 
       <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
@@ -139,13 +139,11 @@
           class="opcion-btn btn btn-secondary"
           type="button"
           (click)="seleccionarModalidad('INDIVIDUAL')"
+          [disabled]="c.abonoActividadVigente"
         >
           <strong>Clase individual</strong>
           <span class="help">Una clase puntual (pago completo o seña)</span>
         </button>
-        <p class="help" *ngIf="c.abonoActividadVigente">
-          Ya sos abonado: elegí «Clase individual» para reservar sin volver a pagar.
-        </p>
       </div>
 
       <div class="form-actions">
@@ -156,7 +154,7 @@
     <!-- Paso: tipo de pago (solo no abonado) -->
     <ng-container *ngIf="pasoModal === 'seleccion-pago'">
       <h3 class="modal-titulo">Modalidad de pago</h3>
-      <p class="help">{{ c.actividad }} — {{ c.proximaFecha }}</p>
+      <p class="help">{{ c.actividad }} — {{ c.proximaFecha | fechaAr }}</p>
 
       <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
 
@@ -202,7 +200,7 @@
         </div>
         <div class="clase-info-row">
           <dt>Próxima fecha</dt>
-          <dd>{{ c.proximaFecha }}</dd>
+          <dd>{{ c.proximaFecha | fechaAr }}</dd>
         </div>
         <div class="clase-info-row">
           <dt>Pago</dt>

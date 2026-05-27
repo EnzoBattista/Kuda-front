@@ -42,6 +42,11 @@ export interface ReservaHistorial {
   montoAbonado?: number;
   fechaReserva: string;
   proximaFecha?: string;
+  /** Id de la inscripción mensual que originó la reserva, si aplica. */
+  inscripcionMensualId?: number;
+  /** Período de la inscripción mensual (YYYY-MM-DD). */
+  periodoInicio?: string;
+  periodoFin?: string;
 }
 
 export interface ClaseDisponible {
@@ -955,6 +960,9 @@ export class ReservasService {
           : undefined,
       fechaReserva: fecha,
       proximaFecha: fecha,
+      inscripcionMensualId: mensual?.id,
+      periodoInicio: mensual ? String(mensual.periodo_inicio).slice(0, 10) : undefined,
+      periodoFin: mensual ? String(mensual.periodo_fin).slice(0, 10) : undefined,
     };
   }
 

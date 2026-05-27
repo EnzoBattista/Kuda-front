@@ -13,6 +13,7 @@ import {
   TipoPago,
 } from '../../services/reservas.service';
 import { AuthService } from '../../services/auth.service';
+import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
 
 type PasoModal =
   | 'seleccion-modalidad'
@@ -25,7 +26,7 @@ type PasoModal =
 @Component({
   selector: 'app-clases-disponibles',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FechaArPipe],
   templateUrl: './clases-disponibles.component.html',
   styleUrl: './clases-disponibles.component.css',
 })
@@ -126,7 +127,8 @@ export class ClasesDisponiblesComponent implements OnInit {
     }
 
     if (this.claseSeleccionada?.abonoActividadVigente) {
-      this.pasoModal = 'confirmacion';
+      this.errorModalMsg =
+        'Ya tenés un abono activo en esta actividad, no podés reservar individualmente esta clase.';
       return;
     }
 

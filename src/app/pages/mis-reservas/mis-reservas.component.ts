@@ -9,11 +9,31 @@ import {
   ReservasService,
   ResultadoCancelacion,
 } from '../../services/reservas.service';
+import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
+
+interface AbonadoGrupo {
+  mensualId: number;
+  actividad: string;
+  sede: string;
+  diaSemana: string;
+  horaInicio: string;
+  horaFin: string;
+  periodoInicio?: string;
+  periodoFin?: string;
+  reservas: ReservaHistorial[];
+  cantidadActivas: number;
+}
+
+interface CardItem {
+  kind: 'individual' | 'grupo';
+  reserva?: ReservaHistorial;
+  grupo?: AbonadoGrupo;
+}
 
 @Component({
   selector: 'app-mis-reservas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FechaArPipe],
   templateUrl: './mis-reservas.component.html',
   styleUrl: './mis-reservas.component.css',
 })
@@ -25,6 +45,7 @@ export class MisReservasComponent implements OnInit {
 
   reservas: ReservaHistorial[] = [];
   reservasFiltradas: ReservaHistorial[] = [];
+  items: CardItem[] = [];
   actividades: string[] = [];
   sedes: string[] = [];
 
@@ -34,8 +55,12 @@ export class MisReservasComponent implements OnInit {
   bannerError = '';
 
   reservaSeleccionada: ReservaHistorial | null = null;
-  modalPaso: 'detalle' | 'confirmar-cancelacion' | 'resultado-cancelacion' =
-    'detalle';
+  grupoSeleccionado: AbonadoGrupo | null = null;
+  modalPaso:
+    | 'detalle'
+    | 'detalle-grupo'
+    | 'confirmar-cancelacion'
+    | 'resultado-cancelacion' = 'detalle';
   resultadoCancelacion: ResultadoCancelacion | null = null;
   isCancelando = false;
   errorCancelacion = '';
@@ -72,6 +97,49 @@ export class MisReservasComponent implements OnInit {
         (!actividad || r.actividad === actividad) &&
         (!sede || r.sede === sede),
     );
+    this.items = this.agruparReservas(this.reservasFiltradas);
+  }
+
+  private agruparReservas(reservas: ReservaHistorial[]): CardItem[] {
+    const grupos = new Map<number, AbonadoGrupo>();
+    const items: CardItem[] = [];
+
+    for (const r of reservas) {
+      if (r.esAbonado && r.inscripcionMensualId) {
+        const key = r.inscripcionMensualId;
+        let grupo = grupos.get(key);
+        if (!grupo) {
+          grupo = {
+            mensualId: key,
+            actividad: r.actividad,
+            sede: r.sede,
+            diaSemana: r.diaSemana,
+            horaInicio: r.horaInicio,
+            horaFin: r.horaFin,
+            periodoInicio: r.periodoInicio,
+            periodoFin: r.periodoFin,
+            reservas: [],
+            cantidadActivas: 0,
+          };
+          grupos.set(key, grupo);
+          items.push({ kind: 'grupo', grupo });
+        }
+        grupo.reservas.push(r);
+        if (r.estado === 'ACTIVA') grupo.cantidadActivas += 1;
+      } else {
+        items.push({ kind: 'individual', reserva: r });
+      }
+    }
+
+    for (const grupo of grupos.values()) {
+      grupo.reservas.sort((a, b) =>
+        (a.proximaFecha ?? a.fechaReserva).localeCompare(
+          b.proximaFecha ?? b.fechaReserva,
+        ),
+      );
+    }
+
+    return items;
   }
 
   limpiarFiltros(): void {
@@ -85,7 +153,25 @@ export class MisReservasComponent implements OnInit {
 
   abrirDetalle(reserva: ReservaHistorial): void {
     this.reservaSeleccionada = reserva;
+    this.grupoSeleccionado = null;
     this.modalPaso = 'detalle';
+    this.resultadoCancelacion = null;
+    this.errorCancelacion = '';
+    this.isCancelando = false;
+  }
+
+  abrirDetalleGrupo(grupo: AbonadoGrupo): void {
+    this.grupoSeleccionado = grupo;
+    this.reservaSeleccionada = null;
+    this.modalPaso = 'detalle-grupo';
+    this.resultadoCancelacion = null;
+    this.errorCancelacion = '';
+    this.isCancelando = false;
+  }
+
+  abrirCancelacionDesdeGrupo(reserva: ReservaHistorial): void {
+    this.reservaSeleccionada = reserva;
+    this.modalPaso = 'confirmar-cancelacion';
     this.resultadoCancelacion = null;
     this.errorCancelacion = '';
     this.isCancelando = false;
@@ -93,6 +179,7 @@ export class MisReservasComponent implements OnInit {
 
   abrirCancelacion(reserva: ReservaHistorial): void {
     this.reservaSeleccionada = reserva;
+    this.grupoSeleccionado = null;
     this.modalPaso = 'confirmar-cancelacion';
     this.resultadoCancelacion = null;
     this.errorCancelacion = '';
@@ -101,7 +188,17 @@ export class MisReservasComponent implements OnInit {
 
   cerrarModal(): void {
     this.reservaSeleccionada = null;
+    this.grupoSeleccionado = null;
     this.modalPaso = 'detalle';
+  }
+
+  volverDesdeCancelacion(): void {
+    if (this.grupoSeleccionado) {
+      this.reservaSeleccionada = null;
+      this.modalPaso = 'detalle-grupo';
+    } else {
+      this.modalPaso = 'detalle';
+    }
   }
 
   irACancelar(): void {
@@ -116,22 +213,46 @@ export class MisReservasComponent implements OnInit {
     this.bannerError = '';
 
     const seleccionada = this.reservaSeleccionada;
+    const mensualIdGrupo = this.grupoSeleccionado?.mensualId;
+
     this.reservasService.cancelarReserva(seleccionada.id).subscribe({
       next: (resultado) => {
         this.isCancelando = false;
+        this.limpiarCacheReserva(seleccionada);
+
         if (resultado.yaCancelada) {
-          this.limpiarCacheReserva(seleccionada);
           this.cerrarModal();
-          this.bannerError = '';
           this.cargarReservas();
           return;
         }
-        this.limpiarCacheReserva(seleccionada);
+
         this.resultadoCancelacion = resultado;
-        this.modalPaso = 'resultado-cancelacion';
         this.bannerSuccess = MSG_RESERVA_CANCELADA;
-        this.cerrarModal();
-        this.cargarReservas();
+
+        if (mensualIdGrupo) {
+          this.reservasService.getMisReservas().subscribe({
+            next: (data) => {
+              this.reservas = data ?? [];
+              this.aplicarFiltros();
+              const nuevoItem = this.items.find(
+                (i) => i.kind === 'grupo' && i.grupo?.mensualId === mensualIdGrupo,
+              );
+              if (nuevoItem?.grupo) {
+                this.grupoSeleccionado = nuevoItem.grupo;
+                this.reservaSeleccionada = null;
+                this.modalPaso = 'detalle-grupo';
+              } else {
+                this.cerrarModal();
+              }
+            },
+            error: () => {
+              this.cerrarModal();
+            },
+          });
+        } else {
+          this.cerrarModal();
+          this.cargarReservas();
+        }
       },
       error: (err) => {
         this.isCancelando = false;

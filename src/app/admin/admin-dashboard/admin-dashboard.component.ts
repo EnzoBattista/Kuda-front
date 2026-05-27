@@ -80,6 +80,10 @@ export class AdminDashboardComponent {
     this.currentUser = this.authService.getCurrentUser();
   }
 
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
   logout(): void {
     this.authService.logout().subscribe({
       complete: () => void this.router.navigateByUrl('/login'),

@@ -71,69 +71,176 @@
 
   <!-- Listado -->
   <ul class="reservas-grid" *ngIf="!isLoading && !errorMsg && reservasFiltradas.length > 0">
-    <li class="card card-pad reserva-card" *ngFor="let r of reservasFiltradas">
-      <div class="reserva-head">
-        <h3 class="reserva-actividad">{{ r.actividad }}</h3>
-        <span
-          class="estado-badge"
-          [class.badge-cancelada]="r.estado === 'CANCELADA'"
-          [class.badge-completada]="r.estado === 'COMPLETADA'"
-          [class.badge-espera]="r.estado === 'EN_ESPERA'"
-        >
-          {{ estadoLabel(r) }}
-        </span>
+    <ng-container *ngFor="let item of items">
+      <!-- Card de reserva individual -->
+      <li
+        *ngIf="item.kind === 'individual'"
+        class="card card-pad reserva-card"
+      >
+        <ng-container *ngIf="item.reserva as r">
+          <div class="reserva-head">
+            <h3 class="reserva-actividad">{{ r.actividad }}</h3>
+            <span
+              class="estado-badge"
+              [class.badge-cancelada]="r.estado === 'CANCELADA'"
+              [class.badge-completada]="r.estado === 'COMPLETADA'"
+              [class.badge-espera]="r.estado === 'EN_ESPERA'"
+            >
+              {{ estadoLabel(r) }}
+            </span>
+          </div>
+
+          <dl class="reserva-info">
+            <div class="reserva-info-row">
+              <dt>Sala</dt>
+              <dd>{{ r.sede }}</dd>
+            </div>
+            <div class="reserva-info-row">
+              <dt>Día</dt>
+              <dd>{{ r.diaSemana }}</dd>
+            </div>
+            <div class="reserva-info-row">
+              <dt>Horario</dt>
+              <dd>{{ r.horaInicio }} – {{ r.horaFin }}</dd>
+            </div>
+            <div class="reserva-info-row">
+              <dt>Modalidad</dt>
+              <dd>
+                <span class="modalidad-badge" [class.badge-individual]="r.modalidad === 'INDIVIDUAL'">
+                  {{ modalidadLabel(r) }}
+                </span>
+              </dd>
+            </div>
+            <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
+              <dt>Próxima fecha</dt>
+              <dd>{{ r.proximaFecha | fechaAr }}</dd>
+            </div>
+          </dl>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="abrirDetalle(r)">
+              Ver detalle
+            </button>
+            <button
+              *ngIf="esCancelable(r)"
+              type="button"
+              class="btn btn-danger"
+              (click)="abrirCancelacion(r)"
+            >
+              Cancelar Reserva
+            </button>
+          </div>
+        </ng-container>
+      </li>
+
+      <!-- Card de grupo (abonado) -->
+      <li
+        *ngIf="item.kind === 'grupo'"
+        class="card card-pad reserva-card"
+      >
+        <ng-container *ngIf="item.grupo as g">
+          <div class="reserva-head">
+            <h3 class="reserva-actividad">{{ g.actividad }}</h3>
+            <span class="modalidad-badge">Abonado</span>
+          </div>
+
+          <dl class="reserva-info">
+            <div class="reserva-info-row">
+              <dt>Sala</dt>
+              <dd>{{ g.sede }}</dd>
+            </div>
+            <div class="reserva-info-row">
+              <dt>Día</dt>
+              <dd>{{ g.diaSemana }}</dd>
+            </div>
+            <div class="reserva-info-row">
+              <dt>Horario</dt>
+              <dd>{{ g.horaInicio }} – {{ g.horaFin }}</dd>
+            </div>
+            <div class="reserva-info-row">
+              <dt>Modalidad</dt>
+              <dd><span class="modalidad-badge">Abonado</span></dd>
+            </div>
+            <div class="reserva-info-row" *ngIf="g.periodoInicio && g.periodoFin">
+              <dt>Período</dt>
+              <dd>{{ g.periodoInicio | fechaAr }} – {{ g.periodoFin | fechaAr }}</dd>
+            </div>
+            <div class="reserva-info-row">
+              <dt>Clases reservadas</dt>
+              <dd>{{ g.cantidadActivas }} activas / {{ g.reservas.length }} totales</dd>
+            </div>
+          </dl>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="abrirDetalleGrupo(g)">
+              Ver detalle
+            </button>
+          </div>
+        </ng-container>
+      </li>
+    </ng-container>
+  </ul>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-backdrop" *ngIf="reservaSeleccionada || grupoSeleccionado" (click)="cerrarModal()">
+  <div class="modal-card card card-pad" (click)="$event.stopPropagation()">
+
+    <!-- Paso: detalle de grupo (abonado) -->
+    <ng-container *ngIf="modalPaso === 'detalle-grupo' && grupoSeleccionado as g">
+      <div class="modal-head">
+        <h3>{{ g.actividad }}</h3>
+        <span class="modalidad-badge">Abonado</span>
       </div>
 
       <dl class="reserva-info">
         <div class="reserva-info-row">
           <dt>Sala</dt>
-          <dd>{{ r.sede }}</dd>
+          <dd>{{ g.sede }}</dd>
         </div>
         <div class="reserva-info-row">
-          <dt>Día</dt>
-          <dd>{{ r.diaSemana }}</dd>
+          <dt>Día y horario</dt>
+          <dd>{{ g.diaSemana }} {{ g.horaInicio }} – {{ g.horaFin }}</dd>
         </div>
-        <div class="reserva-info-row">
-          <dt>Horario</dt>
-          <dd>{{ r.horaInicio }} – {{ r.horaFin }}</dd>
-        </div>
-        <div class="reserva-info-row">
-          <dt>Modalidad</dt>
-          <dd>
-            <span class="modalidad-badge" [class.badge-individual]="r.modalidad === 'INDIVIDUAL'">
-              {{ modalidadLabel(r) }}
-            </span>
-          </dd>
-        </div>
-        <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
-          <dt>Próxima fecha</dt>
-          <dd>{{ r.proximaFecha }}</dd>
+        <div class="reserva-info-row" *ngIf="g.periodoInicio && g.periodoFin">
+          <dt>Período</dt>
+          <dd>{{ g.periodoInicio | fechaAr }} – {{ g.periodoFin | fechaAr }}</dd>
         </div>
       </dl>
 
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" (click)="abrirDetalle(r)">
-          Ver detalle
-        </button>
-        <button
-          *ngIf="esCancelable(r)"
-          type="button"
-          class="btn btn-danger"
-          (click)="abrirCancelacion(r)"
-        >
-          Cancelar Reserva
-        </button>
-      </div>
-    </li>
-  </ul>
-</div>
+      <h4 style="margin-top: 1rem;">Reservas generadas</h4>
+      <ul class="reservas-grid" style="margin-top: 0.5rem;">
+        <li class="card card-pad reserva-card" *ngFor="let r of g.reservas">
+          <div class="reserva-head">
+            <strong>{{ (r.proximaFecha ?? r.fechaReserva) | fechaAr }}</strong>
+            <span
+              class="estado-badge"
+              [class.badge-cancelada]="r.estado === 'CANCELADA'"
+              [class.badge-completada]="r.estado === 'COMPLETADA'"
+            >
+              {{ estadoLabel(r) }}
+            </span>
+          </div>
+          <div class="form-actions">
+            <button
+              *ngIf="esCancelable(r)"
+              type="button"
+              class="btn btn-danger"
+              (click)="abrirCancelacionDesdeGrupo(r)"
+            >
+              Cancelar
+            </button>
+          </div>
+        </li>
+      </ul>
 
-<!-- ===== MODAL ===== -->
-<div class="modal-backdrop" *ngIf="reservaSeleccionada" (click)="cerrarModal()">
-  <div class="modal-card card card-pad" (click)="$event.stopPropagation()" *ngIf="reservaSeleccionada as r">
+      <div class="form-actions">
+        <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cerrar</button>
+      </div>
+    </ng-container>
 
     <!-- Paso: detalle -->
-    <ng-container *ngIf="modalPaso === 'detalle'">
+    <ng-container *ngIf="modalPaso === 'detalle' && reservaSeleccionada as r">
       <div class="modal-head">
         <h3>{{ r.actividad }}</h3>
         <span class="estado-badge" [class.badge-cancelada]="r.estado === 'CANCELADA'">
@@ -168,11 +275,11 @@
         </div>
         <div class="reserva-info-row">
           <dt>Fecha de reserva</dt>
-          <dd>{{ r.fechaReserva }}</dd>
+          <dd>{{ r.fechaReserva | fechaAr }}</dd>
         </div>
         <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
           <dt>Próxima clase</dt>
-          <dd>{{ r.proximaFecha }}</dd>
+          <dd>{{ r.proximaFecha | fechaAr }}</dd>
         </div>
       </dl>
 
@@ -185,7 +292,7 @@
     </ng-container>
 
     <!-- Paso: confirmar cancelación -->
-    <ng-container *ngIf="modalPaso === 'confirmar-cancelacion'">
+    <ng-container *ngIf="modalPaso === 'confirmar-cancelacion' && reservaSeleccionada as r">
       <h3 class="modal-titulo">Cancelar reserva</h3>
 
       <p class="help">
@@ -202,7 +309,7 @@
         <button class="btn btn-danger" type="button" [disabled]="isCancelando" (click)="confirmarCancelacion()">
           {{ isCancelando ? 'Cancelando…' : 'Confirmar cancelación' }}
         </button>
-        <button class="btn btn-secondary" type="button" (click)="modalPaso = 'detalle'">Volver</button>
+        <button class="btn btn-secondary" type="button" (click)="volverDesdeCancelacion()">Volver</button>
       </div>
     </ng-container>
 
