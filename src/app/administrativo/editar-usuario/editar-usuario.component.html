@@ -7,7 +7,7 @@
   <div class="card card-pad" *ngIf="!isLoading && loadError">
     <p class="error-text">{{ loadError }}</p>
     <div class="form-actions">
-      <a class="btn btn-secondary" routerLink="/admin">Volver al panel</a>
+      <a class="btn btn-secondary" routerLink="/administrativo">Volver al panel</a>
     </div>
   </div>
 
@@ -109,7 +109,7 @@
         >
           {{ isSubmitting ? 'Guardando…' : 'Guardar cambios' }}
         </button>
-        <a class="btn btn-secondary" routerLink="/admin">Cancelar</a>
+        <a class="btn btn-secondary" routerLink="/administrativo">Cancelar</a>
       </div>
     </form>
   </div>

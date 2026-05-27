@@ -31,7 +31,7 @@
         <div class="label">Rol</div>
         <select class="control" formControlName="rol">
           <option value="">Todos</option>
-          <option value="ADMIN">Admin</option>
+          <option value="DUEÑO">Dueño</option>
           <option value="RECEPCIONISTA">Recepcionista</option>
           <option value="CLIENTE">Cliente</option>
         </select>
@@ -72,7 +72,7 @@
         <span class="badge" [class.badge-inactivo]="!u.activo">{{ estadoLabel(u) }}</span>
       </div>
       <div class="right">
-        <a class="btn-tabla" [routerLink]="['/admin/usuarios', u.email, 'editar']">Editar</a>
+        <a class="btn-tabla" [routerLink]="['/administrativo/usuarios', u.email, 'editar']">Editar</a>
       </div>
     </div>
   </div>

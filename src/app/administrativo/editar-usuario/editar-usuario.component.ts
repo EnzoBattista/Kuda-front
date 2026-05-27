@@ -76,7 +76,7 @@ export class EditarUsuarioComponent implements OnInit {
   ngOnInit(): void {
     this.emailEditado = this.route.snapshot.paramMap.get('email') ?? '';
     if (!this.emailEditado) {
-      void this.router.navigateByUrl('/admin');
+      void this.router.navigateByUrl('/administrativo');
       return;
     }
 
@@ -146,7 +146,7 @@ export class EditarUsuarioComponent implements OnInit {
         // volvemos a la lista para que el admin vea los cambios aplicados.
         setTimeout(() => {
           this.isSubmitting = false;
-          void this.router.navigateByUrl('/admin');
+          void this.router.navigateByUrl('/administrativo');
         }, 1500);
       },
       error: (err) => {

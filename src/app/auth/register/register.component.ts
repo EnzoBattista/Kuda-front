@@ -74,11 +74,11 @@ export class RegisterComponent {
     this.successMessage = '';
 
     if (this.isUnder14()) {
-      this.submitError = 'Registro fallido - Se debe ser mayor de 14 años.';
+      this.submitError = 'Se debe ser mayor de 14 años.';
       return;
     }
     if (this.form.hasError('passwordsMismatch')) {
-      this.submitError = 'Registro fallido - Las contraseñas no coinciden.';
+      this.submitError = 'Las contraseñas no coinciden.';
       return;
     }
     if (this.form.invalid) return;
@@ -114,16 +114,16 @@ export class RegisterComponent {
   private mapRegisterError(msg: string): string {
     const lower = (msg ?? '').toLowerCase();
     if (lower.includes('email') && (lower.includes('registrado') || lower.includes('uso'))) {
-      return 'Registro fallido - El email ya se encuentra registrado.';
+      return 'El email ya se encuentra registrado.';
     }
     if (lower.includes('contraseña') && lower.includes('8')) {
-      return 'Registro fallido - La contraseña debe tener al menos 8 caracteres.';
+      return 'La contraseña debe tener al menos 8 caracteres.';
     }
     if (lower.includes('14') || lower.includes('mayor de edad') || lower.includes('menor')) {
-      return 'Registro fallido - Se debe ser mayor de 14 años.';
+      return 'Se debe ser mayor de 14 años.';
     }
     if (lower.includes('coinciden')) {
-      return 'Registro fallido - Las contraseñas no coinciden.';
+      return 'Las contraseñas no coinciden.';
     }
     return msg || 'No se pudo registrar. Verificá los datos.';
   }

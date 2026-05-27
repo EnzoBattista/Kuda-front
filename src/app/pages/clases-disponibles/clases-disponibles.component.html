@@ -51,7 +51,14 @@
   <ul class="clases-grid" *ngIf="!isLoading && !errorMsg && clasesFiltradas.length > 0">
     <li class="card card-pad clase-card" *ngFor="let c of clasesFiltradas">
       <div class="clase-head">
-        <h3 class="clase-nombre">{{ c.actividad }}</h3>
+        <div style="flex: 1;">
+          <h3 class="clase-nombre">{{ c.actividad }}</h3>
+          <p class="help" style="margin-top: 0.25rem; font-size: 0.85rem; cursor: pointer;" 
+             *ngIf="c.actividadDescripcion"
+             (click)="c.descripcionExpandida = !c.descripcionExpandida">
+            {{ c.descripcionExpandida ? c.actividadDescripcion : acortarDescripcion(c.actividadDescripcion) }}
+          </p>
+        </div>
         <div class="clase-badges">
           <span class="abono-badge" *ngIf="c.abonoActividadVigente">Abonado</span>
           <span class="cupo-badge" [class.sin-cupo]="c.cupoDisponible === 0">

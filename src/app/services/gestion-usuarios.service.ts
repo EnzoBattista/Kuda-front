@@ -14,7 +14,7 @@ export interface UsuarioListado {
   rol?: { id: number; nombre: string };
 }
 
-export type RolFiltro = '' | 'ADMIN' | 'RECEPCIONISTA' | 'CLIENTE';
+export type RolFiltro = '' | 'DUEÑO' | 'RECEPCIONISTA' | 'CLIENTE';
 export type EstadoFiltro = '' | 'ACTIVO' | 'INACTIVO';
 export type TipoInscripcionFiltro = '' | 'ABONADO' | 'NO_ABONADO';
 export type TipoInscripcion = 'ABONADO' | 'NO_ABONADO';
@@ -52,7 +52,7 @@ export class GestionUsuariosService {
   private readonly apiUrl = `${environment.apiUrl}/usuarios`;
   private readonly clientesUrl = `${environment.apiUrl}/clientes`;
   private readonly inscripcionesMensualesUrl = `${environment.apiUrl}/inscripciones-mensuales`;
-  private readonly recepcionistasUrl = `${environment.apiUrl}/recepcionistas`;
+  private readonly administrativosUrl = `${environment.apiUrl}/administrativos`;
 
   /** Emails con al menos una mensualidad vigente o en gracia (última carga). */
   private abonadosEmails = new Set<string>();
@@ -118,7 +118,7 @@ export class GestionUsuariosService {
     );
   }
 
-  createEmpleado(data: {
+  createAdministrativo(data: {
     nombre: string;
     apellido: string;
     dni: string;
@@ -126,7 +126,7 @@ export class GestionUsuariosService {
     telefono: string;
     password: string;
   }): Observable<unknown> {
-    return this.http.post<unknown>(this.recepcionistasUrl, data);
+    return this.http.post<unknown>(`${environment.apiUrl}/recepcionistas`, data);
   }
 
   getClienteExtraInfo(email: string): Observable<ClienteExtraInfo | null> {

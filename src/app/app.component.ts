@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { AuthService } from './services/auth.service';
 
 @Component({
@@ -15,8 +15,13 @@ export class AppComponent {
 
   constructor(
     readonly auth: AuthService,
-    readonly router: Router
+    readonly router: Router,
+    private readonly location: Location
   ) {}
+
+  goBack(): void {
+    this.location.back();
+  }
 
   get hideHeader(): boolean {
     const url = this.router.url;
@@ -28,9 +33,22 @@ export class AppComponent {
     );
   }
 
+  get showBackButton(): boolean {
+    const url = this.router.url;
+    // Redirigir al inicio correspondiente
+    if (url === '/' || url === '/login' || url === '/catalogo' || url === '/administrativo' || url.startsWith('/confirmar')) {
+      return false;
+    }
+    return true;
+  }
+
   get logoPath(): string {
+    return this.getHomePath();
+  }
+
+  private getHomePath(): string {
     if (!this.auth.isLoggedIn()) return '/';
-    return this.auth.isStaff() ? '/admin' : '/catalogo';
+    return this.auth.isAdministrativo() ? '/administrativo' : '/catalogo';
   }
 
   logout(): void {

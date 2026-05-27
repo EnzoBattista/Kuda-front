@@ -1,6 +1,7 @@
 export interface ClaseActividad {
   id: number;
   nombre: string;
+  descripcion?: string;
 }
 
 export interface ClaseSala {

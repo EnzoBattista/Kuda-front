@@ -31,6 +31,8 @@ export interface ReservaHistorial {
   /** Id de clase; usado para completar sala cuando el API no la envía. */
   claseId?: number;
   actividad: string;
+  actividadDescripcion?: string;
+  descripcionExpandida?: boolean;
   sede: string;
   diaSemana: string;
   horaInicio: string;
@@ -53,6 +55,8 @@ export interface ClaseDisponible {
   id: number;
   actividadId: number;
   actividad: string;
+  actividadDescripcion?: string;
+  descripcionExpandida?: boolean;
   sede: string;
   diaSemana: string;
   horaInicio: string;
@@ -92,6 +96,7 @@ interface ReservaApiDto {
     hora_fin: string;
     cupo: number;
     actividad: string | null;
+    actividad_descripcion?: string | null;
     profesor: string | null;
     sala: string | { identificador?: string; nombre?: string } | null;
   } | null;
@@ -368,6 +373,7 @@ export class ReservasService {
             cupo: Number(clase?.cupo ?? 0),
             actividad:
               ins.actividad?.nombre ?? clase?.actividad?.nombre ?? null,
+            actividad_descripcion: null,
             profesor: null,
             sala: salaExtra === '—' ? null : salaExtra,
           },
@@ -859,6 +865,7 @@ export class ReservasService {
           id: clase.id,
           actividadId: clase.actividad_id,
           actividad: clase.actividad?.nombre ?? clase.nombre,
+          actividadDescripcion: detalle.actividad?.descripcion,
           sede: clase.sala?.identificador ?? '—',
           diaSemana: labelDia(clase.dia_semana),
           horaInicio,
@@ -880,6 +887,7 @@ export class ReservasService {
           id: clase.id,
           actividadId: clase.actividad_id,
           actividad: clase.actividad?.nombre ?? clase.nombre,
+          actividadDescripcion: clase.actividad?.descripcion,
           sede: clase.sala?.identificador ?? '—',
           diaSemana: labelDia(clase.dia_semana),
           horaInicio: formatHora(clase.hora_inicio),
@@ -941,6 +949,7 @@ export class ReservasService {
       id: dto.id,
       claseId,
       actividad: clase?.actividad ?? '—',
+      actividadDescripcion: clase?.actividad_descripcion ?? undefined,
       sede,
       diaSemana: diaDesdeFecha(fecha),
       horaInicio,

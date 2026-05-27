@@ -14,6 +14,8 @@ import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
 interface AbonadoGrupo {
   mensualId: number;
   actividad: string;
+  actividadDescripcion?: string;
+  descripcionExpandida?: boolean;
   sede: string;
   diaSemana: string;
   horaInicio: string;
@@ -112,6 +114,7 @@ export class MisReservasComponent implements OnInit {
           grupo = {
             mensualId: key,
             actividad: r.actividad,
+            actividadDescripcion: r.actividadDescripcion,
             sede: r.sede,
             diaSemana: r.diaSemana,
             horaInicio: r.horaInicio,
@@ -320,5 +323,12 @@ export class MisReservasComponent implements OnInit {
         : 'Cancelás con más de 24hs de anticipación. Recibirás el reembolso completo del pago.';
     }
     return 'Cancelás con menos de 24hs de anticipación. No se aplicará reembolso.';
+  }
+
+  acortarDescripcion(desc: string | undefined): string {
+    if (!desc) return '';
+    const words = desc.split(' ');
+    if (words.length <= 5) return desc;
+    return words.slice(0, 5).join(' ') + '...';
   }
 }

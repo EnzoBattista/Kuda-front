@@ -260,16 +260,16 @@ export class AuthService {
     return this.getCurrentUser()?.rol?.nombre ?? null;
   }
 
-  isAdmin(): boolean {
-    return this.getRol() === 'ADMIN';
+  isDueno(): boolean {
+    return this.getRol() === 'DUEÑO';
   }
 
   isRecepcionista(): boolean {
     return this.getRol() === 'RECEPCIONISTA';
   }
 
-  isStaff(): boolean {
-    return this.isAdmin() || this.isRecepcionista();
+  isAdministrativo(): boolean {
+    return this.isDueno() || this.isRecepcionista();
   }
 
   private setToken(token: string): void {

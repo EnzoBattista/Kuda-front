@@ -312,4 +312,11 @@ export class ClasesDisponiblesComponent implements OnInit {
       JSON.stringify([...this.clasesEnListaEspera]),
     );
   }
+
+  acortarDescripcion(desc: string | undefined): string {
+    if (!desc) return '';
+    const words = desc.split(' ');
+    if (words.length <= 5) return desc;
+    return words.slice(0, 5).join(' ') + '...';
+  }
 }

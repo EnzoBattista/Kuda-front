@@ -9,9 +9,9 @@
     </a>
 
     <nav class="main-nav" aria-label="Navegación principal">
-      <a class="nav-link" routerLink="/catalogo" routerLinkActive="nav-link-active" *ngIf="!auth.isStaff()">Actividades</a>
       <ng-container *ngIf="auth.isLoggedIn(); else noLogueado">
-        <ng-container *ngIf="!auth.isStaff()">
+        <ng-container *ngIf="!auth.isAdministrativo()">
+
           <a class="nav-link" routerLink="/clases" routerLinkActive="nav-link-active">Clases</a>
           <a class="nav-link" routerLink="/mis-reservas" routerLinkActive="nav-link-active">Ver mis reservas actuales</a>
         </ng-container>
@@ -26,6 +26,13 @@
 </header>
 
 <main class="app-main">
+  <button class="btn-global-back" *ngIf="showBackButton" (click)="goBack()" aria-label="Volver atrás">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 12H5"></path>
+      <path d="M12 19l-7-7 7-7"></path>
+    </svg>
+    <span>Volver</span>
+  </button>
   <router-outlet></router-outlet>
 </main>
 

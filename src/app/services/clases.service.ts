@@ -104,10 +104,10 @@ export class ClasesService {
     huboEspera = false,
   ): Observable<{ message: string; clase: Clase }> {
     return this.http
-      .put<{ message: string; clase: Clase }>(`${this.apiUrl}/${id}`, data)
+      .put<{ message: string; clase: Clase; huboEspera?: boolean }>(`${this.apiUrl}/${id}`, data)
       .pipe(
         map((r) => ({
-          message: mapClaseSuccess(r.message, 'modificar', huboEspera),
+          message: mapClaseSuccess(r.message, 'modificar', r.huboEspera || huboEspera),
           clase: this.normalizeClase(r.clase),
         })),
         catchError((err) => throwError(() => this.toHuError(err, 'modificar'))),
@@ -233,10 +233,6 @@ export function mapClaseError(
       : err.message;
 
   const errorMap: Record<string, string> = {
-    'No se puede eliminar la clase porque tiene inscripciones mensuales activas':
-      'No se puede eliminar la clase porque tiene clientes inscriptos',
-    'No se puede eliminar la clase porque tiene inscripciones individuales futuras':
-      'No se puede eliminar la clase porque tiene clientes inscriptos',
     'Esta fecha ya se encuentra cancelada':
       'Esta fecha ya se encuentra cancelada',
   };
@@ -246,13 +242,6 @@ export function mapClaseError(
   }
 
   const lower = (raw ?? '').toLowerCase();
-
-  if (
-    raw.includes('inscripciones mensuales activas') ||
-    raw.includes('inscripciones individuales futuras')
-  ) {
-    return 'No se puede eliminar la clase porque tiene clientes inscriptos';
-  }
 
   if (tipo === 'crear' || tipo === 'modificar') {
     if (lower.includes('sala') && (lower.includes('ocupada') || lower.includes('ocupado'))) {

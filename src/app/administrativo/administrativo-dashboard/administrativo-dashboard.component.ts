@@ -22,10 +22,10 @@ import { Actividad } from '../../models/actividad.model';
     ActividadesListComponent,
     ClasesListComponent,
   ],
-  templateUrl: './admin-dashboard.component.html',
-  styleUrl: './admin-dashboard.component.css',
+  templateUrl: './administrativo-dashboard.component.html',
+  styleUrl: './administrativo-dashboard.component.css',
 })
-export class AdminDashboardComponent {
+export class AdministrativoDashboardComponent {
   tab: 'actividades' | 'usuarios' | 'clases' | 'profesores' | 'empleados' = 'usuarios';
 
   // ─── Profesores ───────────────────────────────────────────────────────────
@@ -84,8 +84,8 @@ export class AdminDashboardComponent {
     this.currentUser = this.authService.getCurrentUser();
   }
 
-  get isAdmin(): boolean {
-    return this.authService.isAdmin();
+  get isDueno(): boolean {
+    return this.authService.isDueno();
   }
 
   logout(): void {
@@ -290,15 +290,25 @@ export class AdminDashboardComponent {
     this.createEmpleadoError = '';
     this.createEmpleadoSuccess = '';
     const f = this.createEmpleadoForm;
-    if (!f.nombre || !f.apellido || !f.dni || !f.email || !f.telefono || !f.password) {
+    
+    const nombre = (f.nombre || '').trim();
+    const apellido = (f.apellido || '').trim();
+    const dni = (f.dni || '').trim();
+    const email = (f.email || '').trim();
+    const telefono = (f.telefono || '').trim();
+    const password = f.password || '';
+
+    if (!nombre || !apellido || !dni || !email || !telefono || !password) {
       this.createEmpleadoError = 'Completá todos los campos.';
       return;
     }
-    if (f.password.length < 8) {
+    if (password.length < 8) {
       this.createEmpleadoError = 'La contraseña debe tener al menos 8 caracteres.';
       return;
     }
-    this.gestionUsuariosService.createEmpleado(f).subscribe({
+    
+    const request = { nombre, apellido, dni, email, telefono, password };
+    this.gestionUsuariosService.createAdministrativo(request).subscribe({
       next: () => {
         this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
         this.createEmpleadoSuccess = 'Recepcionista registrado con éxito';

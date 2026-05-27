@@ -2,14 +2,7 @@
   <div class="card-head">
     <h3>Clases</h3>
     <div class="card-head-actions">
-      <button
-        *ngIf="isAdmin"
-        type="button"
-        class="btn btn-primary"
-        (click)="onAgregar()"
-      >
-        Agregar clase
-      </button>
+      <button class=" btn btn-action" (click)="onAgregar()" *ngIf="isDueno">Agregar clase</button>
       <button type="button" class="btn btn-secondary" (click)="cargarClases()">
         Refrescar
       </button>
@@ -67,14 +60,8 @@
         </div>
       </dl>
 
-      <div class="form-actions" *ngIf="isAdmin">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          (click)="onModificar(clase)"
-        >
-          Modificar clase
-        </button>
+      <div class="form-actions" *ngIf="isDueno">
+        <button class="btn btn-primary" (click)="onModificar(clase)">Modificar</button>
         <button
           type="button"
           class="btn btn-secondary"

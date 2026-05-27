@@ -17,17 +17,17 @@
         <span class="info-label">DNI</span>
         <span class="info-value">{{ usuario.dni }}</span>
       </div>
-      <div class="info-item">
+      <div class="info-item" *ngIf="usuario.genero">
         <span class="info-label">Género</span>
         <span class="info-value">{{ generoLabel }}</span>
       </div>
-      <div class="info-item">
+      <div class="info-item" *ngIf="usuario.fechaNacimiento">
         <span class="info-label">Fecha de nacimiento</span>
         <span class="info-value">{{ fechaNacimientoLabel }}</span>
       </div>
-      <div class="info-item">
+      <div class="info-item" *ngIf="usuario.telefono">
         <span class="info-label">Teléfono</span>
-        <span class="info-value">{{ usuario.telefono || '—' }}</span>
+        <span class="info-value">{{ usuario.telefono }}</span>
       </div>
       <div class="info-item">
         <span class="info-label">Estado de cuenta</span>

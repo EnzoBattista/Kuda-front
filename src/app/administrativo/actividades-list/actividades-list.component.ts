@@ -47,8 +47,8 @@ export class ActividadesListComponent implements OnInit {
     this.cargarActividades();
   }
 
-  get isAdmin(): boolean {
-    return this.authService.isAdmin();
+  get isAdministrativo(): boolean {
+    return this.authService.isAdministrativo();
   }
 
   cargarActividades(): void {

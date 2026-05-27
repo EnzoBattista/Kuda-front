@@ -1,8 +1,9 @@
-<div class="admin-page">
-  <div class="admin-header">
-    <div class="admin-header-top">
-      <h2>Panel de administrador</h2>
-      <div class="admin-header-right">
+<div class="administrativo-page">
+  <div class="administrativo-header">
+    <div class="administrativo-header-top">
+      <h2>Panel de administrativo</h2>
+      <div class="administrativo-header-right">
+
         <span class="current-user" *ngIf="currentUser">
           <strong>{{ currentUser.nombre }} {{ currentUser.apellido }}</strong>
           <span class="role-badge">{{ currentUser.rol.nombre }}</span>
@@ -15,7 +16,7 @@
       <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Usuarios</button>
       <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
       <button (click)="setTab('profesores')" [class.active]="tab === 'profesores'">Profesores</button>
-      <button *ngIf="isAdmin" (click)="setTab('empleados')" [class.active]="tab === 'empleados'">Recepcionistas</button>
+      <button *ngIf="isDueno" (click)="setTab('empleados')" [class.active]="tab === 'empleados'">Recepcionistas</button>
     </div>
   </div>
 
@@ -30,7 +31,7 @@
     <div class="card-head">
       <h3>Profesores</h3>
       <div class="card-head-actions">
-        <button *ngIf="isAdmin" class="btn-action" (click)="abrirModalCrearProfesor()">Registrar profesor</button>
+        <button *ngIf="isDueno" class="btn-action" (click)="abrirModalCrearProfesor()">Registrar profesor</button>
         <button (click)="refreshProfesores()">Refrescar</button>
       </div>
     </div>
@@ -72,7 +73,7 @@
         <div>{{ actividadesProfesorLabel(p) }}</div>
         <div class="right">
           <button class="btn-tabla" (click)="profesorDetalle = p">Ver detalle</button>
-          <button *ngIf="isAdmin" class="btn-tabla btn-tabla-danger" (click)="profesorAEliminar = p; eliminarProfesorError = ''">Eliminar</button>
+          <button *ngIf="isDueno" class="btn-tabla btn-tabla-danger" (click)="profesorAEliminar = p; eliminarProfesorError = ''">Eliminar</button>
         </div>
       </div>
     </div>
@@ -122,7 +123,7 @@
   </div>
 
   <!-- EMPLEADOS -->
-  <section *ngIf="tab === 'empleados' && isAdmin" class="card usuarios-section">
+  <section *ngIf="tab === 'empleados' && isDueno" class="card usuarios-section">
     <div class="card-head">
       <h3>Recepcionistas</h3>
       <div class="card-head-actions">
@@ -289,8 +290,8 @@
       </div>
 
       <div class="modal-actions">
-        <button class="btn btn-primary" (click)="onCreateEmpleado()">Registrar recepcionista</button>
-        <button class="btn btn-secondary" (click)="cerrarModalCrearEmpleado()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()">Registrar recepcionista</button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalCrearEmpleado()">Cancelar</button>
       </div>
     </div>
   </div>

@@ -34,7 +34,7 @@ export class WelcomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.auth.isLoggedIn()) {
-      const destino = this.auth.isStaff() ? '/admin' : '/catalogo';
+      const destino = this.auth.isAdministrativo() ? '/administrativo' : '/clases';
       void this.router.navigateByUrl(destino);
     }
   }

@@ -79,7 +79,14 @@
       >
         <ng-container *ngIf="item.reserva as r">
           <div class="reserva-head">
-            <h3 class="reserva-actividad">{{ r.actividad }}</h3>
+            <div style="flex: 1;">
+              <h3 class="reserva-actividad">{{ r.actividad }}</h3>
+              <p class="help" style="margin-top: 0.25rem; font-size: 0.85rem; cursor: pointer;" 
+                 *ngIf="r.actividadDescripcion"
+                 (click)="r.descripcionExpandida = !r.descripcionExpandida">
+                {{ r.descripcionExpandida ? r.actividadDescripcion : acortarDescripcion(r.actividadDescripcion) }}
+              </p>
+            </div>
             <span
               class="estado-badge"
               [class.badge-cancelada]="r.estado === 'CANCELADA'"
@@ -140,7 +147,14 @@
       >
         <ng-container *ngIf="item.grupo as g">
           <div class="reserva-head">
-            <h3 class="reserva-actividad">{{ g.actividad }}</h3>
+            <div style="flex: 1;">
+              <h3 class="reserva-actividad">{{ g.actividad }}</h3>
+              <p class="help" style="margin-top: 0.25rem; font-size: 0.85rem; cursor: pointer;" 
+                 *ngIf="g.actividadDescripcion"
+                 (click)="g.descripcionExpandida = !g.descripcionExpandida">
+                {{ g.descripcionExpandida ? g.actividadDescripcion : acortarDescripcion(g.actividadDescripcion) }}
+              </p>
+            </div>
             <span class="modalidad-badge">Abonado</span>
           </div>
 
@@ -189,7 +203,14 @@
     <!-- Paso: detalle de grupo (abonado) -->
     <ng-container *ngIf="modalPaso === 'detalle-grupo' && grupoSeleccionado as g">
       <div class="modal-head">
-        <h3>{{ g.actividad }}</h3>
+        <div style="flex: 1;">
+          <h3>{{ g.actividad }}</h3>
+          <p class="help" style="margin-top: 0.25rem; font-size: 0.85rem; cursor: pointer;" 
+             *ngIf="g.actividadDescripcion"
+             (click)="g.descripcionExpandida = !g.descripcionExpandida">
+            {{ g.descripcionExpandida ? g.actividadDescripcion : acortarDescripcion(g.actividadDescripcion) }}
+          </p>
+        </div>
         <span class="modalidad-badge">Abonado</span>
       </div>
 
@@ -242,7 +263,14 @@
     <!-- Paso: detalle -->
     <ng-container *ngIf="modalPaso === 'detalle' && reservaSeleccionada as r">
       <div class="modal-head">
-        <h3>{{ r.actividad }}</h3>
+        <div style="flex: 1;">
+          <h3>{{ r.actividad }}</h3>
+          <p class="help" style="margin-top: 0.25rem; font-size: 0.85rem; cursor: pointer;" 
+             *ngIf="r.actividadDescripcion"
+             (click)="r.descripcionExpandida = !r.descripcionExpandida">
+            {{ r.descripcionExpandida ? r.actividadDescripcion : acortarDescripcion(r.actividadDescripcion) }}
+          </p>
+        </div>
         <span class="estado-badge" [class.badge-cancelada]="r.estado === 'CANCELADA'">
           {{ estadoLabel(r) }}
         </span>

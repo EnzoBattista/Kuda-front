@@ -3,7 +3,7 @@
     <h3>Actividades</h3>
     <div class="card-head-actions">
       <button
-        *ngIf="isAdmin"
+        *ngIf="isAdministrativo"
         type="button"
         class="btn btn-primary"
         (click)="onAgregar()"
@@ -49,7 +49,7 @@
 
       <p class="actividad-precio">{{ formatPrecio(actividad.precio) }}</p>
 
-      <div class="form-actions" *ngIf="isAdmin">
+      <div class="form-actions" *ngIf="isAdministrativo">
         <button
           type="button"
           class="btn btn-secondary"

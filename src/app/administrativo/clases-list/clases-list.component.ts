@@ -126,8 +126,8 @@ export class ClasesListComponent implements OnInit {
     );
   }
 
-  get isAdmin(): boolean {
-    return this.authService.isAdmin();
+  get isDueno(): boolean {
+    return this.authService.isDueno();
   }
 
   get formularioTitulo(): string {

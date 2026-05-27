@@ -129,22 +129,10 @@ export function mapActividadError(err: HttpErrorResponse): string {
 
   const errorMap: Record<string, string> = {
     'Ya existe otra actividad con ese nombre': 'Ya existe una actividad con ese nombre',
-    'No se puede eliminar la actividad porque tiene clases con inscripciones mensuales activas':
-      'No se puede eliminar una actividad con clientes inscriptos',
-    'No se puede eliminar la actividad porque tiene clases con inscripciones individuales futuras':
-      'No se puede eliminar una actividad con clientes inscriptos',
-    'El precio es inválido o negativo': 'El precio debe ser mayor a cero',
   };
 
   if (errorMap[raw]) {
     return errorMap[raw];
-  }
-
-  if (
-    raw.includes('inscripciones mensuales activas') ||
-    raw.includes('inscripciones individuales futuras')
-  ) {
-    return 'No se puede eliminar una actividad con clientes inscriptos';
   }
 
   return raw || 'Ocurrió un error inesperado';
