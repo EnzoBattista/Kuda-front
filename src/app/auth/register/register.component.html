@@ -93,7 +93,7 @@
           <div class="label">Contraseña</div>
           <input class="control" type="password" formControlName="password" autocomplete="new-password" [attr.aria-invalid]="(submitted && form.controls.password.invalid) || (form.controls.password.touched && form.controls.password.hasError('minlength')) ? 'true' : 'false'" />
           <div class="error-text" *ngIf="submitted && form.controls.password.hasError('required')">La contraseña es obligatoria.</div>
-          <div class="error-text" *ngIf="form.controls.password.touched && form.controls.password.hasError('minlength')">Registro fallido - La contraseña debe tener al menos 8 caracteres.</div>
+          <div class="error-text" *ngIf="form.controls.password.touched && form.controls.password.hasError('minlength')">La contraseña debe tener al menos 8 caracteres.</div>
         </div>
 
         <div class="field">

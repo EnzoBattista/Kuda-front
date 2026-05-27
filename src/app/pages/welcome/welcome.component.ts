@@ -1,5 +1,5 @@
 import { Component, HostListener, ElementRef, OnInit, AfterViewInit, OnDestroy, ViewChild, NgZone } from '@angular/core';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -29,13 +29,20 @@ export class WelcomeComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly el: ElementRef,
     private readonly auth: AuthService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
     private readonly ngZone: NgZone
   ) {}
 
   ngOnInit(): void {
     if (this.auth.isLoggedIn()) {
       const destino = this.auth.isAdministrativo() ? '/administrativo' : '/clases';
-      void this.router.navigateByUrl(destino);
+      const status = this.route.snapshot.queryParamMap.get('status');
+      
+      if (status) {
+        void this.router.navigate([destino], { queryParams: { status } });
+      } else {
+        void this.router.navigateByUrl(destino);
+      }
     }
   }
 

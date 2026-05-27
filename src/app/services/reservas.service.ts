@@ -21,7 +21,7 @@ export type TipoListaEspera = 'ABONADO' | 'INDIVIDUAL';
 export const MSG_RESERVA_CONFIRMADA = 'Reserva confirmada. Tu pago fue registrado exitosamente.';
 export const MSG_RESERVA_CONFIRMADA_SEÑA = 'Reserva confirmada. Tu seña fue registrada exitosamente';
 export const MSG_RESERVA_INCOMPLETA = 'Reserva incompleta. Hubo un problema con el pago.';
-export const MSG_RESERVA_CANCELADA = 'Reserva cancelada con éxito';
+export const MSG_RESERVA_CANCELADA = 'La cancelación se realizó con éxito.';
 export const HORAS_MINIMAS_SEÑA = 10;
 
 export type ModalidadInscripcion = 'ABONADO' | 'INDIVIDUAL';
@@ -102,12 +102,7 @@ interface ReservaApiDto {
   } | null;
 }
 
-interface HistorialReservasResponse {
-  total: number;
-  pagina: number;
-  paginas: number;
-  reservas: ReservaApiDto[];
-}
+
 
 interface InscripcionIndividualApi {
   id: number;
@@ -176,7 +171,6 @@ export class ReservasService {
     }
 
     const params = new HttpParams().set('cliente_email', email);
-    const historialParams = params.set('limit', '100').set('page', '1');
 
     return forkJoin({
       activas: this.http
@@ -185,12 +179,6 @@ export class ReservasService {
           params,
         })
         .pipe(map((body) => parseReservasActivasResponse(body))),
-      historial: this.http
-        .get<unknown>(`${this.reservasUrl}/historial`, {
-          headers: this.noCacheHeaders,
-          params: historialParams,
-        })
-        .pipe(map((body) => parseHistorialReservasResponse(body))),
       individuales: this.http
         .get<InscripcionIndividualApi[]>(this.inscripcionesIndUrl, {
           headers: this.noCacheHeaders,
@@ -204,27 +192,31 @@ export class ReservasService {
         })
         .pipe(catchError(() => of([]))),
     }).pipe(
-      switchMap(({ activas, historial, individuales, mensuales }) => {
+      switchMap(({ activas, individuales, mensuales }) => {
         const hoy = fechaHoyLocal();
         const extras = this.construirReservasDesdeInscripciones(
           individuales,
           activas,
-          historial.reservas,
+          [],
           hoy,
         );
 
         const faltanId = extras.filter((e) => e.ins && !e.dto.id);
-        const ensamblar = (dtosExtra: ReservaApiDto[]) =>
-          this.enrichSedesReservas(
-            this.ensamblarMisReservas(
-              activas,
-              dtosExtra,
-              historial,
-              individuales,
-              mensuales,
-              hoy,
-            ),
+        const ensamblar = (dtosExtra: ReservaApiDto[]) => {
+          const activasCompletas = [...activas, ...dtosExtra];
+          const mapped = activasCompletas.map((r) =>
+            this.mapReservaDto(r, individuales, mensuales, hoy),
           );
+          // Solo reservas activas (no canceladas, no pasadas)
+          const soloActivas = mapped.filter((r) => r.estado === 'ACTIVA');
+          // Orden cronológico descendente (próximas primero)
+          soloActivas.sort(
+            (a, b) =>
+              new Date(b.proximaFecha ?? b.fechaReserva).getTime() -
+              new Date(a.proximaFecha ?? a.fechaReserva).getTime(),
+          );
+          return this.enrichSedesReservas(soloActivas);
+        };
 
         if (faltanId.length === 0) {
           return ensamblar(extras.map((x) => x.dto));
@@ -273,58 +265,9 @@ export class ReservasService {
     }
   }
 
-  private ensamblarMisReservas(
-    activas: ReservaApiDto[],
-    extras: ReservaApiDto[],
-    historial: HistorialReservasResponse,
-    individuales: InscripcionIndividualApi[],
-    mensuales: InscripcionMensualApi[],
-    hoy: string,
-  ): ReservaHistorial[] {
-    const extrasSinDuplicar = extras.filter(
-      (e) => !this.existeReservaEnHistorial(historial.reservas, e),
-    );
-    const activasCompletas = [...activas, ...extrasSinDuplicar];
-    const idsActivas = new Set(
-      activasCompletas.filter((r) => r.id > 0).map((r) => r.id),
-    );
-    const pasadas = historial.reservas.filter((r) => {
-      if (r.id > 0 && idsActivas.has(r.id)) return false;
-      return !activasCompletas.some(
-        (a) =>
-          a.clase?.id === r.clase?.id &&
-          String(a.fecha_exacta).slice(0, 10) ===
-            String(r.fecha_exacta).slice(0, 10),
-      );
-    });
-    const todas = [...activasCompletas, ...pasadas];
-    const mapped = todas.map((r) =>
-      this.mapReservaDto(r, individuales, mensuales, hoy),
-    );
-    return mapped.sort(
-      (a, b) =>
-        new Date(b.proximaFecha ?? b.fechaReserva).getTime() -
-        new Date(a.proximaFecha ?? a.fechaReserva).getTime(),
-    );
-  }
 
-  /**
-   * El GET /reservas solo devuelve fecha_exacta >= hoy (UTC). Complementamos con
-   * inscripciones individuales futuras para no perder reservas recién creadas.
-   */
-  private existeReservaEnHistorial(
-    historial: ReservaApiDto[],
-    reserva: ReservaApiDto,
-  ): boolean {
-    const fecha = String(reserva.fecha_exacta).slice(0, 10);
-    const claseId = reserva.clase?.id;
-    if (!claseId) return false;
-    return historial.some(
-      (h) =>
-        h.clase?.id === claseId &&
-        String(h.fecha_exacta).slice(0, 10) === fecha,
-    );
-  }
+
+
 
   private construirReservasDesdeInscripciones(
     individuales: InscripcionIndividualApi[],
@@ -1028,28 +971,7 @@ function fechaHoyLocal(): string {
   return `${y}-${m}-${day}`;
 }
 
-function parseHistorialReservasResponse(body: unknown): HistorialReservasResponse {
-  if (body && typeof body === 'object') {
-    const raw = body as HistorialReservasResponse & { data?: ReservaApiDto[] };
-    if (Array.isArray(raw.reservas)) {
-      return {
-        total: raw.total ?? raw.reservas.length,
-        pagina: raw.pagina ?? 1,
-        paginas: raw.paginas ?? 1,
-        reservas: raw.reservas,
-      };
-    }
-    if (Array.isArray(raw.data)) {
-      return {
-        total: 0,
-        pagina: 1,
-        paginas: 0,
-        reservas: raw.data,
-      };
-    }
-  }
-  return { total: 0, pagina: 1, paginas: 0, reservas: [] };
-}
+
 
 function formatHora(value: string): string {
   if (!value) return '00:00';

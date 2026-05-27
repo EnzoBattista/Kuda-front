@@ -8,6 +8,10 @@
     {{ bannerSuccess }}
   </div>
 
+  <div class="card card-pad" *ngIf="bannerError" style="background-color: var(--danger-color, #e74c3c); color: white; margin-bottom: 1rem;">
+    <p style="margin: 0;">{{ bannerError }}</p>
+  </div>
+
   <!-- Filtros -->
   <form class="filtros-form" [formGroup]="filtros">
     <div class="filtros-row">
