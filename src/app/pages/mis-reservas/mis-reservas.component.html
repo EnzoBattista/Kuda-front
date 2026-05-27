@@ -1,7 +1,7 @@
 <div class="container" style="padding-top: 1.25rem;">
   <header class="reservas-head">
-    <h2>Mis reservas</h2>
-    <p class="help">Historial cronológico de tus reservas en CEF Actividades.</p>
+    <h2>Mis reservas actuales</h2>
+    <p class="help">Tus reservas próximas en CEF Actividades.</p>
   </header>
 
   <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status">
@@ -134,7 +134,7 @@
               class="btn btn-danger"
               (click)="abrirCancelacion(r)"
             >
-              Cancelar Reserva
+              Cancelar Clase
             </button>
           </div>
         </ng-container>
@@ -313,7 +313,7 @@
 
       <div class="form-actions">
         <button *ngIf="esCancelable(r)" class="btn btn-danger" type="button" (click)="irACancelar()">
-          Cancelar Reserva
+          Cancelar Clase
         </button>
         <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cerrar</button>
       </div>
@@ -347,6 +347,9 @@
         <span class="resultado-icono">✓</span>
         <h3>Reserva cancelada</h3>
         <p class="help">{{ rc.message }}</p>
+        <p class="help" *ngIf="rc.bono" style="color: var(--brand-blue); font-weight: bold; margin-top: 0.5rem;">
+          Se ha acreditado un bono de descuento de ${{ rc.bono | number }} para el mes siguiente.
+        </p>
       </div>
       <div class="form-actions">
         <button class="btn btn-primary" type="button" (click)="cerrarModal()">Aceptar</button>

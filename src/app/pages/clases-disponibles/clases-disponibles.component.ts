@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
 import {
@@ -44,6 +44,7 @@ export class ClasesDisponiblesComponent implements OnInit {
   isLoading = true;
   errorMsg = '';
   bannerSuccess = '';
+  bannerError = '';
 
   readonly horasMinimasSena = HORAS_MINIMAS_SEÑA;
 
@@ -61,6 +62,7 @@ export class ClasesDisponiblesComponent implements OnInit {
     private readonly reservasService: ReservasService,
     private readonly authService: AuthService,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -71,6 +73,22 @@ export class ClasesDisponiblesComponent implements OnInit {
     const actividadQuery = this.route.snapshot.queryParamMap.get('actividad');
     if (actividadQuery) {
       this.filtros.patchValue({ actividad: actividadQuery });
+    }
+
+    const statusQuery = this.route.snapshot.queryParamMap.get('status');
+    if (statusQuery === 'approved') {
+      this.bannerSuccess = MSG_RESERVA_CONFIRMADA;
+    } else if (statusQuery === 'failure' || statusQuery === 'rejected' || statusQuery === 'null') {
+      this.bannerError = 'Tu pago ha sido rechazado o cancelado.';
+    }
+
+    if (statusQuery) {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { status: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true
+      });
     }
   }
 
