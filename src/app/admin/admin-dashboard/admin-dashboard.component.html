@@ -31,7 +31,6 @@
       <h3>Profesores</h3>
       <div class="card-head-actions">
         <button *ngIf="isAdmin" class="btn-action" (click)="abrirModalCrearProfesor()">Registrar profesor</button>
-        <button (click)="refreshProfesores()">Refrescar</button>
       </div>
     </div>
 
@@ -40,7 +39,7 @@
     <p class="success-msg" *ngIf="createProfesorSuccess">{{ createProfesorSuccess }}</p>
 
     <!-- Filtro de búsqueda -->
-    <div class="usuarios-filtros">
+    <div class="usuarios-filtros" *ngIf="profesores.length > 0">
       <div class="filtros-row filtros-row-1col">
         <div class="field">
           <div class="label">Buscar</div>
@@ -56,8 +55,11 @@
     </div>
 
     <!-- Tabla de profesores -->
-    <p class="muted" *ngIf="!loading.profesores && !error.profesores && profesoresFiltrados.length === 0">
-      No hay profesores registrados actualmente en el sistema
+    <p class="muted" *ngIf="!loading.profesores && !error.profesores && profesores.length === 0">
+      No hay profesores registrados
+    </p>
+    <p class="muted" *ngIf="!loading.profesores && !error.profesores && profesores.length > 0 && profesoresFiltrados.length === 0">
+      No se encontraron profesores con esos filtros
     </p>
     <div class="table" *ngIf="!loading.profesores && profesoresFiltrados.length > 0">
       <div class="row row-prof head">
@@ -127,7 +129,6 @@
       <h3>Recepcionistas</h3>
       <div class="card-head-actions">
         <button class="btn-action" (click)="abrirModalCrearEmpleado()">Registrar recepcionista</button>
-        <button (click)="refreshEmpleados()">Refrescar</button>
       </div>
     </div>
 
