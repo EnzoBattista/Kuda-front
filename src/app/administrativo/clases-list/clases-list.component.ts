@@ -56,7 +56,8 @@ export class ClasesListComponent implements OnInit {
   readonly diasClase = DIAS_CLASE;
 
   get cupoRangoMsg(): string {
-    return cupoClaseRangoMsg(this.maxCupoSalaSeleccionada);
+    const errorObj = this.claseForm.get('cupo_maximo')?.errors?.['cupoRango'];
+    return cupoClaseRangoMsg(errorObj, this.maxCupoSalaSeleccionada);
   }
 
   /** Máximo permitido para el cupo de la clase: el cupo de la sala seleccionada. */
