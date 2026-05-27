@@ -189,6 +189,10 @@ export class AdministrativoDashboardComponent {
       this.createProfesorError = 'Completá nombre, apellido y DNI.';
       return;
     }
+    if (p.actividadesSeleccionadas.length === 0) {
+      this.createProfesorError = 'El profesor debe dictar al menos una actividad';
+      return;
+    }
 
     this.profesorService
       .create({
