@@ -36,7 +36,7 @@ export class AppComponent {
   get showBackButton(): boolean {
     const url = this.router.url;
     // Redirigir al inicio correspondiente
-    if (url === '/' || url === '/login' || url === '/catalogo' || url === '/administrativo' || url.startsWith('/confirmar')) {
+    if (url === '/' || url === '/login' || url === '/clases' || url === '/catalogo' || url === '/administrativo' || url.startsWith('/confirmar')) {
       return false;
     }
     return true;
@@ -48,7 +48,7 @@ export class AppComponent {
 
   private getHomePath(): string {
     if (!this.auth.isLoggedIn()) return '/';
-    return this.auth.isAdministrativo() ? '/administrativo' : '/catalogo';
+    return this.auth.isAdministrativo() ? '/administrativo' : '/clases';
   }
 
   logout(): void {
