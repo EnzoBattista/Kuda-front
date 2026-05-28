@@ -106,8 +106,8 @@
                 </span>
               </dd>
             </div>
-            <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
-              <dt>Próxima fecha</dt>
+            <div class="reserva-info-row" *ngIf="r.proximaFecha">
+              <dt>Fecha</dt>
               <dd>{{ r.proximaFecha | fechaAr }}</dd>
             </div>
           </dl>
@@ -230,6 +230,9 @@
               {{ estadoLabel(r) }}
             </span>
           </div>
+          <p class="help" *ngIf="r.estado === 'CANCELADA' && r.canceladaPor === 'CEF'" style="margin-top: 0.25rem; font-size: 0.8rem;">
+            Cancelada por CEF{{ r.id === 0 ? ' — esta fecha no se cobró' : '' }}
+          </p>
           <div class="form-actions">
             <button
               *ngIf="esCancelable(r)"
@@ -293,9 +296,13 @@
           <dt>Fecha de reserva</dt>
           <dd>{{ r.fechaReserva | fechaAr }}</dd>
         </div>
-        <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
-          <dt>Próxima clase</dt>
+        <div class="reserva-info-row" *ngIf="r.proximaFecha">
+          <dt>Fecha</dt>
           <dd>{{ r.proximaFecha | fechaAr }}</dd>
+        </div>
+        <div class="reserva-info-row" *ngIf="r.estado === 'CANCELADA' && r.canceladaPor">
+          <dt>Cancelada por</dt>
+          <dd>{{ canceladaPorLabel(r) }}</dd>
         </div>
       </dl>
 
@@ -335,8 +342,11 @@
         <span class="resultado-icono">✓</span>
         <h3>Reserva cancelada</h3>
         <p class="help">{{ rc.message }}</p>
-        <p class="help" *ngIf="rc.bono" style="color: var(--brand-blue); font-weight: bold; margin-top: 0.5rem;">
-          Se ha acreditado un bono de descuento de ${{ rc.bono | number }} para el mes siguiente.
+        <p class="help" *ngIf="rc.bono && rc.tipoCupon === 'MENSUAL'" style="color: var(--brand-blue); font-weight: bold; margin-top: 0.5rem;">
+          Se acreditó un bono de descuento de ${{ rc.bono | number }} para la mensualidad del mes siguiente.
+        </p>
+        <p class="help" *ngIf="rc.bono && rc.tipoCupon === 'INDIVIDUAL'" style="color: var(--brand-blue); font-weight: bold; margin-top: 0.5rem;">
+          Se acreditó un cupón de ${{ rc.bono | number }} disponible para la próxima reserva en esta clase.
         </p>
       </div>
       <div class="form-actions">

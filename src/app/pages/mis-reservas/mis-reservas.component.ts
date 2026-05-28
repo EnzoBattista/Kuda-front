@@ -134,6 +134,7 @@ export class MisReservasComponent implements OnInit {
     }
 
     for (const grupo of grupos.values()) {
+      this.agregarFechasPrecanceladasCef(grupo);
       grupo.reservas.sort((a, b) =>
         (a.proximaFecha ?? a.fechaReserva).localeCompare(
           b.proximaFecha ?? b.fechaReserva,
@@ -141,7 +142,82 @@ export class MisReservasComponent implements OnInit {
       );
     }
 
-    return items;
+    // Oculta abonados que ya no tienen ninguna reserva activa (mensual
+    // "muerta" porque el cliente canceló todas o el CEF las canceló).
+    return items.filter(
+      (i) => i.kind !== 'grupo' || (i.grupo?.cantidadActivas ?? 0) > 0,
+    );
+  }
+
+  /**
+   * Para cada abonado, completa la lista con las fechas del período en que
+   * el CEF canceló la clase ANTES de que el cliente se inscribiera. Esas
+   * fechas no tienen reserva real (el back las saltea y prorratea el monto),
+   * así que se agregan como "ghost" para dar visibilidad.
+   */
+  private agregarFechasPrecanceladasCef(grupo: AbonadoGrupo): void {
+    if (!grupo.periodoInicio || !grupo.periodoFin || grupo.reservas.length === 0) {
+      return;
+    }
+    const primera = grupo.reservas[0];
+    const claseId = primera.claseId;
+    if (!claseId) return;
+
+    const refFecha = primera.proximaFecha ?? primera.fechaReserva;
+    const diaSemana = new Date(`${refFecha}T12:00:00`).getDay();
+    const esperadas = this.fechasEnPeriodo(
+      grupo.periodoInicio,
+      grupo.periodoFin,
+      diaSemana,
+    );
+
+    const fechasYaPresentes = new Set(
+      this.reservas
+        .filter((r) => r.claseId === claseId)
+        .map((r) => r.proximaFecha ?? r.fechaReserva),
+    );
+
+    for (const fecha of esperadas) {
+      if (fechasYaPresentes.has(fecha)) continue;
+      grupo.reservas.push({
+        id: 0,
+        claseId,
+        actividad: grupo.actividad,
+        sede: grupo.sede,
+        diaSemana: grupo.diaSemana,
+        horaInicio: grupo.horaInicio,
+        horaFin: grupo.horaFin,
+        modalidad: 'ABONADO',
+        esAbonado: true,
+        estado: 'CANCELADA',
+        fechaReserva: fecha,
+        proximaFecha: fecha,
+        inscripcionMensualId: grupo.mensualId,
+        periodoInicio: grupo.periodoInicio,
+        periodoFin: grupo.periodoFin,
+        canceladaPor: 'CEF',
+      });
+    }
+  }
+
+  /** Fechas YYYY-MM-DD entre [inicio, fin) que caen en `diaSemana` (JS: 0..6). */
+  private fechasEnPeriodo(
+    inicio: string,
+    fin: string,
+    diaSemana: number,
+  ): string[] {
+    const [yi, mi, di] = inicio.split('-').map(Number);
+    const [yf, mf, df] = fin.split('-').map(Number);
+    const cursor = new Date(Date.UTC(yi, mi - 1, di));
+    const limite = new Date(Date.UTC(yf, mf - 1, df));
+    const out: string[] = [];
+    while (cursor < limite) {
+      if (cursor.getUTCDay() === diaSemana) {
+        out.push(cursor.toISOString().slice(0, 10));
+      }
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    return out;
   }
 
   limpiarFiltros(): void {
@@ -196,10 +272,12 @@ export class MisReservasComponent implements OnInit {
 
   volverDesdeCancelacion(): void {
     if (this.grupoSeleccionado) {
+      // Abonado: vuelve al detalle de la reserva abonada (Escenario 3 HU abonado).
       this.reservaSeleccionada = null;
       this.modalPaso = 'detalle-grupo';
     } else {
-      this.modalPaso = 'detalle';
+      // Individual: vuelve al listado de clases (Escenario 3 HU no-abonado).
+      this.cerrarModal();
     }
   }
 
@@ -230,6 +308,14 @@ export class MisReservasComponent implements OnInit {
 
         this.resultadoCancelacion = resultado;
         this.bannerSuccess = MSG_RESERVA_CANCELADA;
+
+        // Si se acreditó un bono (abonado +24hs), notificar al cliente en el
+        // paso de resultado del modal y refrescar la lista en background.
+        if (resultado.bono) {
+          this.modalPaso = 'resultado-cancelacion';
+          this.cargarReservas();
+          return;
+        }
 
         if (mensualIdGrupo) {
           this.reservasService.getMisReservas().subscribe({
@@ -284,6 +370,11 @@ export class MisReservasComponent implements OnInit {
       EN_ESPERA: 'En lista de espera',
     };
     return map[r.estado] ?? r.estado;
+  }
+
+  canceladaPorLabel(r: ReservaHistorial): string {
+    if (r.estado !== 'CANCELADA' || !r.canceladaPor) return '';
+    return r.canceladaPor === 'CEF' ? 'Administración (CEF)' : 'Cliente';
   }
 
   tipoPagoLabel(r: ReservaHistorial): string {

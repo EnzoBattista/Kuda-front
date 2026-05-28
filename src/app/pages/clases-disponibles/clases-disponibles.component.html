@@ -62,7 +62,7 @@
               </p>
             </div>
             <div class="clase-badges">
-              <span class="abono-badge" *ngIf="c.abonoActividadVigente">Abonado</span>
+              <span class="abono-badge" *ngIf="c.abonoClaseVigente">Abonado</span>
               <span class="cupo-badge" [class.sin-cupo]="c.cupoDisponible === 0">
                 {{ c.cupoDisponible === 0 ? 'Sin cupo' : c.cupoDisponible + ' lugares' }}
               </span>
@@ -158,8 +158,8 @@
     <ng-container *ngIf="pasoModal === 'seleccion-modalidad'">
       <h3 class="modal-titulo">Reservar clase</h3>
       <p class="help">{{ c.actividad }} — {{ c.diaSemana }} {{ c.horaInicio }}</p>
-      <p class="help" *ngIf="c.abonoActividadVigente">
-        Ya tenés mensualidad activa en esta actividad. No podés reservar clases individualmente.
+      <p class="help" *ngIf="c.abonoClaseVigente">
+        Ya tenés mensualidad activa en esta clase. No podés reservar otra mensualidad ni individualmente en esta misma clase.
       </p>
 
       <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
@@ -169,7 +169,7 @@
           class="opcion-btn btn btn-primary"
           type="button"
           (click)="seleccionarModalidad('ABONADO')"
-          [disabled]="c.abonoActividadVigente"
+          [disabled]="c.abonoClaseVigente"
         >
           <strong>Abonado (mensualidad)</strong>
           <span class="help">Inscripción mensual a la actividad</span>
@@ -178,7 +178,7 @@
           class="opcion-btn btn btn-secondary"
           type="button"
           (click)="seleccionarModalidad('INDIVIDUAL')"
-          [disabled]="c.abonoActividadVigente"
+          [disabled]="c.abonoClaseVigente"
         >
           <strong>Clase individual</strong>
           <span class="help">Una clase puntual (pago completo o seña)</span>
@@ -245,7 +245,38 @@
           <dt>Pago</dt>
           <dd>{{ confirmacionDetallePago() }}</dd>
         </div>
+        <div
+          class="clase-info-row"
+          *ngIf="tieneValesDisponibles() && modalidadElegida === 'ABONADO'"
+        >
+          <dt>Aplicar vales disponibles</dt>
+          <dd>
+            <label class="vale-toggle">
+              <input
+                type="checkbox"
+                [(ngModel)]="aplicarValesToggle"
+                [ngModelOptions]="{ standalone: true }"
+              />
+              <span class="vale-toggle-slider"></span>
+            </label>
+          </dd>
+        </div>
+        <div
+          class="clase-info-row"
+          *ngIf="tieneValesDisponibles() && modalidadElegida === 'ABONADO'"
+        >
+          <dt>Total</dt>
+          <dd>
+            <span *ngIf="!aplicarValesToggle">${{ montoBaseReserva() | number }}</span>
+            <span *ngIf="aplicarValesToggle">
+              <s style="opacity: 0.6;">${{ montoBaseReserva() | number }}</s>
+              <strong style="margin-left: 0.5rem;">${{ montoFinalReserva() | number }}</strong>
+            </span>
+          </dd>
+        </div>
       </dl>
+
+      <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
 
       <div class="form-actions">
         <button class="btn btn-primary" type="button" [disabled]="isSubmitting" (click)="confirmarReserva()">
@@ -254,7 +285,7 @@
         <button
           class="btn btn-secondary"
           type="button"
-          (click)="pasoModal = c.abonoActividadVigente ? 'seleccion-modalidad' : 'seleccion-pago'"
+          (click)="pasoModal = c.abonoClaseVigente ? 'seleccion-modalidad' : 'seleccion-pago'"
         >
           Volver
         </button>
