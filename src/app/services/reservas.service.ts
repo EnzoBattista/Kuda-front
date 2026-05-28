@@ -70,14 +70,18 @@ export interface ClaseDisponible {
   proximaFecha: string;
   precioActividad?: number;
   /** Ya tiene mensualidad VIGENTE/EN_GRACIA para esta actividad. */
-  abonoActividadVigente?: boolean;
+  /** El cliente ya tiene una mensualidad activa para ESTA clase puntual. */
+  abonoClaseVigente?: boolean;
   profesor?: string;
 }
 
 export interface ResultadoCancelacion {
   message: string;
   reembolso: boolean;
+  /** Monto del cupón generado (mensual o individual). */
   bono?: number;
+  /** Tipo del cupón generado. */
+  tipoCupon?: 'MENSUAL' | 'INDIVIDUAL';
   /** Mensaje técnico del backend (opcional). */
   detalle?: string;
   /** El back respondió 409: la reserva ya estaba cancelada. */
@@ -96,6 +100,8 @@ interface ReservaApiDto {
   estado: string;
   asistio: boolean | null;
   cancelada_por?: 'CEF' | 'CLIENTE';
+  inscripcion_mensual_id?: number | null;
+  inscripcion_individual_id?: number | null;
   clase: {
     id: number;
     hora_inicio: string;
@@ -494,7 +500,7 @@ export class ReservasService {
   /**
    * Inscripción mensual (abonado): POST /api/inscripciones-mensuales (+ MP).
    */
-  inscribirMensual(clase: ClaseDisponible): Observable<ResultadoReserva> {
+  inscribirMensual(clase: ClaseDisponible, valeId?: number): Observable<ResultadoReserva> {
     const email = this.auth.getCurrentUser()?.email;
     if (!email) {
       return throwError(() => ({
@@ -503,12 +509,13 @@ export class ReservasService {
     }
 
     const periodoInicio = new Date().toISOString().slice(0, 10);
-    const body = {
+    const body: Record<string, unknown> = {
       cliente_email: email,
       actividad_id: clase.actividadId,
       clase_id: clase.id,
       periodo_inicio: periodoInicio,
     };
+    if (valeId) body['vale_id'] = valeId;
 
     return this.http
       .post<InscripcionMensualApi>(this.inscripcionesMenUrl, body)
@@ -571,7 +578,7 @@ export class ReservasService {
       switchMap(({ mensuales, activas }) => {
         const abono = this.buscarAbonoVigente(
           mensuales,
-          clase.actividadId,
+          clase.id,
           clase.proximaFecha,
         );
 
@@ -591,13 +598,14 @@ export class ReservasService {
         mensaje?: string;
         message?: string;
         reembolso?: boolean;
-        vale?: { monto?: number };
+        vale?: { monto?: number; tipo?: 'MENSUAL' | 'INDIVIDUAL' };
       }>(`${this.reservasUrl}/${reservaId}/cancelar`, {})
       .pipe(
         map((r) => ({
-          message: MSG_RESERVA_CANCELADA,
+          message: r.mensaje ?? r.message ?? MSG_RESERVA_CANCELADA,
           reembolso: Boolean(r.reembolso),
           bono: r.vale?.monto ? Number(r.vale.monto) : undefined,
+          tipoCupon: r.vale?.tipo,
           detalle: r.mensaje ?? r.message,
         })),
         catchError((err) => {
@@ -649,22 +657,30 @@ export class ReservasService {
       );
   }
 
+  /**
+   * Busca una mensualidad activa del cliente para la clase puntual indicada.
+   * Solo se considera "vigente" si todavía tiene al menos una reserva ACTIVA;
+   * si todas las reservas están canceladas, el cliente puede volver a
+   * reservar como si la mensualidad no existiera.
+   */
   private buscarAbonoVigente(
     mensuales: InscripcionMensualApi[],
-    actividadId: number,
+    claseId: number,
     fecha: string,
   ): InscripcionMensualApi | undefined {
     return mensuales.find(
       (m) =>
-        m.actividad_id === actividadId &&
+        m.clase_id === claseId &&
         fecha >= String(m.periodo_inicio).slice(0, 10) &&
-        fecha < String(m.periodo_fin).slice(0, 10),
+        fecha < String(m.periodo_fin).slice(0, 10) &&
+        (m.reservas ?? []).some((r) => r.estado === 'ACTIVA'),
     );
   }
 
   /**
-   * Abonado activo de la actividad: no vuelve a cobrar si ya tiene reserva
-   * o si la mensualidad es de esta misma clase (reservas generadas por el back).
+   * El cliente ya está abonado a esta clase: no se vuelve a cobrar. Si la
+   * reserva concreta de la fecha ya existe, se devuelve; si no, se usa la
+   * primera reserva de la mensualidad como referencia.
    */
   private confirmarReservaConAbono(
     clase: ClaseDisponible,
@@ -686,19 +702,10 @@ export class ReservasService {
       });
     }
 
-    if (abono.clase_id === clase.id) {
-      return of({
-        message: MSG_RESERVA_CONFIRMADA,
-        reservaId: abono.reservas?.[0]?.id ?? abono.id,
-      });
-    }
-
-    return throwError(() => ({
-      error: {
-        message:
-          'Tu mensualidad está asociada a otra clase de esta actividad. Revisá tus reservas en Mis reservas.',
-      },
-    }));
+    return of({
+      message: MSG_RESERVA_CONFIRMADA,
+      reservaId: abono.reservas?.[0]?.id ?? abono.id,
+    });
   }
 
   private crearInscripcionIndividual(
@@ -828,8 +835,8 @@ export class ReservasService {
           precioActividad: Number(
             (clase.actividad as { precio?: number })?.precio ?? 0,
           ),
-          abonoActividadVigente: Boolean(
-            this.buscarAbonoVigente(mensuales, clase.actividad_id, prox),
+          abonoClaseVigente: Boolean(
+            this.buscarAbonoVigente(mensuales, clase.id, prox),
           ),
           profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
         };
@@ -848,8 +855,8 @@ export class ReservasService {
           cupoTotal: Number(clase.cupo ?? 0),
           cupoDisponible: Number(clase.cupo ?? 0),
           proximaFecha: prox,
-          abonoActividadVigente: Boolean(
-            this.buscarAbonoVigente(mensuales, clase.actividad_id, prox),
+          abonoClaseVigente: Boolean(
+            this.buscarAbonoVigente(mensuales, clase.id, prox),
           ),
           profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
         });
@@ -868,19 +875,30 @@ export class ReservasService {
     const horaInicio = formatHora(clase?.hora_inicio ?? '00:00');
     const horaFin = formatHora(clase?.hora_fin ?? '00:00');
 
-    const mensual = mensuales.find(
-      (m) =>
-        m.estado !== 'CANCELADA' &&
-        m.clase_id === clase?.id &&
-        fecha >= String(m.periodo_inicio).slice(0, 10) &&
-        fecha < String(m.periodo_fin).slice(0, 10),
-    );
+    // Usa los FKs reales que mandó el back. Si la reserva fue creada antes
+    // del cambio que los expone, cae al lookup inferido por clase + período
+    // (compatibilidad hacia atrás).
+    const mensual = dto.inscripcion_mensual_id
+      ? mensuales.find((m) => m.id === dto.inscripcion_mensual_id)
+      : !dto.inscripcion_individual_id
+        ? mensuales.find(
+            (m) =>
+              m.estado !== 'CANCELADA' &&
+              m.clase_id === clase?.id &&
+              fecha >= String(m.periodo_inicio).slice(0, 10) &&
+              fecha < String(m.periodo_fin).slice(0, 10),
+          )
+        : undefined;
 
-    const individual = individuales.find(
-      (i) =>
-        i.clase_id === clase?.id &&
-        String(i.fecha).slice(0, 10) === fecha,
-    );
+    const individual = dto.inscripcion_individual_id
+      ? individuales.find((i) => i.id === dto.inscripcion_individual_id)
+      : !dto.inscripcion_mensual_id
+        ? individuales.find(
+            (i) =>
+              i.clase_id === clase?.id &&
+              String(i.fecha).slice(0, 10) === fecha,
+          )
+        : undefined;
 
     const esAbonado = Boolean(mensual);
     let estado: EstadoHistorial =

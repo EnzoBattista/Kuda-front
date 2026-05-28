@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import {
   ClaseDisponible,
@@ -13,6 +13,7 @@ import {
   TipoPago,
 } from '../../services/reservas.service';
 import { AuthService } from '../../services/auth.service';
+import { Vale, ValesService } from '../../services/vales.service';
 import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
 
 type PasoModal =
@@ -27,7 +28,7 @@ type PasoModal =
 @Component({
   selector: 'app-clases-disponibles',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FechaArPipe],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, FechaArPipe],
   templateUrl: './clases-disponibles.component.html',
   styleUrl: './clases-disponibles.component.css',
 })
@@ -57,11 +58,17 @@ export class ClasesDisponiblesComponent implements OnInit {
   resultadoMsg = '';
   errorModalMsg = '';
 
+  /** Vales disponibles para la clase seleccionada (no se exponen al usuario). */
+  private valesAplicables: Vale[] = [];
+  /** Toggle "Aplicar vales disponibles" en el paso de confirmación. */
+  aplicarValesToggle = false;
+
   private readonly clasesEnListaEspera = new Set<number>();
 
   constructor(
     private readonly reservasService: ReservasService,
     private readonly authService: AuthService,
+    private readonly valesService: ValesService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
   ) {}
@@ -132,6 +139,7 @@ export class ClasesDisponiblesComponent implements OnInit {
     this.resultadoMsg = '';
     this.errorModalMsg = '';
     this.isSubmitting = false;
+    this.cargarValesParaClase(clase.id);
   }
 
   abrirReserva(clase?: ClaseDisponible): void {
@@ -141,10 +149,55 @@ export class ClasesDisponiblesComponent implements OnInit {
       this.resultadoMsg = '';
       this.errorModalMsg = '';
       this.isSubmitting = false;
+      this.cargarValesParaClase(clase.id);
     }
     this.modalidadElegida = 'INDIVIDUAL';
     this.tipoPagoElegido = 'PAGO_COMPLETO';
     this.pasoModal = 'seleccion-modalidad';
+  }
+
+  private cargarValesParaClase(claseId: number): void {
+    this.valesAplicables = [];
+    this.aplicarValesToggle = false;
+    this.valesService.getValesAplicables(claseId).subscribe({
+      next: (data) => (this.valesAplicables = data ?? []),
+      error: () => (this.valesAplicables = []),
+    });
+  }
+
+  /** Hay al menos un vale aplicable a la clase y modalidad actual. */
+  tieneValesDisponibles(): boolean {
+    return this.valesAplicables.length > 0 && this.montoBaseReserva() > 0;
+  }
+
+  /**
+   * Elige internamente el mejor vale a aplicar (el de mayor monto). El usuario
+   * no ve cuál se eligió: solo toca el toggle y ve el total actualizado.
+   */
+  private mejorValeDisponible(): Vale | null {
+    if (this.valesAplicables.length === 0) return null;
+    return this.valesAplicables.reduce(
+      (best, v) => (v.monto > (best?.monto ?? 0) ? v : best),
+      null as Vale | null,
+    );
+  }
+
+  montoBaseReserva(): number {
+    const c = this.claseSeleccionada;
+    if (!c) return 0;
+    if (this.modalidadElegida === 'ABONADO') {
+      return Number(c.precioActividad ?? 0);
+    }
+    const precioIndividual = Number(c.precioActividad ?? 0) * 0.333;
+    return this.tipoPagoElegido === 'SEÑA' ? precioIndividual / 2 : precioIndividual;
+  }
+
+  montoFinalReserva(): number {
+    const base = this.montoBaseReserva();
+    if (!this.aplicarValesToggle) return base;
+    const vale = this.mejorValeDisponible();
+    if (!vale) return base;
+    return Math.max(0, base - vale.monto);
   }
 
   seleccionarModalidad(modalidad: ModalidadInscripcion): void {
@@ -156,9 +209,9 @@ export class ClasesDisponiblesComponent implements OnInit {
       return;
     }
 
-    if (this.claseSeleccionada?.abonoActividadVigente) {
+    if (this.claseSeleccionada?.abonoClaseVigente) {
       this.errorModalMsg =
-        'Ya tenés un abono activo en esta actividad, no podés reservar individualmente esta clase.';
+        'Ya tenés un abono activo en esta clase, no podés reservar individualmente.';
       return;
     }
 
@@ -176,9 +229,14 @@ export class ClasesDisponiblesComponent implements OnInit {
     this.errorModalMsg = '';
 
     const clase = this.claseSeleccionada;
+    // El cupón solo aplica al pago de mensualidades (regla de negocio).
+    const valeId =
+      this.modalidadElegida === 'ABONADO' && this.aplicarValesToggle
+        ? this.mejorValeDisponible()?.id
+        : undefined;
     const obs =
       this.modalidadElegida === 'ABONADO'
-        ? this.reservasService.inscribirMensual(clase)
+        ? this.reservasService.inscribirMensual(clase, valeId)
         : this.reservasService.reservarClase(clase, this.tipoPagoElegido);
 
     obs.subscribe({
@@ -189,7 +247,7 @@ export class ClasesDisponiblesComponent implements OnInit {
           err?.error?.message ?? 'No se pudo confirmar la reserva.';
         if (this.modalidadElegida === 'ABONADO') {
           this.pasoModal = 'confirmacion';
-        } else if (clase.abonoActividadVigente) {
+        } else if (clase.abonoClaseVigente) {
           this.pasoModal = 'confirmacion';
         } else {
           this.pasoModal = 'seleccion-pago';
@@ -276,7 +334,7 @@ export class ClasesDisponiblesComponent implements OnInit {
     if (this.modalidadElegida === 'ABONADO') {
       return 'Confirmá tu inscripción mensual';
     }
-    if (this.claseSeleccionada?.abonoActividadVigente) {
+    if (this.claseSeleccionada?.abonoClaseVigente) {
       return 'Confirmá tu reserva (abonado)';
     }
     return 'Confirmá tu reserva';
@@ -287,7 +345,7 @@ export class ClasesDisponiblesComponent implements OnInit {
       const precio = this.claseSeleccionada?.precioActividad ?? 0;
       return `Mensualidad — $${precio}`;
     }
-    if (this.claseSeleccionada?.abonoActividadVigente) {
+    if (this.claseSeleccionada?.abonoClaseVigente) {
       return 'Sin cargo adicional (ya sos abonado de esta actividad)';
     }
     return this.tipoPagoLabel(this.tipoPagoElegido);
