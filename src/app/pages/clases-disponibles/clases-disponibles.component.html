@@ -46,49 +46,72 @@
     <p class="help">No hay clases disponibles{{ hayFiltros() ? ' con los filtros seleccionados' : '' }}.</p>
   </div>
 
-  <!-- Grid de clases -->
-  <ul class="clases-grid" *ngIf="!isLoading && !errorMsg && clasesFiltradas.length > 0">
-    <li class="card card-pad clase-card" *ngFor="let c of clasesFiltradas">
-      <div class="clase-head">
-        <div style="flex: 1;">
-          <h3 class="clase-nombre">{{ c.actividad }}</h3>
-          <p class="help" style="margin-top: 0.25rem; font-size: 0.85rem; cursor: pointer;" 
-             *ngIf="c.actividadDescripcion"
-             (click)="c.descripcionExpandida = !c.descripcionExpandida">
-            {{ c.descripcionExpandida ? c.actividadDescripcion : acortarDescripcion(c.actividadDescripcion) }}
-          </p>
-        </div>
-        <div class="clase-badges">
-          <span class="abono-badge" *ngIf="c.abonoActividadVigente">Abonado</span>
-          <span class="cupo-badge" [class.sin-cupo]="c.cupoDisponible === 0">
-            {{ c.cupoDisponible === 0 ? 'Sin cupo' : c.cupoDisponible + ' lugares' }}
-          </span>
-        </div>
-      </div>
+  <!-- Secciones por actividad -->
+  <ng-container *ngIf="!isLoading && !errorMsg && clasesFiltradas.length > 0">
+    <section class="actividad-grupo" *ngFor="let grupo of clasesPorActividad">
+      <h3 class="actividad-titulo">{{ grupo.actividad }}</h3>
+      <ul class="clases-grid">
+        <li class="card card-pad clase-card" *ngFor="let c of grupo.clases">
+          <div class="clase-head">
+            <div style="flex: 1;">
+              <p class="clase-nombre">{{ c.diaSemana }} · {{ c.horaInicio }} – {{ c.horaFin }}</p>
+              <p class="help" style="margin-top: 0.25rem; font-size: 0.85rem; cursor: pointer;"
+                 *ngIf="c.actividadDescripcion"
+                 (click)="c.descripcionExpandida = !c.descripcionExpandida">
+                {{ c.descripcionExpandida ? c.actividadDescripcion : acortarDescripcion(c.actividadDescripcion) }}
+              </p>
+            </div>
+            <div class="clase-badges">
+              <span class="abono-badge" *ngIf="c.abonoActividadVigente">Abonado</span>
+              <span class="cupo-badge" [class.sin-cupo]="c.cupoDisponible === 0">
+                {{ c.cupoDisponible === 0 ? 'Sin cupo' : c.cupoDisponible + ' lugares' }}
+              </span>
+            </div>
+          </div>
 
-      <dl class="clase-info">
-        <div class="clase-info-row">
-          <dt>Sala</dt>
-          <dd>{{ c.sede }}</dd>
-        </div>
-        <div class="clase-info-row">
-          <dt>Día</dt>
-          <dd>{{ c.diaSemana }}</dd>
-        </div>
-        <div class="clase-info-row">
-          <dt>Horario</dt>
-          <dd>{{ c.horaInicio }} – {{ c.horaFin }}</dd>
-        </div>
-        <div class="clase-info-row">
-          <dt>Próxima fecha</dt>
-          <dd>{{ c.proximaFecha | fechaAr }}</dd>
-        </div>
-        <div class="clase-info-row">
-          <dt>Cupo</dt>
-          <dd>{{ c.cupoDisponible }} / {{ c.cupoTotal }}</dd>
-        </div>
-      </dl>
+          <dl class="clase-info">
+            <div class="clase-info-row">
+              <dt>Sala</dt>
+              <dd>{{ c.sede }}</dd>
+            </div>
+            <div class="clase-info-row">
+              <dt>Próxima fecha</dt>
+              <dd>{{ c.proximaFecha | fechaAr }}</dd>
+            </div>
+            <div class="clase-info-row">
+              <dt>Cupo</dt>
+              <dd>{{ c.cupoDisponible }} / {{ c.cupoTotal }}</dd>
+            </div>
+          </dl>
 
+          <div class="form-actions">
+            <button
+              *ngIf="c.cupoDisponible > 0"
+              class="btn btn-primary"
+              type="button"
+              (click)="abrirReserva(c)"
+            >
+              Reservar
+            </button>
+            <button
+              *ngIf="c.cupoDisponible === 0 && !yaEnListaEspera(c.id)"
+              class="btn btn-secondary"
+              type="button"
+              (click)="abrirEspera(c)"
+            >
+              Anotarse en lista de espera
+            </button>
+            <p
+              *ngIf="c.cupoDisponible === 0 && yaEnListaEspera(c.id)"
+              class="help lista-espera-inscripto"
+            >
+              Ya estás en la lista de espera para esta clase
+            </p>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </ng-container>
       <div class="form-actions">
         <button class="btn btn-primary" (click)="abrirDetalle(c)">
           Ver detalle
@@ -100,6 +123,7 @@
 
 <!-- ===== MODAL DE RESERVA ===== -->
 <div class="modal-backdrop" *ngIf="claseSeleccionada && pasoModal !== 'espera' && pasoModal !== 'resultado-espera'" (click)="cerrarModal()">
+  <div class="modal-card card card-pad" (click)="$event.stopPropagation()" *ngIf="claseSeleccionada as c">
   <div class="card card-pad modal-panel modal-panel-form" role="dialog" aria-labelledby="modal-reserva-title" (click)="$event.stopPropagation()" *ngIf="claseSeleccionada as c">
     
     <!-- PASO: DETALLE DE LA CLASE -->
