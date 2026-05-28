@@ -18,10 +18,9 @@
           <div class="label">Email</div>
           <input
             class="control"
-            type="email"
+            type="text"
             formControlName="email"
             autocomplete="email"
-            inputmode="email"
             [attr.aria-invalid]="
               form.controls.email.touched && form.controls.email.invalid
                 ? 'true'
@@ -30,9 +29,6 @@
           />
           <div class="error-text" *ngIf="form.controls.email.touched && form.controls.email.hasError('required')">
             El email es obligatorio.
-          </div>
-          <div class="error-text" *ngIf="form.controls.email.touched && form.controls.email.hasError('email')">
-            Ingresá un email válido.
           </div>
         </div>
 

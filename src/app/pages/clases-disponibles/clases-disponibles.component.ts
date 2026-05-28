@@ -16,6 +16,7 @@ import { AuthService } from '../../services/auth.service';
 import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
 
 type PasoModal =
+  | 'detalle'
   | 'seleccion-modalidad'
   | 'seleccion-pago'
   | 'confirmacion'
@@ -124,15 +125,19 @@ export class ClasesDisponiblesComponent implements OnInit {
     );
   }
 
-  abrirReserva(clase: ClaseDisponible): void {
+  abrirDetalle(clase: ClaseDisponible): void {
     this.bannerSuccess = '';
     this.claseSeleccionada = clase;
-    this.modalidadElegida = 'INDIVIDUAL';
-    this.tipoPagoElegido = 'PAGO_COMPLETO';
-    this.pasoModal = 'seleccion-modalidad';
+    this.pasoModal = 'detalle';
     this.resultadoMsg = '';
     this.errorModalMsg = '';
     this.isSubmitting = false;
+  }
+
+  abrirReserva(): void {
+    this.modalidadElegida = 'INDIVIDUAL';
+    this.tipoPagoElegido = 'PAGO_COMPLETO';
+    this.pasoModal = 'seleccion-modalidad';
   }
 
   seleccionarModalidad(modalidad: ModalidadInscripcion): void {
@@ -220,15 +225,11 @@ export class ClasesDisponiblesComponent implements OnInit {
     return this.clasesEnListaEspera.has(claseId);
   }
 
-  abrirEspera(clase: ClaseDisponible): void {
-    if (this.yaEnListaEspera(clase.id)) {
+  abrirEspera(): void {
+    if (!this.claseSeleccionada || this.yaEnListaEspera(this.claseSeleccionada.id)) {
       return;
     }
-    this.claseSeleccionada = clase;
     this.pasoModal = 'espera';
-    this.resultadoMsg = '';
-    this.errorModalMsg = '';
-    this.isSubmitting = false;
   }
 
   confirmarEspera(tipo: TipoListaEspera): void {

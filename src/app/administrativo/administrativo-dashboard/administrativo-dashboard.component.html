@@ -13,7 +13,7 @@
 
     <div class="tabs">
       <button (click)="setTab('actividades')" [class.active]="tab === 'actividades'">Actividades</button>
-      <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Usuarios</button>
+      <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Clientes</button>
       <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
       <button (click)="setTab('profesores')" [class.active]="tab === 'profesores'">Profesores</button>
       <button *ngIf="isDueno" (click)="setTab('empleados')" [class.active]="tab === 'empleados'">Recepcionistas</button>
@@ -31,13 +31,13 @@
     <div class="card-head">
       <h3>Profesores</h3>
       <div class="card-head-actions">
-        <button *ngIf="isDueno" class="btn-action" (click)="abrirModalCrearProfesor()">Registrar profesor</button>
+        <button *ngIf="isAdministrativo" class="btn-action" (click)="abrirModalProfesor()">Registrar profesor</button>
       </div>
     </div>
 
     <p class="error" *ngIf="error.profesores">{{ error.profesores }}</p>
     <p class="muted" *ngIf="loading.profesores">Cargando…</p>
-    <p class="success-msg" *ngIf="createProfesorSuccess">{{ createProfesorSuccess }}</p>
+    <p class="success-msg" *ngIf="formProfesorSuccess">{{ formProfesorSuccess }}</p>
 
     <!-- Filtro de búsqueda -->
     <div class="usuarios-filtros" *ngIf="profesores.length > 0">
@@ -75,7 +75,8 @@
         <div>{{ actividadesProfesorLabel(p) }}</div>
         <div class="right">
           <button class="btn-tabla" (click)="profesorDetalle = p">Ver detalle</button>
-          <button *ngIf="isDueno" class="btn-tabla btn-tabla-danger" (click)="profesorAEliminar = p; eliminarProfesorError = ''">Eliminar</button>
+          <button *ngIf="isAdministrativo" class="btn-tabla" (click)="abrirModalProfesor(p)">Modificar</button>
+          <button *ngIf="isAdministrativo" class="btn-tabla btn-tabla-danger" (click)="profesorAEliminar = p; eliminarProfesorError = ''">Eliminar</button>
         </div>
       </div>
     </div>
@@ -163,7 +164,7 @@
 
     <!-- Tabla de empleados -->
     <p class="muted" *ngIf="!loading.empleados && !error.empleados && empleadosFiltrados.length === 0">
-      No se han encontrado recepcionistas.
+      No hay recepcionistas registrados en el sistema
     </p>
     <div class="table" *ngIf="!loading.empleados && empleadosFiltrados.length > 0">
       <div class="row row-emp head">
@@ -184,10 +185,30 @@
         </div>
         <div class="right">
           <button class="btn-tabla" (click)="empleadoDetalle = u">Ver detalle</button>
+          <button *ngIf="isDueno" class="btn-tabla btn-tabla-danger" (click)="empleadoAEliminar = u; eliminarEmpleadoError = ''">Eliminar</button>
         </div>
       </div>
     </div>
   </section>
+
+  <!-- Modal: confirmar eliminación de recepcionista -->
+  <div class="modal-overlay" *ngIf="empleadoAEliminar" (click)="empleadoAEliminar = null">
+    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+      <h4 class="modal-title">Eliminar recepcionista</h4>
+      <p class="modal-confirm-msg">
+        ¿Estás seguro que querés eliminar a
+        <strong>{{ empleadoAEliminar.nombre }} {{ empleadoAEliminar.apellido }}</strong>?
+        Si tiene sesión activa, su token quedará invalidado.
+      </p>
+      <p class="error-text" *ngIf="eliminarEmpleadoError">{{ eliminarEmpleadoError }}</p>
+      <div class="modal-actions">
+        <button class="btn btn-danger" (click)="onConfirmarEliminarEmpleado()" [disabled]="eliminandoEmpleado">
+          {{ eliminandoEmpleado ? 'Eliminando…' : 'Confirmar' }}
+        </button>
+        <button class="btn-tabla" (click)="empleadoAEliminar = null" [disabled]="eliminandoEmpleado">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal: detalle de empleado -->
   <div class="modal-overlay" *ngIf="empleadoDetalle" (click)="empleadoDetalle = null">
@@ -213,24 +234,24 @@
     </div>
   </div>
 
-  <!-- Modal: crear profesor -->
-  <div class="modal-overlay" *ngIf="showModalCrearProfesor" (click)="cerrarModalCrearProfesor()">
+  <!-- Modal: crear/modificar profesor -->
+  <div class="modal-overlay" *ngIf="showModalFormProfesor" (click)="cerrarModalProfesor()">
     <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
-      <h4 class="modal-title">Registrar nuevo profesor</h4>
-      <p class="error-text" *ngIf="createProfesorError">{{ createProfesorError }}</p>
+      <h4 class="modal-title">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar nuevo profesor' }}</h4>
+      <p class="error-text" *ngIf="formProfesorError">{{ formProfesorError }}</p>
 
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Nombre</div>
-          <input class="control" [(ngModel)]="createProfesor.nombre" />
+          <input class="control" [(ngModel)]="formProfesor.nombre" />
         </div>
         <div class="field">
           <div class="label">Apellido</div>
-          <input class="control" [(ngModel)]="createProfesor.apellido" />
+          <input class="control" [(ngModel)]="formProfesor.apellido" />
         </div>
         <div class="field">
           <div class="label">DNI</div>
-          <input class="control" [(ngModel)]="createProfesor.dni" />
+          <input class="control" [(ngModel)]="formProfesor.dni" />
         </div>
       </div>
 
@@ -251,8 +272,8 @@
       <p class="muted" *ngIf="!loadingActividades && actividades.length === 0">Sin actividades disponibles para asignar.</p>
 
       <div class="modal-actions">
-        <button class="btn btn-primary" (click)="onCreateProfesor()">Registrar profesor</button>
-        <button class="btn btn-secondary" (click)="cerrarModalCrearProfesor()">Cancelar</button>
+        <button class="btn btn-primary" (click)="onGuardarProfesor()" [disabled]="!formProfesor.nombre?.trim() || !formProfesor.apellido?.trim() || !formProfesor.dni?.trim()">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar profesor' }}</button>
+        <button class="btn btn-secondary" (click)="cerrarModalProfesor()">Cancelar</button>
       </div>
     </div>
   </div>
@@ -291,7 +312,7 @@
       </div>
 
       <div class="modal-actions">
-        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()">Registrar recepcionista</button>
+        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()" [disabled]="!createEmpleadoForm.nombre?.trim() || !createEmpleadoForm.apellido?.trim() || !createEmpleadoForm.dni?.trim() || !createEmpleadoForm.email?.trim() || !createEmpleadoForm.telefono?.trim() || !createEmpleadoForm.password?.trim()">Registrar recepcionista</button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalCrearEmpleado()">Cancelar</button>
       </div>
     </div>

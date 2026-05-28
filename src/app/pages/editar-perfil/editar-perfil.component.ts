@@ -34,7 +34,7 @@ export class EditarPerfilComponent implements OnInit {
     }),
     fechaNacimiento: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, EditarPerfilComponent.edadMinimaValidator],
+      validators: [Validators.required],
     }),
     telefono: new FormControl('', { nonNullable: true }),
   });
@@ -47,7 +47,7 @@ export class EditarPerfilComponent implements OnInit {
   successMessage = '';
 
   constructor(
-    private readonly auth: AuthService,
+    public readonly auth: AuthService,
     private readonly router: Router
   ) {}
 
@@ -94,7 +94,23 @@ export class EditarPerfilComponent implements OnInit {
     this.submitted = true;
     this.submitError = '';
     this.successMessage = '';
+    
+    if (this.auth.isAdministrativo()) {
+      this.form.controls.genero.clearValidators();
+      this.form.controls.fechaNacimiento.clearValidators();
+      this.form.controls.genero.updateValueAndValidity();
+      this.form.controls.fechaNacimiento.updateValueAndValidity();
+    }
+    
     if (this.form.invalid) return;
+
+    if (!this.auth.isAdministrativo()) {
+      const err = EditarPerfilComponent.edadMinimaValidator(this.form.controls.fechaNacimiento);
+      if (err) {
+        this.form.controls.fechaNacimiento.setErrors(err);
+        return;
+      }
+    }
 
     this.isSubmitting = true;
     const { nombre, apellido, genero, fechaNacimiento, telefono } = this.form.controls;

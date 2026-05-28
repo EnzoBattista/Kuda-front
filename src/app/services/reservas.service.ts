@@ -67,6 +67,7 @@ export interface ClaseDisponible {
   precioActividad?: number;
   /** Ya tiene mensualidad VIGENTE/EN_GRACIA para esta actividad. */
   abonoActividadVigente?: boolean;
+  profesor?: string;
 }
 
 export interface ResultadoCancelacion {
@@ -822,6 +823,7 @@ export class ReservasService {
           abonoActividadVigente: Boolean(
             this.buscarAbonoVigente(mensuales, clase.actividad_id, prox),
           ),
+          profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
         };
       }),
       catchError(() => {
@@ -841,6 +843,7 @@ export class ReservasService {
           abonoActividadVigente: Boolean(
             this.buscarAbonoVigente(mensuales, clase.actividad_id, prox),
           ),
+          profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
         });
       }),
     );

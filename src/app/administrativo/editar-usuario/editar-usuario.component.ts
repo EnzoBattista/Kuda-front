@@ -43,7 +43,7 @@ export class EditarUsuarioComponent implements OnInit {
     }),
     dni: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(7), Validators.maxLength(10)],
+      validators: [Validators.required],
     }),
     genero: new FormControl<'femenino' | 'masculino' | 'otro'>('otro', {
       nonNullable: true,
@@ -51,7 +51,7 @@ export class EditarUsuarioComponent implements OnInit {
     }),
     fechaNacimiento: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, EditarUsuarioComponent.edadMinimaValidator],
+      validators: [Validators.required],
     }),
     telefono: new FormControl('', { nonNullable: true }),
   });
@@ -113,6 +113,12 @@ export class EditarUsuarioComponent implements OnInit {
     this.successMessage = '';
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
+
+    const err = EditarUsuarioComponent.edadMinimaValidator(this.form.controls.fechaNacimiento);
+    if (err) {
+      this.form.controls.fechaNacimiento.setErrors(err);
+      return;
+    }
 
     const dni = this.form.controls.dni.value.trim();
 

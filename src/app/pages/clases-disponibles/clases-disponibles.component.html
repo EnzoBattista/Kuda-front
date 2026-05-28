@@ -29,12 +29,7 @@
           <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
         </select>
       </div>
-      <div class="field" *ngIf="hayFiltros()">
-        <div class="label">&nbsp;</div>
-        <button type="button" class="control btn-limpiar" (click)="limpiarFiltros()">
-          Limpiar filtros
-        </button>
-      </div>
+
     </div>
   </form>
 
@@ -117,11 +112,70 @@
       </ul>
     </section>
   </ng-container>
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="abrirDetalle(c)">
+          Ver detalle
+        </button>
+      </div>
+    </li>
+  </ul>
 </div>
 
 <!-- ===== MODAL DE RESERVA ===== -->
 <div class="modal-backdrop" *ngIf="claseSeleccionada && pasoModal !== 'espera' && pasoModal !== 'resultado-espera'" (click)="cerrarModal()">
   <div class="modal-card card card-pad" (click)="$event.stopPropagation()" *ngIf="claseSeleccionada as c">
+  <div class="card card-pad modal-panel modal-panel-form" role="dialog" aria-labelledby="modal-reserva-title" (click)="$event.stopPropagation()" *ngIf="claseSeleccionada as c">
+    
+    <!-- PASO: DETALLE DE LA CLASE -->
+    <ng-container *ngIf="pasoModal === 'detalle'">
+      <h3 id="modal-reserva-title" class="modal-title">Detalle de la clase</h3>
+      
+      <dl class="clase-info info-detalle">
+        <div class="clase-info-row">
+          <dt>Actividad</dt>
+          <dd>{{ c.actividad }}</dd>
+        </div>
+        <div class="clase-info-row" *ngIf="c.actividadDescripcion">
+          <dt>Descripción</dt>
+          <dd>{{ c.actividadDescripcion }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Profesor</dt>
+          <dd>{{ c.profesor ?? '—' }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Cupos disponibles</dt>
+          <dd>{{ c.cupoDisponible }} de {{ c.cupoTotal }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Horario</dt>
+          <dd>{{ c.proximaFecha | fechaAr }} – {{ c.horaInicio }} a {{ c.horaFin }}</dd>
+        </div>
+        <div class="clase-info-row">
+          <dt>Sala</dt>
+          <dd>{{ c.sede }}</dd>
+        </div>
+      </dl>
+
+      <div class="modal-actions" style="margin-top: 1.5rem;">
+        <button
+          *ngIf="c.cupoDisponible > 0"
+          class="btn btn-primary"
+          (click)="abrirReserva()"
+        >
+          Reservar
+        </button>
+        <button
+          *ngIf="c.cupoDisponible === 0"
+          class="btn btn-secondary"
+          (click)="abrirEspera()"
+          [disabled]="yaEnListaEspera(c.id)"
+        >
+          {{ yaEnListaEspera(c.id) ? 'Ya estás en espera' : 'Anotarse en lista de espera' }}
+        </button>
+        <button class="btn btn-secondary" (click)="cerrarModal()">Volver</button>
+      </div>
+    </ng-container>
 
     <!-- Paso: modalidad (abonado vs individual) -->
     <ng-container *ngIf="pasoModal === 'seleccion-modalidad'">

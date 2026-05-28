@@ -3,7 +3,6 @@
     <h3>Clases</h3>
     <div class="card-head-actions">
       <button
-        *ngIf="isDueno"
         type="button"
         class="btn btn-primary"
         (click)="onAgregar()"
@@ -84,6 +83,25 @@
       </ul>
     </section>
   </ng-container>
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="onModificar(clase)">Modificar</button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="onCancelar(clase)"
+        >
+          Cancelar clase
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="onEliminar(clase)"
+        >
+          Eliminar clase
+        </button>
+      </div>
+    </li>
+  </ul>
 </section>
 
 <!-- Modal: Agregar / Modificar clase -->
@@ -210,21 +228,26 @@
 
     <form class="form" (ngSubmit)="submitCancelar()">
       <div class="field">
-        <label class="label" for="cancelar-fecha">Fecha a cancelar</label>
-        <input
-          id="cancelar-fecha"
-          class="control"
-          type="date"
-          name="fecha"
-          [(ngModel)]="cancelarFecha"
-          required
-        />
+        <label class="label">Fecha a cancelar</label>
+        <div class="date-carousel">
+          <button type="button" class="btn-arrow" (click)="prevFechaCancelacion()" [disabled]="fechaCancelacionIndex === 0">
+            ◀
+          </button>
+          <div class="date-display-wrapper">
+            <div class="date-display" [ngClass]="{'slide-left': slidingLeft, 'slide-right': slidingRight}">
+              {{ formatFechaDisplay(cancelarFecha) }}
+            </div>
+          </div>
+          <button type="button" class="btn-arrow" (click)="nextFechaCancelacion()" [disabled]="fechaCancelacionIndex === fechasCancelacion.length - 1">
+            ▶
+          </button>
+        </div>
       </div>
 
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || !cancelarFecha">
           Cancelar clase
         </button>
         <button

@@ -33,6 +33,10 @@ export class ProfesorService {
     return this.http.post<unknown>(this.apiUrl, data);
   }
 
+  update(id: number, data: CreateProfesorDto): Observable<unknown> {
+    return this.http.put<unknown>(`${this.apiUrl}/${id}`, data);
+  }
+
   delete(id: number): Observable<unknown> {
     return this.http.delete<unknown>(`${this.apiUrl}/${id}`);
   }

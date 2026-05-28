@@ -68,7 +68,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1.5fr 2fr 1fr 1fr 100px 80px;
+  grid-template-columns: 1.5fr 2fr 1fr 1fr 1.5fr;
   gap: 0.75rem;
   padding: 0.6rem 1rem;
   border-bottom: 1px solid var(--border);

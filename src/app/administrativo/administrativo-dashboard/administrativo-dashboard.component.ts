@@ -33,17 +33,18 @@ export class AdministrativoDashboardComponent {
   actividades: Actividad[] = [];
   loadingActividades = false;
 
-  createProfesor = {
+  formProfesor = {
     nombre: '',
     apellido: '',
     dni: '',
     actividadesSeleccionadas: [] as number[],
   };
+  profesorAEditarId: number | null = null;
 
   filtroProfesorQ = '';
 
   // ─── Modales de alta ──────────────────────────────────────────────────────
-  showModalCrearProfesor = false;
+  showModalFormProfesor = false;
   showModalCrearEmpleado = false;
 
   // ─── Detalle ──────────────────────────────────────────────────────────────
@@ -55,6 +56,11 @@ export class AdministrativoDashboardComponent {
   eliminandoProfesor = false;
   eliminarProfesorError = '';
 
+  // ─── Eliminar empleado ────────────────────────────────────────────────────
+  empleadoAEliminar: UsuarioListado | null = null;
+  eliminandoEmpleado = false;
+  eliminarEmpleadoError = '';
+
   // ─── Empleados ────────────────────────────────────────────────────────────
   empleados: UsuarioListado[] = [];
 
@@ -65,8 +71,8 @@ export class AdministrativoDashboardComponent {
   createEmpleadoError = '';
   createEmpleadoSuccess = '';
 
-  createProfesorError = '';
-  createProfesorSuccess = '';
+  formProfesorError = '';
+  formProfesorSuccess = '';
 
   // ─── Shared ───────────────────────────────────────────────────────────────
   loading = { profesores: false, empleados: false };
@@ -86,6 +92,10 @@ export class AdministrativoDashboardComponent {
 
   get isDueno(): boolean {
     return this.authService.isDueno();
+  }
+
+  get isAdministrativo(): boolean {
+    return this.authService.isAdministrativo();
   }
 
   logout(): void {
@@ -142,14 +152,14 @@ export class AdministrativoDashboardComponent {
   }
 
   toggleActividad(id: number): void {
-    const sel = this.createProfesor.actividadesSeleccionadas;
+    const sel = this.formProfesor.actividadesSeleccionadas;
     const idx = sel.indexOf(id);
-    this.createProfesor.actividadesSeleccionadas =
+    this.formProfesor.actividadesSeleccionadas =
       idx === -1 ? [...sel, id] : sel.filter((a) => a !== id);
   }
 
   isActividadSeleccionada(id: number): boolean {
-    return this.createProfesor.actividadesSeleccionadas.includes(id);
+    return this.formProfesor.actividadesSeleccionadas.includes(id);
   }
 
   actividadesProfesorLabel(p: Profesor): string {
@@ -167,49 +177,66 @@ export class AdministrativoDashboardComponent {
     );
   }
 
-  abrirModalCrearProfesor(): void {
-    this.createProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
-    this.createProfesorError = '';
-    this.createProfesorSuccess = '';
-    if (this.actividades.length === 0) this.loadActividades();
-    this.showModalCrearProfesor = true;
-  }
-
-  cerrarModalCrearProfesor(): void {
-    this.showModalCrearProfesor = false;
-    this.createProfesorError = '';
-  }
-
-  onCreateProfesor(): void {
-    this.error.profesores = '';
-    this.createProfesorError = '';
-    this.createProfesorSuccess = '';
-    const p = this.createProfesor;
-    if (!p.nombre || !p.apellido || !p.dni) {
-      this.createProfesorError = 'Completá nombre, apellido y DNI.';
-      return;
-    }
-    if (p.actividadesSeleccionadas.length === 0) {
-      this.createProfesorError = 'El profesor debe dictar al menos una actividad';
-      return;
-    }
-
-    this.profesorService
-      .create({
+  abrirModalProfesor(p?: Profesor): void {
+    if (p) {
+      this.profesorAEditarId = p.id;
+      this.formProfesor = {
         nombre: p.nombre,
         apellido: p.apellido,
         dni: p.dni,
-        actividades: p.actividadesSeleccionadas.length ? p.actividadesSeleccionadas : undefined,
-      })
-      .subscribe({
+        actividadesSeleccionadas: p.actividades?.map(a => a.id) ?? [],
+      };
+    } else {
+      this.profesorAEditarId = null;
+      this.formProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
+    }
+    this.formProfesorError = '';
+    this.formProfesorSuccess = '';
+    if (this.actividades.length === 0) this.loadActividades();
+    this.showModalFormProfesor = true;
+  }
+
+  cerrarModalProfesor(): void {
+    this.showModalFormProfesor = false;
+    this.formProfesorError = '';
+  }
+
+  onGuardarProfesor(): void {
+    this.error.profesores = '';
+    this.formProfesorError = '';
+    this.formProfesorSuccess = '';
+    const p = this.formProfesor;
+    if (!p.nombre || !p.apellido || !p.dni) {
+      this.formProfesorError = 'Completá nombre, apellido y DNI.';
+      return;
+    }
+    if (p.actividadesSeleccionadas.length === 0) {
+      this.formProfesorError = 'El profesor debe dictar al menos una actividad';
+      return;
+    }
+
+    const request = {
+      nombre: p.nombre,
+      apellido: p.apellido,
+      dni: p.dni,
+      actividades: p.actividadesSeleccionadas.length ? p.actividadesSeleccionadas : undefined,
+    };
+
+    const operacion = this.profesorAEditarId
+      ? this.profesorService.update(this.profesorAEditarId, request)
+      : this.profesorService.create(request);
+
+    operacion.subscribe({
         next: () => {
-          this.createProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
-          this.createProfesorSuccess = 'Profesor registrado con éxito';
-          this.showModalCrearProfesor = false;
+          this.formProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
+          this.formProfesorSuccess = this.profesorAEditarId
+            ? 'Profesor modificado con éxito'
+            : 'Profesor registrado con éxito';
+          this.showModalFormProfesor = false;
           this.refreshProfesores();
         },
         error: (err) => {
-          this.createProfesorError = this.mapProfesorError(err?.error?.message ?? '');
+          this.formProfesorError = this.mapProfesorError(err?.error?.message ?? '');
         },
       });
   }
@@ -222,7 +249,7 @@ export class AdministrativoDashboardComponent {
       next: () => {
         this.profesorAEliminar = null;
         this.eliminandoProfesor = false;
-        this.createProfesorSuccess = 'Profesor eliminado con éxito';
+        this.formProfesorSuccess = 'Profesor eliminado con éxito';
         this.refreshProfesores();
       },
       error: (err) => {
@@ -334,5 +361,26 @@ export class AdministrativoDashboardComponent {
       return 'El correo electrónico ya está en uso por otro usuario';
     }
     return msg || 'No se pudo registrar el recepcionista.';
+  }
+
+  onConfirmarEliminarEmpleado(): void {
+    if (!this.empleadoAEliminar) return;
+    this.eliminandoEmpleado = true;
+    this.eliminarEmpleadoError = '';
+
+    const email = this.empleadoAEliminar.email;
+    this.gestionUsuariosService.eliminarRecepcionista(email).subscribe({
+      next: () => {
+        this.empleadoAEliminar = null;
+        this.eliminandoEmpleado = false;
+        this.createEmpleadoSuccess = 'Recepcionista eliminado con éxito';
+        this.refreshEmpleados();
+      },
+      error: (err) => {
+        this.eliminandoEmpleado = false;
+        this.eliminarEmpleadoError =
+          err?.error?.message || 'No se pudo eliminar al recepcionista';
+      },
+    });
   }
 }

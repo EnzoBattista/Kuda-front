@@ -29,12 +29,7 @@
           <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
         </select>
       </div>
-      <div class="field" *ngIf="hayFiltros()">
-        <div class="label">&nbsp;</div>
-        <button type="button" class="control btn-limpiar" (click)="limpiarFiltros()">
-          Limpiar filtros
-        </button>
-      </div>
+
     </div>
   </form>
 
@@ -52,9 +47,6 @@
     *ngIf="!isLoading && !errorMsg && reservas.length === 0"
   >
     <p>No posee reservas</p>
-    <div class="form-actions">
-      <a class="btn btn-primary" routerLink="/clases">Ver Clases</a>
-    </div>
   </div>
 
   <div
@@ -62,11 +54,7 @@
     *ngIf="!isLoading && !errorMsg && reservas.length > 0 && reservasFiltradas.length === 0"
   >
     <p class="help">{{ filtros.controls.sede.value ? 'No se encontraron reservas' : 'No se han encontrado reservas' }}</p>
-    <div class="form-actions">
-      <button type="button" class="btn btn-secondary" (click)="limpiarFiltros()">
-        Limpiar filtros
-      </button>
-    </div>
+
   </div>
 
   <!-- Listado -->

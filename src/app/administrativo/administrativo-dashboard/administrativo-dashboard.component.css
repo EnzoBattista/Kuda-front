@@ -297,7 +297,7 @@ select {
 }
 
 .row-emp {
-  grid-template-columns: 1.5fr 2fr 1fr 100px 80px;
+  grid-template-columns: 1.5fr 2fr 1fr 1fr 2.5fr;
 }
 
 /* ─── Badge de estado (empleados) ────────────────────────────────────────── */
@@ -353,7 +353,7 @@ select {
 }
 
 .modal-confirm-msg {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(0, 0, 0, 0.75);
   font-size: 0.95rem;
   margin-bottom: 0.5rem;
 }
