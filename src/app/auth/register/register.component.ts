@@ -30,11 +30,11 @@ export class RegisterComponent {
       apellido: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
       dni: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.minLength(7), Validators.maxLength(10)],
+        validators: [Validators.required],
       }),
       email: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.email],
+        validators: [Validators.required],
       }),
       genero: new FormControl<'femenino' | 'masculino' | 'otro'>('otro', {
         nonNullable: true,
@@ -46,7 +46,7 @@ export class RegisterComponent {
       }),
       telefono: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.minLength(6)],
+        validators: [Validators.required],
       }),
       fichaMedicaFile: new FormControl<File | null>(null, {
         validators: [Validators.required],

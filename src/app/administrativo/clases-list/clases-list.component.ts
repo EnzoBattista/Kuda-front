@@ -241,6 +241,13 @@ export class ClasesListComponent implements OnInit {
     );
   }
 
+  private getLocalIsoDate(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   private calcularProximaFecha(diaSemana: string): string | null {
     const mapa: Record<string, number> = {
       Domingo: 0,
@@ -261,7 +268,7 @@ export class ClasesListComponent implements OnInit {
     while (actual.getDay() !== objetivo) {
       actual.setDate(actual.getDate() + 1);
     }
-    return actual.toISOString().slice(0, 10);
+    return this.getLocalIsoDate(actual);
   }
 
   onAgregar(): void {
@@ -434,12 +441,70 @@ export class ClasesListComponent implements OnInit {
     return `${s.identificador} (máx. ${s.cupo})`;
   }
 
+  fechasCancelacion: string[] = [];
+  fechaCancelacionIndex = 0;
+  slidingLeft = false;
+  slidingRight = false;
+
+  private getProximasFechas(clase: ClaseListItem, max: number = 8): string[] {
+    if (clase.proximas_fechas && clase.proximas_fechas.length > 0) {
+      return clase.proximas_fechas.slice(0, max);
+    }
+    const mapa: Record<string, number> = {
+      Domingo: 0, Lunes: 1, Martes: 2, Miercoles: 3, Miércoles: 3,
+      Jueves: 4, Viernes: 5, Sabado: 6, Sábado: 6,
+    };
+    const objetivo = mapa[clase.dia_semana];
+    if (objetivo === undefined) return [];
+    
+    const fechas: string[] = [];
+    const actual = new Date();
+    while (actual.getDay() !== objetivo) {
+      actual.setDate(actual.getDate() + 1);
+    }
+    for (let i = 0; i < max; i++) {
+      fechas.push(this.getLocalIsoDate(actual));
+      actual.setDate(actual.getDate() + 7);
+    }
+    return fechas;
+  }
+
   onCancelar(clase: ClaseListItem): void {
     this.clearBanners();
     this.selectedClase = clase;
-    this.cancelarFecha = clase.proximaFecha ?? '';
+    this.fechasCancelacion = this.getProximasFechas(clase);
+    this.fechaCancelacionIndex = 0;
+    this.cancelarFecha = this.fechasCancelacion[0] ?? (clase.proximaFecha ?? '');
     this.modalError = '';
     this.showModalCancelar = true;
+  }
+
+  prevFechaCancelacion(): void {
+    if (this.fechaCancelacionIndex > 0) {
+      this.fechaCancelacionIndex--;
+      this.cancelarFecha = this.fechasCancelacion[this.fechaCancelacionIndex];
+      this.triggerDateAnimation('right');
+    }
+  }
+
+  nextFechaCancelacion(): void {
+    if (this.fechaCancelacionIndex < this.fechasCancelacion.length - 1) {
+      this.fechaCancelacionIndex++;
+      this.cancelarFecha = this.fechasCancelacion[this.fechaCancelacionIndex];
+      this.triggerDateAnimation('left');
+    }
+  }
+
+  private triggerDateAnimation(direction: 'left' | 'right'): void {
+    this.slidingLeft = false;
+    this.slidingRight = false;
+    setTimeout(() => {
+      if (direction === 'left') {
+        this.slidingLeft = true;
+      } else {
+        this.slidingRight = true;
+      }
+    }, 10);
   }
 
   cerrarModalCancelar(): void {

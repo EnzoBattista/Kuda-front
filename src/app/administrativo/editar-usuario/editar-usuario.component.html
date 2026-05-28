@@ -57,9 +57,7 @@
           <div class="error-text" *ngIf="form.controls.dni.touched && form.controls.dni.hasError('required')">
             El DNI es obligatorio.
           </div>
-          <div class="error-text" *ngIf="form.controls.dni.touched && (form.controls.dni.hasError('minlength') || form.controls.dni.hasError('maxlength'))">
-            Ingresá un DNI válido.
-          </div>
+
         </div>
 
         <div class="field">

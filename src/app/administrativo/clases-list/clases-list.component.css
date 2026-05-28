@@ -190,3 +190,64 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Custom Date Selector Carousel */
+.date-carousel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  padding: 0.35rem 0.5rem;
+  background: var(--bg);
+  min-height: 48px;
+}
+.btn-arrow {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--brand-blue);
+  padding: 0.25rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+.btn-arrow:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.btn-arrow:hover:not(:disabled) {
+  opacity: 0.8;
+}
+.date-display-wrapper {
+  flex-grow: 1;
+  text-align: center;
+  overflow: hidden;
+  position: relative;
+}
+.date-display {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.slide-left {
+  animation: slideLeftBlur 0.25s ease-out forwards;
+}
+.slide-right {
+  animation: slideRightBlur 0.25s ease-out forwards;
+}
+
+@keyframes slideLeftBlur {
+  0% { transform: translateX(25px); filter: blur(4px); opacity: 0; }
+  100% { transform: translateX(0); filter: blur(0); opacity: 1; }
+}
+
+@keyframes slideRightBlur {
+  0% { transform: translateX(-25px); filter: blur(4px); opacity: 0; }
+  100% { transform: translateX(0); filter: blur(0); opacity: 1; }
+}

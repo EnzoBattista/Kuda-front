@@ -114,11 +114,24 @@
           [(ngModel)]="formDescripcion"
         ></textarea>
       </div>
+      
+      <div class="field">
+        <label class="label" for="agregar-precio">Precio mensual</label>
+        <input
+          id="agregar-precio"
+          class="control"
+          type="number"
+          name="precio"
+          step="0.01"
+          [(ngModel)]="formPrecio"
+          autocomplete="off"
+        />
+      </div>
 
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || !formNombre.trim() || formPrecio === null || formPrecio <= 0">
           Agregar actividad
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalAgregar()" [disabled]="modalSubmitting">
@@ -167,7 +180,7 @@
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || !formNombre.trim()">
           Modificar actividad
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalModificar()" [disabled]="modalSubmitting">
@@ -207,7 +220,7 @@
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || formPrecio === null || formPrecio <= 0">
           Guardar cambios
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalPrecio()" [disabled]="modalSubmitting">

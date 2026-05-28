@@ -115,12 +115,19 @@ export class ActividadesListComponent implements OnInit {
       return;
     }
 
+    const precio = this.formPrecio;
+    if (precio === null || isNaN(precio) || precio <= 0) {
+      this.modalError = 'El precio de la actividad debe ser mayor a 0';
+      return;
+    }
+
     this.modalSubmitting = true;
     this.modalError = '';
     this.actividadesService
       .create({
         nombre,
         descripcion: this.formDescripcion.trim() || undefined,
+        precio: Number(precio),
       })
       .subscribe({
         next: (res) => {

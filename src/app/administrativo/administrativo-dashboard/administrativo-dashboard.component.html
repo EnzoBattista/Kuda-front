@@ -164,7 +164,7 @@
 
     <!-- Tabla de empleados -->
     <p class="muted" *ngIf="!loading.empleados && !error.empleados && empleadosFiltrados.length === 0">
-      No se han encontrado recepcionistas.
+      No hay recepcionistas registrados en el sistema
     </p>
     <div class="table" *ngIf="!loading.empleados && empleadosFiltrados.length > 0">
       <div class="row row-emp head">
@@ -185,7 +185,7 @@
         </div>
         <div class="right">
           <button class="btn-tabla" (click)="empleadoDetalle = u">Ver detalle</button>
-          <button *ngIf="isDueno && u.activo" class="btn-tabla btn-tabla-danger" (click)="empleadoAEliminar = u; eliminarEmpleadoError = ''">Eliminar</button>
+          <button *ngIf="isDueno" class="btn-tabla btn-tabla-danger" (click)="empleadoAEliminar = u; eliminarEmpleadoError = ''">Eliminar</button>
         </div>
       </div>
     </div>
@@ -272,7 +272,7 @@
       <p class="muted" *ngIf="!loadingActividades && actividades.length === 0">Sin actividades disponibles para asignar.</p>
 
       <div class="modal-actions">
-        <button class="btn btn-primary" (click)="onGuardarProfesor()">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar profesor' }}</button>
+        <button class="btn btn-primary" (click)="onGuardarProfesor()" [disabled]="!formProfesor.nombre?.trim() || !formProfesor.apellido?.trim() || !formProfesor.dni?.trim()">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar profesor' }}</button>
         <button class="btn btn-secondary" (click)="cerrarModalProfesor()">Cancelar</button>
       </div>
     </div>
@@ -312,7 +312,7 @@
       </div>
 
       <div class="modal-actions">
-        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()">Registrar recepcionista</button>
+        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()" [disabled]="!createEmpleadoForm.nombre?.trim() || !createEmpleadoForm.apellido?.trim() || !createEmpleadoForm.dni?.trim() || !createEmpleadoForm.email?.trim() || !createEmpleadoForm.telefono?.trim() || !createEmpleadoForm.password?.trim()">Registrar recepcionista</button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalCrearEmpleado()">Cancelar</button>
       </div>
     </div>

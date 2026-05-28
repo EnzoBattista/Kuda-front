@@ -32,7 +32,6 @@
           <div class="label">DNI</div>
           <input class="control" formControlName="dni" inputmode="numeric" [attr.aria-invalid]="submitted && form.controls.dni.invalid ? 'true' : 'false'" />
           <div class="error-text" *ngIf="submitted && form.controls.dni.hasError('required')">El DNI es obligatorio.</div>
-          <div class="error-text" *ngIf="submitted && (form.controls.dni.hasError('minlength') || form.controls.dni.hasError('maxlength'))">Ingresá un DNI válido.</div>
         </div>
 
         <div class="field">
@@ -44,9 +43,8 @@
 
       <div class="field">
         <div class="label">Email</div>
-        <input class="control" type="email" formControlName="email" autocomplete="email" inputmode="email" [attr.aria-invalid]="submitted && form.controls.email.invalid ? 'true' : 'false'" />
+        <input class="control" type="text" formControlName="email" autocomplete="email" [attr.aria-invalid]="submitted && form.controls.email.invalid ? 'true' : 'false'" />
         <div class="error-text" *ngIf="submitted && form.controls.email.hasError('required')">El email es obligatorio.</div>
-        <div class="error-text" *ngIf="submitted && form.controls.email.hasError('email')">Ingresá un email válido.</div>
       </div>
 
       <div class="form-row form-row-2">
@@ -112,7 +110,7 @@
         <button
           class="btn btn-primary"
           type="submit"
-          [disabled]="isSubmitting"
+          [disabled]="isSubmitting || form.invalid"
         >
           {{ isSubmitting ? 'Registrando…' : 'Registrarse' }}
         </button>
