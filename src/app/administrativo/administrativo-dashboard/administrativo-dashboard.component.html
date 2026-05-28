@@ -272,7 +272,7 @@
       <p class="muted" *ngIf="!loadingActividades && actividades.length === 0">Sin actividades disponibles para asignar.</p>
 
       <div class="modal-actions">
-        <button class="btn btn-primary" (click)="onGuardarProfesor()" [disabled]="!formProfesor.nombre?.trim() || !formProfesor.apellido?.trim() || !formProfesor.dni?.trim()">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar profesor' }}</button>
+        <button class="btn btn-primary" (click)="onGuardarProfesor()" [disabled]="!formProfesor.nombre.trim() || !formProfesor.apellido.trim() || !formProfesor.dni.trim()">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar profesor' }}</button>
         <button class="btn btn-secondary" (click)="cerrarModalProfesor()">Cancelar</button>
       </div>
     </div>
@@ -312,7 +312,7 @@
       </div>
 
       <div class="modal-actions">
-        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()" [disabled]="!createEmpleadoForm.nombre?.trim() || !createEmpleadoForm.apellido?.trim() || !createEmpleadoForm.dni?.trim() || !createEmpleadoForm.email?.trim() || !createEmpleadoForm.telefono?.trim() || !createEmpleadoForm.password?.trim()">Registrar recepcionista</button>
+        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()" [disabled]="!createEmpleadoForm.nombre.trim() || !createEmpleadoForm.apellido.trim() || !createEmpleadoForm.dni.trim() || !createEmpleadoForm.email.trim() || !createEmpleadoForm.telefono.trim() || !createEmpleadoForm.password.trim()">Registrar recepcionista</button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalCrearEmpleado()">Cancelar</button>
       </div>
     </div>
