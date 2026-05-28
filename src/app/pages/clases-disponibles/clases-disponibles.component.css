@@ -34,6 +34,20 @@
   font-size: 1rem;
 }
 
+/* Secciones por actividad */
+.actividad-grupo {
+  margin-bottom: 2rem;
+}
+
+.actividad-titulo {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--brand-blue);
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--brand-blue);
+}
+
 /* Grid de clases */
 .clases-grid {
   list-style: none;

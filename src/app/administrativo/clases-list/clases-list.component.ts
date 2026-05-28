@@ -425,6 +425,30 @@ export class ClasesListComponent implements OnInit {
     return dia;
   }
 
+  private readonly ORDEN_DIA: Record<string, number> = {
+    Lunes: 0, Martes: 1, Miercoles: 2, 'Miércoles': 2, Jueves: 3,
+    Viernes: 4, Sabado: 5, 'Sábado': 5, Domingo: 6,
+  };
+
+  get clasesPorActividad(): { actividad: string; clases: ClaseListItem[] }[] {
+    const grupos = new Map<string, ClaseListItem[]>();
+    for (const c of this.clases) {
+      const nombre = c.actividad?.nombre ?? c.nombre;
+      if (!grupos.has(nombre)) grupos.set(nombre, []);
+      grupos.get(nombre)!.push(c);
+    }
+    return [...grupos.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([actividad, clases]) => ({
+        actividad,
+        clases: clases.sort(
+          (a, b) =>
+            (this.ORDEN_DIA[a.dia_semana] ?? 9) - (this.ORDEN_DIA[b.dia_semana] ?? 9) ||
+            a.hora_inicio.localeCompare(b.hora_inicio),
+        ),
+      }));
+  }
+
   labelProfesor(p: Profesor): string {
     return `${p.nombre} ${p.apellido} — DNI ${p.dni}`;
   }

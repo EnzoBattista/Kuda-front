@@ -331,6 +331,29 @@ export class ClasesDisponiblesComponent implements OnInit {
     );
   }
 
+  private readonly ORDEN_DIA: Record<string, number> = {
+    Lunes: 0, Martes: 1, Miercoles: 2, Jueves: 3,
+    Viernes: 4, Sabado: 5, Domingo: 6,
+  };
+
+  get clasesPorActividad(): { actividad: string; clases: ClaseDisponible[] }[] {
+    const grupos = new Map<string, ClaseDisponible[]>();
+    for (const c of this.clasesFiltradas) {
+      if (!grupos.has(c.actividad)) grupos.set(c.actividad, []);
+      grupos.get(c.actividad)!.push(c);
+    }
+    return [...grupos.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([actividad, clases]) => ({
+        actividad,
+        clases: clases.sort(
+          (a, b) =>
+            (this.ORDEN_DIA[a.diaSemana] ?? 9) - (this.ORDEN_DIA[b.diaSemana] ?? 9) ||
+            a.horaInicio.localeCompare(b.horaInicio),
+        ),
+      }));
+  }
+
   acortarDescripcion(desc: string | undefined): string {
     if (!desc) return '';
     const words = desc.split(' ');

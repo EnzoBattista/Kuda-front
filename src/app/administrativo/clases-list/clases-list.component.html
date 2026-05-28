@@ -33,56 +33,57 @@
     <p>No hay clases</p>
   </div>
 
-  <ul class="clases-grid" *ngIf="!isLoading && !errorMsg && clases.length > 0">
-    <li class="card card-pad clase-card" *ngFor="let clase of clases">
-      <div class="clase-card-head">
-        <p class="clase-fecha-hora">{{ formatFechaHora(clase) }}</p>
-        <span
-          class="clase-estado-badge"
-          [class.clase-estado-cancelada]="estadoEsCancelada(clase)"
-        >
-          {{ estadoLabel(clase) }}
-        </span>
-      </div>
+  <ng-container *ngIf="!isLoading && !errorMsg && clases.length > 0">
+    <section class="actividad-grupo" *ngFor="let grupo of clasesPorActividad">
+      <h4 class="actividad-titulo">{{ grupo.actividad }}</h4>
+      <ul class="clases-grid">
+        <li class="card card-pad clase-card" *ngFor="let clase of grupo.clases">
+          <div class="clase-card-head">
+            <p class="clase-fecha-hora">{{ formatFechaHora(clase) }}</p>
+            <span
+              class="clase-estado-badge"
+              [class.clase-estado-cancelada]="estadoEsCancelada(clase)"
+            >
+              {{ estadoLabel(clase) }}
+            </span>
+          </div>
 
-      <dl class="clase-info">
-        <div class="clase-info-row">
-          <dt>Actividad</dt>
-          <dd>{{ nombreActividad(clase) }}</dd>
-        </div>
-        <div class="clase-info-row">
-          <dt>Profesor</dt>
-          <dd>{{ nombreProfesor(clase) }}</dd>
-        </div>
-        <div class="clase-info-row">
-          <dt>Sala</dt>
-          <dd>{{ nombreSala(clase) }}</dd>
-        </div>
-        <div class="clase-info-row">
-          <dt>Cupo</dt>
-          <dd>{{ cupoLabel(clase) }}</dd>
-        </div>
-      </dl>
+          <dl class="clase-info">
+            <div class="clase-info-row">
+              <dt>Profesor</dt>
+              <dd>{{ nombreProfesor(clase) }}</dd>
+            </div>
+            <div class="clase-info-row">
+              <dt>Sala</dt>
+              <dd>{{ nombreSala(clase) }}</dd>
+            </div>
+            <div class="clase-info-row">
+              <dt>Cupo</dt>
+              <dd>{{ cupoLabel(clase) }}</dd>
+            </div>
+          </dl>
 
-      <div class="form-actions" *ngIf="isDueno">
-        <button class="btn btn-primary" (click)="onModificar(clase)">Modificar</button>
-        <button
-          type="button"
-          class="btn btn-secondary"
-          (click)="onCancelar(clase)"
-        >
-          Cancelar clase
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger"
-          (click)="onEliminar(clase)"
-        >
-          Eliminar clase
-        </button>
-      </div>
-    </li>
-  </ul>
+          <div class="form-actions" *ngIf="isDueno">
+            <button class="btn btn-primary" (click)="onModificar(clase)">Modificar</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="onCancelar(clase)"
+            >
+              Cancelar clase
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              (click)="onEliminar(clase)"
+            >
+              Eliminar clase
+            </button>
+          </div>
+        </li>
+      </ul>
+    </section>
+  </ng-container>
 </section>
 
 <!-- Modal: Agregar / Modificar clase -->
