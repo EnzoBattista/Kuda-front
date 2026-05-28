@@ -129,6 +129,12 @@ export class GestionUsuariosService {
     return this.http.post<unknown>(`${environment.apiUrl}/recepcionistas`, data);
   }
 
+  eliminarRecepcionista(email: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${environment.apiUrl}/recepcionistas/${encodeURIComponent(email)}`,
+    );
+  }
+
   getClienteExtraInfo(email: string): Observable<ClienteExtraInfo | null> {
     return this.http
       .get<ClienteExtraInfo>(`${this.clientesUrl}/${encodeURIComponent(email)}`)

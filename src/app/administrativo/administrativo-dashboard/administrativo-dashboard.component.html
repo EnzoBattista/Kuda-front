@@ -185,10 +185,30 @@
         </div>
         <div class="right">
           <button class="btn-tabla" (click)="empleadoDetalle = u">Ver detalle</button>
+          <button *ngIf="isDueno && u.activo" class="btn-tabla btn-tabla-danger" (click)="empleadoAEliminar = u; eliminarEmpleadoError = ''">Eliminar</button>
         </div>
       </div>
     </div>
   </section>
+
+  <!-- Modal: confirmar eliminación de recepcionista -->
+  <div class="modal-overlay" *ngIf="empleadoAEliminar" (click)="empleadoAEliminar = null">
+    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+      <h4 class="modal-title">Eliminar recepcionista</h4>
+      <p class="modal-confirm-msg">
+        ¿Estás seguro que querés eliminar a
+        <strong>{{ empleadoAEliminar.nombre }} {{ empleadoAEliminar.apellido }}</strong>?
+        Si tiene sesión activa, su token quedará invalidado.
+      </p>
+      <p class="error-text" *ngIf="eliminarEmpleadoError">{{ eliminarEmpleadoError }}</p>
+      <div class="modal-actions">
+        <button class="btn btn-danger" (click)="onConfirmarEliminarEmpleado()" [disabled]="eliminandoEmpleado">
+          {{ eliminandoEmpleado ? 'Eliminando…' : 'Confirmar' }}
+        </button>
+        <button class="btn-tabla" (click)="empleadoAEliminar = null" [disabled]="eliminandoEmpleado">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal: detalle de empleado -->
   <div class="modal-overlay" *ngIf="empleadoDetalle" (click)="empleadoDetalle = null">

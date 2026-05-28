@@ -56,6 +56,11 @@ export class AdministrativoDashboardComponent {
   eliminandoProfesor = false;
   eliminarProfesorError = '';
 
+  // ─── Eliminar empleado ────────────────────────────────────────────────────
+  empleadoAEliminar: UsuarioListado | null = null;
+  eliminandoEmpleado = false;
+  eliminarEmpleadoError = '';
+
   // ─── Empleados ────────────────────────────────────────────────────────────
   empleados: UsuarioListado[] = [];
 
@@ -356,5 +361,26 @@ export class AdministrativoDashboardComponent {
       return 'El correo electrónico ya está en uso por otro usuario';
     }
     return msg || 'No se pudo registrar el recepcionista.';
+  }
+
+  onConfirmarEliminarEmpleado(): void {
+    if (!this.empleadoAEliminar) return;
+    this.eliminandoEmpleado = true;
+    this.eliminarEmpleadoError = '';
+
+    const email = this.empleadoAEliminar.email;
+    this.gestionUsuariosService.eliminarRecepcionista(email).subscribe({
+      next: () => {
+        this.empleadoAEliminar = null;
+        this.eliminandoEmpleado = false;
+        this.createEmpleadoSuccess = 'Recepcionista eliminado con éxito';
+        this.refreshEmpleados();
+      },
+      error: (err) => {
+        this.eliminandoEmpleado = false;
+        this.eliminarEmpleadoError =
+          err?.error?.message || 'No se pudo eliminar al recepcionista';
+      },
+    });
   }
 }
