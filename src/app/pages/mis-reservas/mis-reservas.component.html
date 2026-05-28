@@ -4,12 +4,14 @@
     <p class="help">Tus reservas próximas en CEF Actividades.</p>
   </header>
 
-  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status">
-    {{ bannerSuccess }}
+  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status" style="display: flex; justify-content: space-between; align-items: center;">
+    <span>{{ bannerSuccess }}</span>
+    <button type="button" (click)="bannerSuccess = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
   </div>
 
-  <div class="card card-pad" *ngIf="bannerError">
-    <p class="error-text">{{ bannerError }}</p>
+  <div class="card card-pad" *ngIf="bannerError" style="display: flex; justify-content: space-between; align-items: center;">
+    <p class="error-text" style="margin: 0;">{{ bannerError }}</p>
+    <button type="button" (click)="bannerError = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
   </div>
 
   <!-- Filtros -->

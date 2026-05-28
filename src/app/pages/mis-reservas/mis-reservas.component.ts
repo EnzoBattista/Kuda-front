@@ -78,7 +78,7 @@ export class MisReservasComponent implements OnInit {
     this.errorMsg = '';
     this.reservasService.getMisReservas().subscribe({
       next: (data) => {
-        this.reservas = data ?? [];
+        this.reservas = (data ?? []).filter((r) => r.estado !== 'CANCELADA' || r.esAbonado);
         this.actividades = [...new Set(this.reservas.map((r) => r.actividad))].sort();
         this.sedes = [...new Set(this.reservas.map((r) => r.sede))].sort();
         this.aplicarFiltros();
@@ -134,7 +134,6 @@ export class MisReservasComponent implements OnInit {
     }
 
     for (const grupo of grupos.values()) {
-      this.agregarFechasPrecanceladasCef(grupo);
       grupo.reservas.sort((a, b) =>
         (a.proximaFecha ?? a.fechaReserva).localeCompare(
           b.proximaFecha ?? b.fechaReserva,
@@ -149,76 +148,6 @@ export class MisReservasComponent implements OnInit {
     );
   }
 
-  /**
-   * Para cada abonado, completa la lista con las fechas del período en que
-   * el CEF canceló la clase ANTES de que el cliente se inscribiera. Esas
-   * fechas no tienen reserva real (el back las saltea y prorratea el monto),
-   * así que se agregan como "ghost" para dar visibilidad.
-   */
-  private agregarFechasPrecanceladasCef(grupo: AbonadoGrupo): void {
-    if (!grupo.periodoInicio || !grupo.periodoFin || grupo.reservas.length === 0) {
-      return;
-    }
-    const primera = grupo.reservas[0];
-    const claseId = primera.claseId;
-    if (!claseId) return;
-
-    const refFecha = primera.proximaFecha ?? primera.fechaReserva;
-    const diaSemana = new Date(`${refFecha}T12:00:00`).getDay();
-    const esperadas = this.fechasEnPeriodo(
-      grupo.periodoInicio,
-      grupo.periodoFin,
-      diaSemana,
-    );
-
-    const fechasYaPresentes = new Set(
-      this.reservas
-        .filter((r) => r.claseId === claseId)
-        .map((r) => r.proximaFecha ?? r.fechaReserva),
-    );
-
-    for (const fecha of esperadas) {
-      if (fechasYaPresentes.has(fecha)) continue;
-      grupo.reservas.push({
-        id: 0,
-        claseId,
-        actividad: grupo.actividad,
-        sede: grupo.sede,
-        diaSemana: grupo.diaSemana,
-        horaInicio: grupo.horaInicio,
-        horaFin: grupo.horaFin,
-        modalidad: 'ABONADO',
-        esAbonado: true,
-        estado: 'CANCELADA',
-        fechaReserva: fecha,
-        proximaFecha: fecha,
-        inscripcionMensualId: grupo.mensualId,
-        periodoInicio: grupo.periodoInicio,
-        periodoFin: grupo.periodoFin,
-        canceladaPor: 'CEF',
-      });
-    }
-  }
-
-  /** Fechas YYYY-MM-DD entre [inicio, fin) que caen en `diaSemana` (JS: 0..6). */
-  private fechasEnPeriodo(
-    inicio: string,
-    fin: string,
-    diaSemana: number,
-  ): string[] {
-    const [yi, mi, di] = inicio.split('-').map(Number);
-    const [yf, mf, df] = fin.split('-').map(Number);
-    const cursor = new Date(Date.UTC(yi, mi - 1, di));
-    const limite = new Date(Date.UTC(yf, mf - 1, df));
-    const out: string[] = [];
-    while (cursor < limite) {
-      if (cursor.getUTCDay() === diaSemana) {
-        out.push(cursor.toISOString().slice(0, 10));
-      }
-      cursor.setUTCDate(cursor.getUTCDate() + 1);
-    }
-    return out;
-  }
 
   limpiarFiltros(): void {
     this.filtros.reset({ actividad: '', sede: '' });
@@ -320,7 +249,7 @@ export class MisReservasComponent implements OnInit {
         if (mensualIdGrupo) {
           this.reservasService.getMisReservas().subscribe({
             next: (data) => {
-              this.reservas = data ?? [];
+              this.reservas = (data ?? []).filter((r) => r.estado !== 'CANCELADA' || r.esAbonado);
               this.aplicarFiltros();
               const nuevoItem = this.items.find(
                 (i) => i.kind === 'grupo' && i.grupo?.mensualId === mensualIdGrupo,

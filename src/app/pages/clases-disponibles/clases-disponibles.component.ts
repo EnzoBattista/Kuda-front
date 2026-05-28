@@ -7,6 +7,7 @@ import {
   ClaseDisponible,
   HORAS_MINIMAS_SEÑA,
   MSG_RESERVA_CONFIRMADA,
+  MSG_RESERVA_INCOMPLETA,
   ModalidadInscripcion,
   ReservasService,
   TipoListaEspera,
@@ -57,6 +58,7 @@ export class ClasesDisponiblesComponent implements OnInit {
   isSubmitting = false;
   resultadoMsg = '';
   errorModalMsg = '';
+  isReservaIncompleta = false;
 
   /** Vales disponibles para la clase seleccionada (no se exponen al usuario). */
   private valesAplicables: Vale[] = [];
@@ -134,11 +136,13 @@ export class ClasesDisponiblesComponent implements OnInit {
 
   abrirDetalle(clase: ClaseDisponible): void {
     this.bannerSuccess = '';
+    this.bannerError = '';
     this.claseSeleccionada = clase;
     this.pasoModal = 'detalle';
     this.resultadoMsg = '';
     this.errorModalMsg = '';
     this.isSubmitting = false;
+    this.isReservaIncompleta = false;
     this.cargarValesParaClase(clase.id);
   }
 
@@ -146,9 +150,11 @@ export class ClasesDisponiblesComponent implements OnInit {
     if (clase) {
       this.claseSeleccionada = clase;
       this.bannerSuccess = '';
+      this.bannerError = '';
       this.resultadoMsg = '';
       this.errorModalMsg = '';
       this.isSubmitting = false;
+      this.isReservaIncompleta = false;
       this.cargarValesParaClase(clase.id);
     }
     this.modalidadElegida = 'INDIVIDUAL';
@@ -168,6 +174,11 @@ export class ClasesDisponiblesComponent implements OnInit {
   /** Hay al menos un vale aplicable a la clase y modalidad actual. */
   tieneValesDisponibles(): boolean {
     return this.valesAplicables.length > 0 && this.montoBaseReserva() > 0;
+  }
+
+  /** Suma de montos de todos los vales aplicables. */
+  montoTotalValesDisponibles(): number {
+    return this.valesAplicables.reduce((sum, v) => sum + v.monto, 0);
   }
 
   /**
@@ -229,15 +240,14 @@ export class ClasesDisponiblesComponent implements OnInit {
     this.errorModalMsg = '';
 
     const clase = this.claseSeleccionada;
-    // El cupón solo aplica al pago de mensualidades (regla de negocio).
     const valeId =
-      this.modalidadElegida === 'ABONADO' && this.aplicarValesToggle
+      this.aplicarValesToggle
         ? this.mejorValeDisponible()?.id
         : undefined;
     const obs =
       this.modalidadElegida === 'ABONADO'
         ? this.reservasService.inscribirMensual(clase, valeId)
-        : this.reservasService.reservarClase(clase, this.tipoPagoElegido);
+        : this.reservasService.reservarClase(clase, this.tipoPagoElegido, valeId);
 
     obs.subscribe({
       next: (res) => this.onReservaExitosa(res),
@@ -263,6 +273,7 @@ export class ClasesDisponiblesComponent implements OnInit {
   }): void {
     this.isSubmitting = false;
     this.resultadoMsg = res.message;
+    this.isReservaIncompleta = (res.message === MSG_RESERVA_INCOMPLETA);
     this.pasoModal = 'resultado';
 
     if (this.claseSeleccionada && res.reservaId) {
@@ -278,7 +289,11 @@ export class ClasesDisponiblesComponent implements OnInit {
       return;
     }
 
-    this.bannerSuccess = MSG_RESERVA_CONFIRMADA;
+    if (this.isReservaIncompleta) {
+      this.bannerError = this.resultadoMsg;
+    } else {
+      this.bannerSuccess = MSG_RESERVA_CONFIRMADA;
+    }
     this.recargarClases();
   }
 
@@ -294,9 +309,11 @@ export class ClasesDisponiblesComponent implements OnInit {
     if (clase) {
       this.claseSeleccionada = clase;
       this.bannerSuccess = '';
+      this.bannerError = '';
       this.resultadoMsg = '';
       this.errorModalMsg = '';
       this.isSubmitting = false;
+      this.isReservaIncompleta = false;
     }
     if (!this.claseSeleccionada || this.yaEnListaEspera(this.claseSeleccionada.id)) {
       return;

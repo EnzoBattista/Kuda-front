@@ -36,7 +36,16 @@ export class AppComponent {
   get showBackButton(): boolean {
     const url = this.router.url;
     // Redirigir al inicio correspondiente
-    if (url === '/' || url === '/login' || url === '/clases' || url === '/catalogo' || url === '/administrativo' || url.startsWith('/confirmar')) {
+    if (
+      url === '/' ||
+      url === '/login' ||
+      url === '/clases' ||
+      url === '/mis-reservas' ||
+      url === '/mi-informacion' ||
+      url === '/catalogo' ||
+      url === '/administrativo' ||
+      url.startsWith('/confirmar')
+    ) {
       return false;
     }
     return true;

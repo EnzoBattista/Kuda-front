@@ -18,9 +18,9 @@ export type EstadoHistorial = 'ACTIVA' | 'CANCELADA' | 'COMPLETADA' | 'EN_ESPERA
 export type TipoPago = 'PAGO_COMPLETO' | 'SEÑA';
 export type TipoListaEspera = 'ABONADO' | 'INDIVIDUAL';
 
-export const MSG_RESERVA_CONFIRMADA = 'Reserva confirmada. Tu pago fue registrado exitosamente.';
-export const MSG_RESERVA_CONFIRMADA_SEÑA = 'Reserva confirmada. Tu seña fue registrada exitosamente';
-export const MSG_RESERVA_INCOMPLETA = 'Reserva incompleta. Hubo un problema con el pago.';
+export const MSG_RESERVA_CONFIRMADA = 'Tu pago fue registrado exitosamente.';
+export const MSG_RESERVA_CONFIRMADA_SEÑA = 'Tu seña fue registrada exitosamente';
+export const MSG_RESERVA_INCOMPLETA = 'Hubo un problema con el pago.';
 export const MSG_RESERVA_CANCELADA = 'La cancelación se realizó con éxito.';
 export const HORAS_MINIMAS_SEÑA = 10;
 
@@ -558,6 +558,7 @@ export class ReservasService {
   reservarClase(
     clase: ClaseDisponible,
     tipoPago: TipoPago,
+    valeId?: number,
   ): Observable<ResultadoReserva> {
     const email = this.auth.getCurrentUser()?.email;
     if (!email) {
@@ -586,7 +587,7 @@ export class ReservasService {
           return this.confirmarReservaConAbono(clase, activas, abono);
         }
 
-        return this.crearInscripcionIndividual(clase, tipoPago, email);
+        return this.crearInscripcionIndividual(clase, tipoPago, email, valeId);
       }),
       catchError((err) => throwError(() => this.toHttpError(err))),
     );
@@ -712,6 +713,7 @@ export class ReservasService {
     clase: ClaseDisponible,
     tipoPago: TipoPago,
     email: string,
+    valeId?: number,
   ): Observable<ResultadoReserva> {
     if (
       tipoPago === 'SEÑA' &&
@@ -733,6 +735,8 @@ export class ReservasService {
       fecha: clase.proximaFecha,
       modalidad,
     };
+
+    if (valeId) body['vale_id'] = valeId;
 
     if (modalidad === 'SEÑA') {
       body['vencimiento_seña'] = this.calcularVencimientoSeña(clase.proximaFecha);
@@ -782,7 +786,7 @@ export class ReservasService {
       })),
       catchError(() =>
         of({
-          message: MSG_RESERVA_INCOMPLETA,
+          message: okMessage,
           reservaId,
         }),
       ),
