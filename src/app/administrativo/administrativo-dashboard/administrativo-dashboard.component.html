@@ -185,7 +185,7 @@
         </div>
         <div class="right">
           <button class="btn-tabla" (click)="empleadoDetalle = u">Ver detalle</button>
-          <button *ngIf="isDueno" class="btn-tabla btn-tabla-danger" (click)="empleadoAEliminar = u; eliminarEmpleadoError = ''">Eliminar</button>
+          <button *ngIf="isDueno && u.activo" class="btn-tabla btn-tabla-danger" (click)="empleadoAEliminar = u; eliminarEmpleadoError = ''">Eliminar</button>
         </div>
       </div>
     </div>
@@ -198,7 +198,6 @@
       <p class="modal-confirm-msg">
         ¿Estás seguro que querés eliminar a
         <strong>{{ empleadoAEliminar.nombre }} {{ empleadoAEliminar.apellido }}</strong>?
-        Si tiene sesión activa, su token quedará invalidado.
       </p>
       <p class="error-text" *ngIf="eliminarEmpleadoError">{{ eliminarEmpleadoError }}</p>
       <div class="modal-actions">
