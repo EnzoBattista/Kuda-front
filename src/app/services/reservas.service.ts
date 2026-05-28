@@ -26,6 +26,8 @@ export const HORAS_MINIMAS_SEÑA = 10;
 
 export type ModalidadInscripcion = 'ABONADO' | 'INDIVIDUAL';
 
+export type CanceladaPor = 'CEF' | 'CLIENTE';
+
 export interface ReservaHistorial {
   id: number;
   /** Id de clase; usado para completar sala cuando el API no la envía. */
@@ -49,6 +51,8 @@ export interface ReservaHistorial {
   /** Período de la inscripción mensual (YYYY-MM-DD). */
   periodoInicio?: string;
   periodoFin?: string;
+  /** Solo presente si estado === 'CANCELADA'. */
+  canceladaPor?: CanceladaPor;
 }
 
 export interface ClaseDisponible {
@@ -91,6 +95,7 @@ interface ReservaApiDto {
   fecha_exacta: string;
   estado: string;
   asistio: boolean | null;
+  cancelada_por?: 'CEF' | 'CLIENTE';
   clase: {
     id: number;
     hora_inicio: string;
@@ -172,12 +177,13 @@ export class ReservasService {
     }
 
     const params = new HttpParams().set('cliente_email', email);
+    const paramsConCanceladas = params.set('incluir_canceladas', 'true');
 
     return forkJoin({
       activas: this.http
         .get<unknown>(this.reservasUrl, {
           headers: this.noCacheHeaders,
-          params,
+          params: paramsConCanceladas,
         })
         .pipe(map((body) => parseReservasActivasResponse(body))),
       individuales: this.http
@@ -208,15 +214,17 @@ export class ReservasService {
           const mapped = activasCompletas.map((r) =>
             this.mapReservaDto(r, individuales, mensuales, hoy),
           );
-          // Solo reservas activas (no canceladas, no pasadas)
-          const soloActivas = mapped.filter((r) => r.estado === 'ACTIVA');
+          // Próximas: activas o canceladas por el CEF (sin fechas pasadas).
+          const proximas = mapped.filter(
+            (r) => r.estado === 'ACTIVA' || r.estado === 'CANCELADA',
+          );
           // Orden cronológico descendente (próximas primero)
-          soloActivas.sort(
+          proximas.sort(
             (a, b) =>
               new Date(b.proximaFecha ?? b.fechaReserva).getTime() -
               new Date(a.proximaFecha ?? a.fechaReserva).getTime(),
           );
-          return this.enrichSedesReservas(soloActivas);
+          return this.enrichSedesReservas(proximas);
         };
 
         if (faltanId.length === 0) {
@@ -918,6 +926,7 @@ export class ReservasService {
       inscripcionMensualId: mensual?.id,
       periodoInicio: mensual ? String(mensual.periodo_inicio).slice(0, 10) : undefined,
       periodoFin: mensual ? String(mensual.periodo_fin).slice(0, 10) : undefined,
+      canceladaPor: dto.cancelada_por,
     };
   }
 

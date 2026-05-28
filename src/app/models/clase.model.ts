@@ -69,4 +69,6 @@ export interface ClaseMutationResponse {
 export interface CancelarClaseResponse {
   message: string;
   cancelacion?: unknown;
+  reservasCanceladas?: number;
+  valesGenerados?: number;
 }

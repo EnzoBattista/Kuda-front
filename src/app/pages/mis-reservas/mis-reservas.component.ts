@@ -286,6 +286,11 @@ export class MisReservasComponent implements OnInit {
     return map[r.estado] ?? r.estado;
   }
 
+  canceladaPorLabel(r: ReservaHistorial): string {
+    if (r.estado !== 'CANCELADA' || !r.canceladaPor) return '';
+    return r.canceladaPor === 'CEF' ? 'Administración (CEF)' : 'Cliente';
+  }
+
   tipoPagoLabel(r: ReservaHistorial): string {
     if (!r.tipoPago) return '—';
     return r.tipoPago === 'PAGO_COMPLETO' ? 'Pago completo' : 'Seña';

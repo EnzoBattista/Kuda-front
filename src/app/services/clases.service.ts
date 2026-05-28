@@ -137,10 +137,13 @@ export class ClasesService {
         motivo: data.motivo ?? 'Cancelación administrativa',
       })
       .pipe(
-        map((r) => ({
-          ...r,
-          message: mapClaseSuccess(r.message, 'cancelar', conInscriptos),
-        })),
+        map((r) => {
+          const huboInscriptos = conInscriptos || (r.reservasCanceladas ?? 0) > 0;
+          return {
+            ...r,
+            message: mapClaseSuccess(r.message, 'cancelar', huboInscriptos),
+          };
+        }),
         catchError((err) => throwError(() => this.toHuError(err, 'cancelar'))),
       );
   }

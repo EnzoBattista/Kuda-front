@@ -106,8 +106,8 @@
                 </span>
               </dd>
             </div>
-            <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
-              <dt>Próxima fecha</dt>
+            <div class="reserva-info-row" *ngIf="r.proximaFecha">
+              <dt>Fecha</dt>
               <dd>{{ r.proximaFecha | fechaAr }}</dd>
             </div>
           </dl>
@@ -293,9 +293,13 @@
           <dt>Fecha de reserva</dt>
           <dd>{{ r.fechaReserva | fechaAr }}</dd>
         </div>
-        <div class="reserva-info-row" *ngIf="r.proximaFecha && r.estado === 'ACTIVA'">
-          <dt>Próxima clase</dt>
+        <div class="reserva-info-row" *ngIf="r.proximaFecha">
+          <dt>Fecha</dt>
           <dd>{{ r.proximaFecha | fechaAr }}</dd>
+        </div>
+        <div class="reserva-info-row" *ngIf="r.estado === 'CANCELADA' && r.canceladaPor">
+          <dt>Cancelada por</dt>
+          <dd>{{ canceladaPorLabel(r) }}</dd>
         </div>
       </dl>
 

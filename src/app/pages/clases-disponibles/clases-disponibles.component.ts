@@ -134,7 +134,14 @@ export class ClasesDisponiblesComponent implements OnInit {
     this.isSubmitting = false;
   }
 
-  abrirReserva(): void {
+  abrirReserva(clase?: ClaseDisponible): void {
+    if (clase) {
+      this.claseSeleccionada = clase;
+      this.bannerSuccess = '';
+      this.resultadoMsg = '';
+      this.errorModalMsg = '';
+      this.isSubmitting = false;
+    }
     this.modalidadElegida = 'INDIVIDUAL';
     this.tipoPagoElegido = 'PAGO_COMPLETO';
     this.pasoModal = 'seleccion-modalidad';
@@ -225,7 +232,14 @@ export class ClasesDisponiblesComponent implements OnInit {
     return this.clasesEnListaEspera.has(claseId);
   }
 
-  abrirEspera(): void {
+  abrirEspera(clase?: ClaseDisponible): void {
+    if (clase) {
+      this.claseSeleccionada = clase;
+      this.bannerSuccess = '';
+      this.resultadoMsg = '';
+      this.errorModalMsg = '';
+      this.isSubmitting = false;
+    }
     if (!this.claseSeleccionada || this.yaEnListaEspera(this.claseSeleccionada.id)) {
       return;
     }
