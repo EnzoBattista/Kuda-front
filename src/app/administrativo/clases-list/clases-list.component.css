@@ -266,3 +266,34 @@
   0% { transform: translateX(-25px); filter: blur(4px); opacity: 0; }
   100% { transform: translateX(0); filter: blur(0); opacity: 1; }
 }
+
+.modal-panel-wide {
+  max-width: 560px;
+}
+
+.lista-espera-items {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.lista-espera-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.lista-espera-item:last-child {
+  border-bottom: none;
+}
+
+.lista-espera-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}

@@ -1,29 +1,190 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+
+export type MedioCobro = 'MERCADO_PAGO' | 'QR';
+export type MetodoPago = 'EFECTIVO' | 'TRANSFERENCIA' | 'MERCADO_PAGO' | 'QR';
+export type EstadoPago = 'PENDIENTE' | 'COMPLETADO' | 'RECHAZADO';
+
+export interface PagoListado {
+  id: number;
+  cliente_email: string;
+  recepcionista_email?: string | null;
+  concepto?: string | null;
+  monto: number | string;
+  fecha: string;
+  metodo: MetodoPago;
+  estado: EstadoPago;
+  origen?: string | null;
+  cliente?: {
+    usuario?: {
+      nombre: string;
+      apellido: string;
+      dni: string;
+      email: string;
+    };
+  };
+  recepcionista?: {
+    nombre: string;
+    apellido: string;
+    email: string;
+  } | null;
+}
+
+export interface RegistrarPagoPayload {
+  cliente_email: string;
+  monto: number;
+  concepto: string;
+  metodo: 'EFECTIVO' | 'TRANSFERENCIA';
+  origen?: string;
+  reserva_id?: number;
+  inscripcion_mensual_id?: number;
+}
+
+export interface GenerarPagoQrPayload {
+  monto: number;
+  concepto: string;
+  cliente_email?: string;
+  reserva_id?: number;
+  inscripcion_mensual_id?: number;
+  origen?: string;
+  origen_id?: number;
+}
+
+export interface GenerarPagoQrResponse {
+  message: string;
+  pago_id: number;
+  qr_data: string;
+  referencia: string;
+  estado: EstadoPago;
+  monto: number;
+  concepto: string;
+}
+
+export interface ComprobantePago {
+  gimnasio: {
+    nombre: string;
+    subtitulo: string;
+    direccion: string;
+    cuit: string;
+    email: string;
+    logo_url: string;
+  };
+  pago: {
+    id: number;
+    monto: number;
+    fecha: string;
+    metodo: MetodoPago;
+    estado: EstadoPago;
+    concepto?: string;
+    origen?: string;
+    referencia: string;
+  };
+  cliente: {
+    email: string;
+    nombre?: string;
+    apellido?: string;
+    dni?: string;
+  };
+  recepcionista?: {
+    nombre: string;
+    apellido: string;
+    email: string;
+  } | null;
+}
 
 export interface CreatePreferenceRequest {
   tituloPlan: string;
   precio: number;
+  cliente_email?: string;
+  external_reference?: string;
 }
 
 export interface CreatePreferenceResponse {
   id: string;
   init_point: string;
+  sandbox_init_point?: string;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+export interface FiltrosPagos {
+  cliente_email?: string;
+  metodo?: MetodoPago;
+  estado?: EstadoPago;
+  desde?: string;
+  hasta?: string;
+}
+
+@Injectable({ providedIn: 'root' })
 export class PagoService {
-  private readonly apiUrl = `${environment.apiUrl}/pagos/create-preference`;
+  private readonly apiUrl = `${environment.apiUrl}/pagos`;
 
   constructor(private readonly http: HttpClient) {}
 
-  createPreference(
-    data: CreatePreferenceRequest
-  ): Observable<CreatePreferenceResponse> {
-    return this.http.post<CreatePreferenceResponse>(this.apiUrl, data);
+  getAll(filtros: FiltrosPagos = {}): Observable<PagoListado[]> {
+    let params = new HttpParams();
+    Object.entries(filtros).forEach(([key, value]) => {
+      if (value) params = params.set(key, value);
+    });
+
+    return this.http
+      .get<PagoListado[] | { message: string; data: PagoListado[] }>(this.apiUrl, { params })
+      .pipe(
+        map((res) => {
+          if (Array.isArray(res)) return res;
+          return res.data ?? [];
+        }),
+      );
+  }
+
+  registrar(payload: RegistrarPagoPayload): Observable<{ message: string; data: PagoListado }> {
+    return this.http.post<{ message: string; data: PagoListado }>(
+      `${this.apiUrl}/registrar`,
+      payload,
+    );
+  }
+
+  generarPagoQr(payload: GenerarPagoQrPayload): Observable<GenerarPagoQrResponse> {
+    return this.http.post<GenerarPagoQrResponse>(`${this.apiUrl}/qr`, payload);
+  }
+
+  getComprobante(id: number): Observable<ComprobantePago> {
+    return this.http.get<ComprobantePago>(`${this.apiUrl}/${id}/comprobante`);
+  }
+
+  createPreference(data: CreatePreferenceRequest): Observable<CreatePreferenceResponse> {
+    return this.http.post<CreatePreferenceResponse>(`${this.apiUrl}/create-preference`, data);
+  }
+
+  mensajeError(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error;
+      if (typeof body === 'object' && body !== null) {
+        if ('message' in body) return String((body as { message: string }).message);
+        if ('error' in body) return String((body as { error: string }).error);
+      }
+      return err.message ?? 'Error de conexión con el servidor.';
+    }
+    return 'Error inesperado.';
+  }
+
+  metodoLabel(metodo: MetodoPago): string {
+    const labels: Record<MetodoPago, string> = {
+      EFECTIVO: 'Efectivo',
+      TRANSFERENCIA: 'Transferencia',
+      MERCADO_PAGO: 'Mercado Pago',
+      QR: 'QR',
+    };
+    return labels[metodo] ?? metodo;
+  }
+
+  estadoLabel(estado: EstadoPago): string {
+    const labels: Record<EstadoPago, string> = {
+      PENDIENTE: 'Pendiente',
+      COMPLETADO: 'Completado',
+      RECHAZADO: 'Rechazado',
+    };
+    return labels[estado] ?? estado;
   }
 }

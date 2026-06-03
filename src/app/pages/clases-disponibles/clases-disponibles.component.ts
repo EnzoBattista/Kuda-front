@@ -15,6 +15,8 @@ import {
 } from '../../services/reservas.service';
 import { AuthService } from '../../services/auth.service';
 import { Vale, ValesService } from '../../services/vales.service';
+import { MedioCobro } from '../../services/pago.service';
+import { QRCodeComponent } from 'angularx-qrcode';
 import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
 
 type PasoModal =
@@ -22,6 +24,8 @@ type PasoModal =
   | 'seleccion-modalidad'
   | 'seleccion-pago'
   | 'confirmacion'
+  | 'seleccion-medio-cobro'
+  | 'qr-pago'
   | 'resultado'
   | 'espera'
   | 'resultado-espera';
@@ -29,7 +33,7 @@ type PasoModal =
 @Component({
   selector: 'app-clases-disponibles',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, FechaArPipe],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, FechaArPipe, QRCodeComponent],
   templateUrl: './clases-disponibles.component.html',
   styleUrl: './clases-disponibles.component.css',
 })
@@ -59,6 +63,8 @@ export class ClasesDisponiblesComponent implements OnInit {
   resultadoMsg = '';
   errorModalMsg = '';
   isReservaIncompleta = false;
+  medioCobroElegido: MedioCobro = 'MERCADO_PAGO';
+  qrDataPago = '';
 
   /** Vales disponibles para la clase seleccionada (no se exponen al usuario). */
   private valesAplicables: Vale[] = [];
@@ -92,10 +98,17 @@ export class ClasesDisponiblesComponent implements OnInit {
       this.bannerError = 'Tu pago ha sido rechazado o cancelado.';
     }
 
-    if (statusQuery) {
+    const pagoQuery = this.route.snapshot.queryParamMap.get('pago');
+    if (pagoQuery === 'ok') {
+      this.bannerSuccess = MSG_RESERVA_CONFIRMADA;
+    } else if (pagoQuery === 'fail') {
+      this.bannerError = 'Tu pago ha sido rechazado o cancelado.';
+    }
+
+    if (statusQuery || pagoQuery) {
       void this.router.navigate([], {
         relativeTo: this.route,
-        queryParams: { status: null },
+        queryParams: { status: null, pago: null },
         queryParamsHandling: 'merge',
         replaceUrl: true
       });
@@ -234,6 +247,19 @@ export class ClasesDisponiblesComponent implements OnInit {
     this.pasoModal = 'confirmacion';
   }
 
+  irAMedioCobro(): void {
+    if (this.montoFinalReserva() > 0) {
+      this.pasoModal = 'seleccion-medio-cobro';
+      return;
+    }
+    this.confirmarReserva();
+  }
+
+  seleccionarMedioCobro(medio: MedioCobro): void {
+    this.medioCobroElegido = medio;
+    this.confirmarReserva();
+  }
+
   confirmarReserva(): void {
     if (!this.claseSeleccionada) return;
     this.isSubmitting = true;
@@ -246,8 +272,8 @@ export class ClasesDisponiblesComponent implements OnInit {
         : undefined;
     const obs =
       this.modalidadElegida === 'ABONADO'
-        ? this.reservasService.inscribirMensual(clase, valeId)
-        : this.reservasService.reservarClase(clase, this.tipoPagoElegido, valeId);
+        ? this.reservasService.inscribirMensual(clase, valeId, this.medioCobroElegido)
+        : this.reservasService.reservarClase(clase, this.tipoPagoElegido, valeId, this.medioCobroElegido);
 
     obs.subscribe({
       next: (res) => this.onReservaExitosa(res),
@@ -270,10 +296,28 @@ export class ClasesDisponiblesComponent implements OnInit {
     message: string;
     reservaId?: number;
     redirectUrl?: string;
+    qrData?: string;
+    medioCobro?: MedioCobro;
   }): void {
     this.isSubmitting = false;
+
+    if (res.qrData && res.medioCobro === 'QR') {
+      this.qrDataPago = res.qrData;
+      this.resultadoMsg = res.message;
+      this.pasoModal = 'qr-pago';
+      if (this.claseSeleccionada && res.reservaId) {
+        this.reservasService.recordarReservaCreada(
+          this.claseSeleccionada.id,
+          this.claseSeleccionada.proximaFecha,
+          res.reservaId,
+        );
+      }
+      this.recargarClases();
+      return;
+    }
+
     this.resultadoMsg = res.message;
-    this.isReservaIncompleta = (res.message === MSG_RESERVA_INCOMPLETA);
+    this.isReservaIncompleta = res.message === MSG_RESERVA_INCOMPLETA;
     this.pasoModal = 'resultado';
 
     if (this.claseSeleccionada && res.reservaId) {

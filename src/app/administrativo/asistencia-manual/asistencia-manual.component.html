@@ -1,0 +1,61 @@
+<section class="card card-pad manual-section">
+  <h3>Anotar asistencia manual</h3>
+  <p class="help">Seleccioná una clase de hoy y marcá presente o ausente a cada inscripto.</p>
+
+  <p class="help" *ngIf="loading">Cargando clases de hoy…</p>
+  <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
+  <div class="card card-pad success-banner" *ngIf="successMsg">{{ successMsg }}</div>
+  <p class="error-text" *ngIf="itemError">{{ itemError }}</p>
+
+  <ng-container *ngIf="!loading && !errorMsg">
+    <p class="help" *ngIf="clases.length === 0">No hay clases programadas para hoy ({{ fecha }}).</p>
+
+    <div class="field" *ngIf="clases.length > 0">
+      <label class="label" for="clase-hoy">Clase de hoy</label>
+      <select
+        id="clase-hoy"
+        class="control"
+        [value]="claseSeleccionadaId"
+        (change)="claseSeleccionadaId = +$any($event.target).value"
+      >
+        <option *ngFor="let c of clases" [value]="c.id">
+          {{ c.nombre }} · {{ c.hora_inicio }} – {{ c.hora_fin }}
+        </option>
+      </select>
+    </div>
+
+    <p class="help" *ngIf="claseSeleccionada && claseSeleccionada.inscriptos.length === 0">
+      No hay inscriptos para esta clase hoy.
+    </p>
+
+    <ul class="inscriptos-list" *ngIf="claseSeleccionada && claseSeleccionada.inscriptos.length > 0">
+      <li class="card card-pad inscripto-item" *ngFor="let ins of claseSeleccionada.inscriptos">
+        <div>
+          <strong>{{ ins.nombre }} {{ ins.apellido }}</strong>
+          <p class="help">DNI {{ ins.dni }} · {{ ins.email }}</p>
+          <p class="help" *ngIf="ins.asistencia">
+            Estado: {{ ins.asistencia.estado }}
+          </p>
+        </div>
+        <div class="inscripto-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="marcar(ins, 'PRESENTE')"
+            [disabled]="procesandoReservaId === ins.reserva_id || yaRegistrado(ins)"
+          >
+            Presente
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="marcar(ins, 'AUSENTE')"
+            [disabled]="procesandoReservaId === ins.reserva_id"
+          >
+            Ausente
+          </button>
+        </div>
+      </li>
+    </ul>
+  </ng-container>
+</section>

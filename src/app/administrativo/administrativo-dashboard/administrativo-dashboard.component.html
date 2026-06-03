@@ -15,6 +15,11 @@
       <button (click)="setTab('actividades')" [class.active]="tab === 'actividades'">Actividades</button>
       <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Clientes</button>
       <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
+      <button (click)="setTab('salas')" [class.active]="tab === 'salas'">Salas</button>
+      <button (click)="setTab('escanear')" [class.active]="tab === 'escanear'">Escanear QR</button>
+      <button (click)="setTab('asistencia-manual')" [class.active]="tab === 'asistencia-manual'">Asistencia manual</button>
+      <button (click)="setTab('pagos')" [class.active]="tab === 'pagos'">Pagos</button>
+      <button *ngIf="isDueno" (click)="setTab('reportes')" [class.active]="tab === 'reportes'">Reportes</button>
       <button (click)="setTab('profesores')" [class.active]="tab === 'profesores'">Profesores</button>
       <button *ngIf="isDueno" (click)="setTab('empleados')" [class.active]="tab === 'empleados'">Recepcionistas</button>
     </div>
@@ -25,6 +30,16 @@
   <app-usuarios-list *ngIf="tab === 'usuarios'"></app-usuarios-list>
 
   <app-clases-list *ngIf="tab === 'clases'"></app-clases-list>
+
+  <app-salas-list *ngIf="tab === 'salas'"></app-salas-list>
+
+  <app-escanear-qr *ngIf="tab === 'escanear'"></app-escanear-qr>
+
+  <app-asistencia-manual *ngIf="tab === 'asistencia-manual'"></app-asistencia-manual>
+
+  <app-pagos-list *ngIf="tab === 'pagos'"></app-pagos-list>
+
+  <app-reportes-panel *ngIf="tab === 'reportes' && isDueno"></app-reportes-panel>
 
   <!-- PROFESORES -->
   <section *ngIf="tab === 'profesores'" class="card usuarios-section">

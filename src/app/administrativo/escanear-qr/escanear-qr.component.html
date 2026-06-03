@@ -1,0 +1,69 @@
+<section class="card card-pad escanear-section">
+  <h3>Control de accesos — Escanear QR</h3>
+  <p class="help">Apuntá la cámara al código QR del cliente para validar su ingreso.</p>
+
+  <div class="card card-pad success-banner" *ngIf="successMsg">{{ successMsg }}</div>
+  <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+  <div class="scanner-wrap">
+    <div [id]="scannerId" class="qr-reader"></div>
+    <p class="help scanner-status" *ngIf="escaneando">Cámara activa…</p>
+  </div>
+</section>
+
+<div class="modal-overlay" *ngIf="showModalValidacion && escaneoData" (click)="cerrarModal()">
+  <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+    <h4 class="modal-title">Validación visual</h4>
+
+    <div class="validacion-cliente">
+      <img
+        [src]="escaneoData.cliente.foto_perfil"
+        [alt]="escaneoData.cliente.nombre + ' ' + escaneoData.cliente.apellido"
+        class="foto-perfil"
+      />
+      <div>
+        <p class="cliente-nombre">
+          {{ escaneoData.cliente.nombre }} {{ escaneoData.cliente.apellido }}
+        </p>
+        <p class="help">DNI {{ escaneoData.cliente.dni }}</p>
+        <p class="help">
+          {{ escaneoData.clase.nombre }} · {{ escaneoData.clase.hora_inicio }} – {{ escaneoData.clase.hora_fin }}
+        </p>
+      </div>
+    </div>
+
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+    <div class="field">
+      <label class="label" for="motivo-denegar">Motivo (solo si denegás)</label>
+      <input
+        id="motivo-denegar"
+        class="control"
+        [(ngModel)]="motivoDenegado"
+        placeholder="Identidad no coincide"
+      />
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="confirmarIngreso()"
+        [disabled]="modalSubmitting"
+      >
+        {{ modalSubmitting ? 'Procesando…' : 'Confirmar ingreso' }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-danger"
+        (click)="denegarAcceso()"
+        [disabled]="modalSubmitting"
+      >
+        Denegar acceso
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarModal()" [disabled]="modalSubmitting">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>

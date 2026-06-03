@@ -14,6 +14,13 @@
 
           <a class="nav-link" routerLink="/clases" routerLinkActive="nav-link-active">Clases</a>
           <a class="nav-link" routerLink="/mis-reservas" routerLinkActive="nav-link-active">Ver mis reservas actuales</a>
+          <a class="nav-link" routerLink="/mi-qr" routerLinkActive="nav-link-active">Generar QR</a>
+          <a class="nav-link" routerLink="/historial-asistencia" routerLinkActive="nav-link-active">Historial asistencia</a>
+        </ng-container>
+        <ng-container *ngIf="auth.isAdministrativo()">
+          <a class="nav-link" routerLink="/administrativo/escanear-qr" routerLinkActive="nav-link-active">Escanear QR</a>
+          <a class="nav-link" routerLink="/administrativo/asistencia-manual" routerLinkActive="nav-link-active">Asistencia manual</a>
+          <a class="nav-link" routerLink="/historial-asistencia" routerLinkActive="nav-link-active">Historial asistencia</a>
         </ng-container>
         <a class="nav-link" routerLink="/mi-informacion" routerLinkActive="nav-link-active">Mi información</a>
         <button class="nav-link nav-logout" (click)="logout()">Cerrar sesión</button>

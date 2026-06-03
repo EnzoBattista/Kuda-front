@@ -1,0 +1,173 @@
+.pagos-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.card-head h3 {
+  margin: 0;
+}
+
+.filtros-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .filtros-row {
+    grid-template-columns: 2fr 1fr 1fr auto;
+    align-items: end;
+  }
+}
+
+.field-action {
+  display: flex;
+  align-items: flex-end;
+}
+
+.empty-msg {
+  text-align: center;
+  font-weight: 600;
+}
+
+.pagos-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 780px) {
+  .pagos-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pago-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pago-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.badge-completado {
+  background: rgba(22, 163, 74, 0.15);
+  color: #15803d;
+}
+
+.badge-pendiente {
+  background: rgba(234, 179, 8, 0.18);
+  color: #a16207;
+}
+
+.success-banner {
+  font-weight: 700;
+  color: var(--brand-blue);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(30, 64, 175, 0.08);
+  border: 1px solid rgba(30, 64, 175, 0.2);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+@media (min-width: 600px) {
+  .modal-overlay {
+    align-items: center;
+  }
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: min(480px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.modal-title {
+  margin: 0 0 0.75rem;
+}
+
+.comprobante-panel {
+  max-width: min(520px, 100%);
+}
+
+.comprobante-header {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.comprobante-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.comprobante-monto {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--brand-blue-700);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .comprobante-overlay,
+  .comprobante-overlay * {
+    visibility: visible;
+  }
+
+  .comprobante-overlay {
+    position: absolute;
+    inset: 0;
+    background: white;
+    padding: 0;
+  }
+
+  .comprobante-panel {
+    box-shadow: none;
+    border: none;
+    max-width: 100%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

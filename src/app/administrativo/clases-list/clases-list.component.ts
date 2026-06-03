@@ -16,6 +16,7 @@ import { ClasesService, isClaseActiva } from '../../services/clases.service';
 import { ActividadesService } from '../../services/actividades.service';
 import { SalasService } from '../../services/salas.service';
 import { AuthService } from '../../services/auth.service';
+import { ListaEsperaItem, ListaEsperaService } from '../../services/lista-espera.service';
 import {
   CUPO_CLASE_MAX_DEFAULT,
   cupoClaseRangoMsg,
@@ -51,6 +52,7 @@ export class ClasesListComponent implements OnInit {
   private readonly salasService = inject(SalasService);
   private readonly profesorService = inject(ProfesorService);
   private readonly authService = inject(AuthService);
+  private readonly listaEsperaService = inject(ListaEsperaService);
   private readonly fb = inject(FormBuilder);
 
   readonly diasClase = DIAS_CLASE;
@@ -78,7 +80,12 @@ export class ClasesListComponent implements OnInit {
   showModalCancelar = false;
   showModalEliminar = false;
   showModalFormulario = false;
+  showModalListaEspera = false;
   formMode: 'agregar' | 'modificar' = 'agregar';
+
+  listaEsperaItems: ListaEsperaItem[] = [];
+  listaEsperaLoading = false;
+  listaEsperaError = '';
 
   selectedClase: ClaseListItem | null = null;
   modalError = '';
@@ -129,6 +136,10 @@ export class ClasesListComponent implements OnInit {
 
   get isDueno(): boolean {
     return this.authService.isDueno();
+  }
+
+  get isAdministrativo(): boolean {
+    return this.authService.isAdministrativo();
   }
 
   get formularioTitulo(): string {
@@ -657,5 +668,66 @@ export class ClasesListComponent implements OnInit {
         ? '—'
         : clase.cupoOcupado;
     return `${ocupado} / ${max}`;
+  }
+
+  onVerListaEspera(clase: ClaseListItem): void {
+    this.clearBanners();
+    this.selectedClase = clase;
+    this.listaEsperaItems = [];
+    this.listaEsperaError = '';
+    this.showModalListaEspera = true;
+    this.cargarListaEspera(clase.id);
+  }
+
+  cerrarModalListaEspera(): void {
+    this.showModalListaEspera = false;
+    this.selectedClase = null;
+    this.listaEsperaItems = [];
+    this.listaEsperaError = '';
+    this.modalSubmitting = false;
+  }
+
+  private cargarListaEspera(claseId: number): void {
+    this.listaEsperaLoading = true;
+    this.listaEsperaError = '';
+    this.listaEsperaService.getByClase(claseId).subscribe({
+      next: (items) => {
+        this.listaEsperaItems = items;
+        this.listaEsperaLoading = false;
+      },
+      error: (err) => {
+        this.listaEsperaError = this.listaEsperaService.mensajeError(err);
+        this.listaEsperaLoading = false;
+      },
+    });
+  }
+
+  removerDeListaEspera(item: ListaEsperaItem): void {
+    this.modalSubmitting = true;
+    this.listaEsperaError = '';
+    this.listaEsperaService.remover(item.id).subscribe({
+      next: (res) => {
+        this.bannerSuccess = res.message;
+        this.modalSubmitting = false;
+        if (this.selectedClase) {
+          this.cargarListaEspera(this.selectedClase.id);
+        }
+      },
+      error: (err) => {
+        this.listaEsperaError = this.listaEsperaService.mensajeError(err);
+        this.modalSubmitting = false;
+      },
+    });
+  }
+
+  nombreClienteLista(item: ListaEsperaItem): string {
+    if (item.cliente) {
+      return `${item.cliente.nombre} ${item.cliente.apellido}`.trim();
+    }
+    return item.cliente_email;
+  }
+
+  tipoListaLabel(item: ListaEsperaItem): string {
+    return item.tipo === 'MENSUAL' ? 'Abonado' : 'No abonado';
   }
 }

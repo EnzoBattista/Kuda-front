@@ -64,6 +64,16 @@
             </div>
           </dl>
 
+          <div class="form-actions" *ngIf="isAdministrativo">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="onVerListaEspera(clase)"
+            >
+              Ver Lista de Espera
+            </button>
+          </div>
+
           <div class="form-actions" *ngIf="isDueno">
             <button class="btn btn-primary" (click)="onModificar(clase)">Modificar</button>
             <button
@@ -284,6 +294,62 @@
         [disabled]="modalSubmitting"
       >
         Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Lista de espera -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalListaEspera"
+  role="presentation"
+  (click)="cerrarModalListaEspera()"
+>
+  <div
+    class="card card-pad modal-panel modal-panel-wide"
+    role="dialog"
+    aria-labelledby="modal-lista-espera-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h4 id="modal-lista-espera-title" class="modal-title">Lista de espera</h4>
+    <p class="help" *ngIf="selectedClase">
+      {{ nombreActividad(selectedClase) }} — {{ selectedClase.dia_semana }}
+      {{ selectedClase.hora_inicio }} – {{ selectedClase.hora_fin }}
+    </p>
+
+    <p class="help" *ngIf="listaEsperaLoading">Cargando lista de espera…</p>
+    <p class="error-text" *ngIf="listaEsperaError">{{ listaEsperaError }}</p>
+    <p class="help" *ngIf="!listaEsperaLoading && !listaEsperaError && listaEsperaItems.length === 0">
+      No hay clientes en la lista de espera
+    </p>
+
+    <ul class="lista-espera-items" *ngIf="!listaEsperaLoading && listaEsperaItems.length > 0">
+      <li class="lista-espera-item" *ngFor="let item of listaEsperaItems">
+        <div class="lista-espera-info">
+          <strong>{{ nombreClienteLista(item) }}</strong>
+          <span class="help">{{ item.cliente?.email ?? item.cliente_email }}</span>
+          <span class="help">Puesto {{ item.posicion }} · {{ tipoListaLabel(item) }}</span>
+        </div>
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="removerDeListaEspera(item)"
+          [disabled]="modalSubmitting"
+        >
+          Remover
+        </button>
+      </li>
+    </ul>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="cerrarModalListaEspera()"
+        [disabled]="modalSubmitting"
+      >
+        Cerrar
       </button>
     </div>
   </div>

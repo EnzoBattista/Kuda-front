@@ -1,0 +1,236 @@
+<section class="card usuarios-section salas-section">
+  <div class="card-head">
+    <h3>Salas</h3>
+    <div class="card-head-actions">
+      <button
+        *ngIf="isAdministrativo"
+        type="button"
+        class="btn btn-primary"
+        (click)="onAgregar()"
+      >
+        Agregar sala
+      </button>
+    </div>
+  </div>
+
+  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status">
+    <span>{{ bannerSuccess }}</span>
+    <button type="button" class="banner-close" (click)="bannerSuccess = ''" aria-label="Cerrar">&times;</button>
+  </div>
+
+  <div class="card card-pad" *ngIf="bannerError">
+    <p class="error-text">{{ bannerError }}</p>
+  </div>
+
+  <div class="card card-pad" *ngIf="isLoading">
+    <p class="help">Cargando…</p>
+  </div>
+
+  <div class="card card-pad" *ngIf="!isLoading && errorMsg">
+    <p class="error-text">{{ errorMsg }}</p>
+  </div>
+
+  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && salas.length === 0">
+    <p>No aun no hay salas para mostrar.</p>
+  </div>
+
+  <ul class="salas-grid" *ngIf="!isLoading && !errorMsg && salas.length > 0">
+    <li class="card card-pad sala-card" *ngFor="let sala of salas">
+      <div class="sala-card-head">
+        <button type="button" class="sala-identificador" (click)="onVerSala(sala)">
+          {{ sala.identificador }}
+        </button>
+        <span class="sala-badge" [class.sala-badge-inactiva]="!sala.estado_activo">
+          {{ estadoSalaLabel(sala.estado_activo) }}
+        </span>
+      </div>
+
+      <p class="sala-cupo">Cupo: <strong>{{ sala.cupo }}</strong></p>
+
+      <div class="form-actions" *ngIf="isAdministrativo">
+        <button type="button" class="btn btn-secondary" (click)="onModificar(sala)">
+          Modificar sala
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="onDeshabilitar(sala)"
+          [disabled]="!sala.estado_activo"
+        >
+          Deshabilitar sala
+        </button>
+        <button type="button" class="btn btn-danger" (click)="onEliminar(sala)">
+          Eliminar sala
+        </button>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- Modal: Ver sala -->
+<div class="modal-overlay" *ngIf="showModalVer" (click)="cerrarModales()">
+  <div class="card card-pad modal-panel modal-panel-wide" role="dialog" (click)="$event.stopPropagation()">
+    <h4 class="modal-title">Ver sala</h4>
+
+    <p class="help" *ngIf="detalleLoading">Cargando detalle…</p>
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+    <ng-container *ngIf="salaDetalle && !detalleLoading">
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Identificador</span>
+          <span class="info-value">{{ salaDetalle.identificador }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Cupo</span>
+          <span class="info-value">{{ salaDetalle.cupo }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Estado</span>
+          <span class="info-value">{{ estadoSalaLabel(salaDetalle.estado_activo) }}</span>
+        </div>
+      </div>
+
+      <h5 class="clases-proximas-title">Clases próximas asignadas</h5>
+
+      <p class="help" *ngIf="salaDetalle.clases_proximas.length === 0">
+        No hay clases próximas asignadas a esta sala.
+      </p>
+
+      <ul class="clases-proximas-list" *ngIf="salaDetalle.clases_proximas.length > 0">
+        <li *ngFor="let clase of salaDetalle.clases_proximas">
+          <div class="clase-proxima-head">
+            <strong>{{ clase.nombre }}</strong>
+            <span class="help">{{ clase.actividad?.nombre }}</span>
+          </div>
+          <p class="help">
+            {{ clase.dia_semana }} · {{ formatHora(clase.hora_inicio) }} – {{ formatHora(clase.hora_fin) }}
+            · Cupo {{ clase.cupo }}
+          </p>
+          <p class="help" *ngIf="clase.profesor">
+            Prof. {{ clase.profesor.nombre }} {{ clase.profesor.apellido }}
+          </p>
+          <p class="clase-fechas">
+            Próximas fechas: {{ clase.proximas_fechas.join(', ') }}
+          </p>
+        </li>
+      </ul>
+
+      <div class="form-actions" *ngIf="isAdministrativo && selectedSala">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModales(); onModificar(selectedSala)">
+          Modificar sala
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="cerrarModales(); onDeshabilitar(selectedSala)"
+          [disabled]="!selectedSala.estado_activo"
+        >
+          Deshabilitar sala
+        </button>
+        <button type="button" class="btn btn-danger" (click)="cerrarModales(); onEliminar(selectedSala)">
+          Eliminar sala
+        </button>
+      </div>
+    </ng-container>
+
+    <div class="form-actions modal-actions-solo">
+      <button type="button" class="btn btn-secondary" (click)="cerrarModales()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agregar sala -->
+<div class="modal-overlay" *ngIf="showModalAgregar" (click)="cerrarModales()">
+  <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+    <h4 class="modal-title">Agregar sala</h4>
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+    <form [formGroup]="formSala" (ngSubmit)="onSubmitAgregar()" class="form">
+      <div class="field">
+        <label class="label" for="agregar-identificador">Identificador</label>
+        <input id="agregar-identificador" class="control" formControlName="identificador" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label class="label" for="agregar-cupo">Cupo</label>
+        <input id="agregar-cupo" class="control" type="number" min="10" formControlName="cupo" />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || formSala.invalid">
+          {{ modalSubmitting ? 'Guardando…' : 'Agregar' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModales()" [disabled]="modalSubmitting">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Modificar sala -->
+<div class="modal-overlay" *ngIf="showModalModificar" (click)="cerrarModales()">
+  <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+    <h4 class="modal-title">Modificar sala</h4>
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+    <form [formGroup]="formSala" (ngSubmit)="onSubmitModificar()" class="form">
+      <div class="field">
+        <label class="label" for="modificar-identificador">Identificador</label>
+        <input id="modificar-identificador" class="control" formControlName="identificador" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label class="label" for="modificar-cupo">Cupo</label>
+        <input id="modificar-cupo" class="control" type="number" min="10" formControlName="cupo" />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || formSala.invalid">
+          {{ modalSubmitting ? 'Guardando…' : 'Aplicar cambios' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModales()" [disabled]="modalSubmitting">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Deshabilitar sala -->
+<div class="modal-overlay" *ngIf="showModalDeshabilitar" (click)="cerrarModales()">
+  <div class="card card-pad modal-panel modal-panel-danger" role="dialog" (click)="$event.stopPropagation()">
+    <h4 class="modal-title">Deshabilitar sala</h4>
+    <p class="modal-confirm-msg" *ngIf="selectedSala">
+      ¿Confirmás deshabilitar la sala <strong>{{ selectedSala.identificador }}</strong>?
+    </p>
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+    <div class="form-actions">
+      <button type="button" class="btn btn-danger" (click)="onConfirmarDeshabilitar()" [disabled]="modalSubmitting">
+        {{ modalSubmitting ? 'Procesando…' : 'Deshabilitar' }}
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarModales()" [disabled]="modalSubmitting">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Eliminar sala -->
+<div class="modal-overlay" *ngIf="showModalEliminar" (click)="cerrarModales()">
+  <div class="card card-pad modal-panel modal-panel-danger" role="dialog" (click)="$event.stopPropagation()">
+    <h4 class="modal-title">Eliminar sala</h4>
+    <p class="modal-confirm-msg" *ngIf="selectedSala">
+      ¿Confirmás eliminar la sala <strong>{{ selectedSala.identificador }}</strong>?
+      Esta acción no se puede deshacer.
+    </p>
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+    <div class="form-actions">
+      <button type="button" class="btn btn-danger" (click)="onConfirmarEliminar()" [disabled]="modalSubmitting">
+        {{ modalSubmitting ? 'Eliminando…' : 'Eliminar' }}
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarModales()" [disabled]="modalSubmitting">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>

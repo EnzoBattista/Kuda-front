@@ -1,0 +1,131 @@
+<section class="card card-pad pagos-section">
+  <div class="card-head">
+    <h3>Pagos</h3>
+    <div class="card-head-actions">
+      <button type="button" class="btn btn-primary" (click)="abrirRegistrar()">
+        Registrar pago
+      </button>
+    </div>
+  </div>
+
+  <div class="card card-pad success-banner" *ngIf="bannerSuccess">{{ bannerSuccess }}</div>
+
+  <form class="filtros-form" [formGroup]="filtros" (ngSubmit)="onFiltrar()">
+    <div class="filtros-row">
+      <div class="field">
+        <label class="label" for="filtro-email">Cliente (email)</label>
+        <input id="filtro-email" class="control" formControlName="cliente_email" />
+      </div>
+      <div class="field">
+        <label class="label" for="filtro-desde">Desde</label>
+        <input id="filtro-desde" class="control" type="date" formControlName="desde" />
+      </div>
+      <div class="field">
+        <label class="label" for="filtro-hasta">Hasta</label>
+        <input id="filtro-hasta" class="control" type="date" formControlName="hasta" />
+      </div>
+      <div class="field field-action">
+        <button type="submit" class="btn btn-secondary">Ver pagos</button>
+      </div>
+    </div>
+  </form>
+
+  <p class="help" *ngIf="isLoading">Cargando…</p>
+  <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
+  <p class="help empty-msg" *ngIf="!isLoading && !errorMsg && emptyMsg">{{ emptyMsg }}</p>
+
+  <ul class="pagos-grid" *ngIf="!isLoading && pagos.length > 0">
+    <li class="card card-pad pago-card" *ngFor="let p of pagos">
+      <div class="pago-card-head">
+        <strong>{{ formatMonto(p.monto) }}</strong>
+        <span class="badge" [class.badge-completado]="p.estado === 'COMPLETADO'" [class.badge-pendiente]="p.estado === 'PENDIENTE'">
+          {{ estadoLabel(p.estado) }}
+        </span>
+      </div>
+      <p class="help">{{ p.concepto || '—' }}</p>
+      <p><strong>{{ clienteNombre(p) }}</strong></p>
+      <p class="help">{{ formatFecha(p.fecha) }} · {{ metodoLabel(p.metodo) }}</p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="abrirComprobante(p)">
+          Generar comprobante
+        </button>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- Modal registrar -->
+<div class="modal-overlay" *ngIf="showModalRegistrar" (click)="cerrarRegistrar()">
+  <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+    <h4 class="modal-title">Registrar pago</h4>
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+    <form [formGroup]="formRegistrar" (ngSubmit)="onRegistrar()" class="form">
+      <div class="field">
+        <label class="label" for="reg-email">Email del cliente</label>
+        <input id="reg-email" class="control" type="email" formControlName="cliente_email" />
+      </div>
+      <div class="field">
+        <label class="label" for="reg-monto">Monto</label>
+        <input id="reg-monto" class="control" type="number" min="0.01" step="0.01" formControlName="monto" />
+      </div>
+      <div class="field">
+        <label class="label" for="reg-concepto">Concepto</label>
+        <input id="reg-concepto" class="control" formControlName="concepto" placeholder="Clase / Mensualidad" />
+      </div>
+      <div class="field">
+        <label class="label" for="reg-metodo">Método</label>
+        <select id="reg-metodo" class="control" formControlName="metodo">
+          <option value="EFECTIVO">Efectivo</option>
+          <option value="TRANSFERENCIA">Transferencia</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || formRegistrar.invalid">
+          {{ modalSubmitting ? 'Guardando…' : 'Registrar pago' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarRegistrar()" [disabled]="modalSubmitting">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal comprobante -->
+<div class="modal-overlay comprobante-overlay" *ngIf="showModalComprobante" (click)="cerrarComprobante()">
+  <div class="card card-pad modal-panel comprobante-panel" role="dialog" (click)="$event.stopPropagation()">
+    <p class="help" *ngIf="comprobanteLoading">Cargando comprobante…</p>
+    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
+
+    <div id="comprobante-print" class="comprobante-print" *ngIf="comprobante && !comprobanteLoading">
+      <div class="comprobante-header">
+        <img src="LogoSolo.png" alt="CEF Actividades" class="comprobante-logo" />
+        <div>
+          <h4>{{ comprobante.gimnasio.nombre }}</h4>
+          <p class="help">{{ comprobante.gimnasio.subtitulo }}</p>
+          <p class="help">{{ comprobante.gimnasio.direccion }}</p>
+          <p class="help">CUIT {{ comprobante.gimnasio.cuit }}</p>
+        </div>
+      </div>
+
+      <hr />
+
+      <p><strong>Comprobante de pago #{{ comprobante.pago.id }}</strong></p>
+      <p>Fecha: {{ formatFecha(comprobante.pago.fecha) }}</p>
+      <p>Cliente: {{ comprobante.cliente.nombre }} {{ comprobante.cliente.apellido }}</p>
+      <p>DNI: {{ comprobante.cliente.dni }}</p>
+      <p>Email: {{ comprobante.cliente.email }}</p>
+      <p>Concepto: {{ comprobante.pago.concepto || '—' }}</p>
+      <p>Método: {{ metodoLabel(comprobante.pago.metodo) }}</p>
+      <p>Estado: {{ estadoLabel(comprobante.pago.estado) }}</p>
+      <p class="comprobante-monto">Total: {{ formatMonto(comprobante.pago.monto) }}</p>
+      <p class="help">Ref: {{ comprobante.pago.referencia }}</p>
+    </div>
+
+    <div class="form-actions no-print" *ngIf="comprobante">
+      <button type="button" class="btn btn-primary" (click)="imprimirComprobante()">Imprimir</button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarComprobante()">Cerrar</button>
+    </div>
+  </div>
+</div>

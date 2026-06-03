@@ -1,0 +1,46 @@
+.manual-section h3 {
+  margin: 0 0 0.35rem;
+}
+
+.success-banner {
+  margin: 0.75rem 0;
+  font-weight: 700;
+  color: var(--brand-blue);
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(30, 64, 175, 0.08);
+  border: 1px solid rgba(30, 64, 175, 0.2);
+}
+
+.inscriptos-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.inscripto-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .inscripto-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.inscripto-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inscripto-actions .btn {
+  flex: 1 1 auto;
+  min-width: 7rem;
+}

@@ -1,0 +1,31 @@
+.page-mi-qr {
+  padding: 1rem 0 2rem;
+}
+
+.page-mi-qr h2 {
+  margin: 0 0 0.5rem;
+}
+
+.qr-actions {
+  margin: 1rem 0;
+}
+
+.qr-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(30, 64, 175, 0.04);
+}
+
+.qr-meta {
+  text-align: center;
+}
+
+.qr-meta p {
+  margin: 0.25rem 0;
+}

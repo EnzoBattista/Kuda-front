@@ -13,6 +13,10 @@ import { EditarPerfilComponent } from './pages/editar-perfil/editar-perfil.compo
 import { CambiarPasswordComponent } from './pages/cambiar-password/cambiar-password.component';
 import { MisReservasComponent } from './pages/mis-reservas/mis-reservas.component';
 import { ClasesDisponiblesComponent } from './pages/clases-disponibles/clases-disponibles.component';
+import { MiQrComponent } from './pages/mi-qr/mi-qr.component';
+import { HistorialAsistenciaComponent } from './pages/historial-asistencia/historial-asistencia.component';
+import { EscanearQrComponent } from './administrativo/escanear-qr/escanear-qr.component';
+import { AsistenciaManualComponent } from './administrativo/asistencia-manual/asistencia-manual.component';
 import { RecuperarPasswordComponent } from './auth/recuperar-password/recuperar-password.component';
 import { NuevaPasswordComponent } from './auth/nueva-password/nueva-password.component';
 
@@ -31,8 +35,12 @@ export const routes: Routes = [
   { path: 'cambiar-password', component: CambiarPasswordComponent, canActivate: [authGuard] },
   { path: 'clases', component: ClasesDisponiblesComponent, canActivate: [authGuard] },
   { path: 'mis-reservas', component: MisReservasComponent, canActivate: [authGuard] },
+  { path: 'mi-qr', component: MiQrComponent, canActivate: [authGuard] },
+  { path: 'historial-asistencia', component: HistorialAsistenciaComponent, canActivate: [authGuard] },
   // Administrativo / Recepcionista
   { path: 'administrativo', component: AdministrativoDashboardComponent, canActivate: [authGuard, administrativoGuard] },
+  { path: 'administrativo/escanear-qr', component: EscanearQrComponent, canActivate: [authGuard, administrativoGuard] },
+  { path: 'administrativo/asistencia-manual', component: AsistenciaManualComponent, canActivate: [authGuard, administrativoGuard] },
   {
     path: 'administrativo/usuarios/:email/editar',
     component: EditarUsuarioComponent,

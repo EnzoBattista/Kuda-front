@@ -1,0 +1,32 @@
+<section class="container page-historial">
+  <div class="card card-pad">
+    <h2>{{ esStaff ? 'Historial de asistencia' : 'Mi historial de asistencia' }}</h2>
+
+    <p class="help" *ngIf="loading">Cargando…</p>
+    <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
+    <p class="help empty-msg" *ngIf="!loading && !errorMsg && emptyMsg">{{ emptyMsg }}</p>
+
+    <ul class="historial-list" *ngIf="!loading && items.length > 0">
+      <li class="card card-pad historial-item" *ngFor="let item of items">
+        <div class="historial-head">
+          <strong>{{ item.clase?.nombre ?? 'Clase' }}</strong>
+          <span class="badge" [class.badge-presente]="item.estado === 'PRESENTE'" [class.badge-denegado]="item.estado === 'DENEGADO'" [class.badge-ausente]="item.estado === 'AUSENTE'">
+            {{ estadoLabel(item.estado) }}
+          </span>
+        </div>
+
+        <p class="help" *ngIf="item.clase">
+          {{ item.fecha }} · {{ item.clase.dia_semana }} · {{ item.clase.hora_inicio }} – {{ item.clase.hora_fin }}
+        </p>
+
+        <p class="help" *ngIf="esStaff && item.cliente">
+          {{ item.cliente.nombre }} {{ item.cliente.apellido }} · DNI {{ item.cliente.dni }}
+        </p>
+
+        <p class="error-text" *ngIf="item.estado === 'DENEGADO' && item.motivo_denegado">
+          Motivo: {{ item.motivo_denegado }}
+        </p>
+      </li>
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,33 @@
+<section class="container page-mi-qr">
+  <div class="card card-pad">
+    <h2>Mi código QR de acceso</h2>
+    <p class="help">
+      Presentá este código en recepción para ingresar a tu clase reservada.
+    </p>
+
+    <div class="qr-actions">
+      <button type="button" class="btn btn-primary" (click)="generarQr()" [disabled]="loading">
+        {{ loading ? 'Generando…' : 'Generar QR' }}
+      </button>
+    </div>
+
+    <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
+
+    <div class="qr-panel" *ngIf="qrData && !errorMsg">
+      <qrcode
+        [qrdata]="qrData.token"
+        [width]="240"
+        [errorCorrectionLevel]="'M'"
+        [elementType]="'canvas'"
+      ></qrcode>
+
+      <div class="qr-meta">
+        <p><strong>{{ qrData.clase.nombre }}</strong></p>
+        <p class="help">
+          {{ qrData.clase.fecha }} · {{ qrData.clase.hora_inicio }} – {{ qrData.clase.hora_fin }}
+        </p>
+        <p class="help">Válido por {{ qrData.expira_en }}</p>
+      </div>
+    </div>
+  </div>
+</section>

@@ -59,3 +59,37 @@
     flex: 1 1 auto;
   }
 }
+
+.notif-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.notif-section h3 {
+  margin: 0 0 0.35rem;
+}
+
+.notif-form {
+  margin-top: 1rem;
+}
+
+.toggle-row,
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+  cursor: pointer;
+}
+
+.notif-opciones {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.notif-opciones[disabled] {
+  opacity: 0.55;
+}

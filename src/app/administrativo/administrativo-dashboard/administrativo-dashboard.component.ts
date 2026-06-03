@@ -8,6 +8,11 @@ import { AuthService, CurrentUser } from '../../services/auth.service';
 import { UsuariosListComponent } from '../usuarios-list/usuarios-list.component';
 import { ActividadesListComponent } from '../actividades-list/actividades-list.component';
 import { ClasesListComponent } from '../clases-list/clases-list.component';
+import { SalasListComponent } from '../salas-list/salas-list.component';
+import { EscanearQrComponent } from '../escanear-qr/escanear-qr.component';
+import { AsistenciaManualComponent } from '../asistencia-manual/asistencia-manual.component';
+import { PagosListComponent } from '../pagos-list/pagos-list.component';
+import { ReportesPanelComponent } from '../reportes-panel/reportes-panel.component';
 import { ActividadesService } from '../../services/actividades.service';
 import { GestionUsuariosService, UsuarioListado } from '../../services/gestion-usuarios.service';
 import { Actividad } from '../../models/actividad.model';
@@ -21,12 +26,17 @@ import { Actividad } from '../../models/actividad.model';
     UsuariosListComponent,
     ActividadesListComponent,
     ClasesListComponent,
+    SalasListComponent,
+    EscanearQrComponent,
+    AsistenciaManualComponent,
+    PagosListComponent,
+    ReportesPanelComponent,
   ],
   templateUrl: './administrativo-dashboard.component.html',
   styleUrl: './administrativo-dashboard.component.css',
 })
 export class AdministrativoDashboardComponent {
-  tab: 'actividades' | 'usuarios' | 'clases' | 'profesores' | 'empleados' = 'usuarios';
+  tab: 'actividades' | 'usuarios' | 'clases' | 'salas' | 'pagos' | 'profesores' | 'empleados' | 'escanear' | 'asistencia-manual' | 'reportes' = 'usuarios';
 
   // ─── Profesores ───────────────────────────────────────────────────────────
   profesores: Profesor[] = [];

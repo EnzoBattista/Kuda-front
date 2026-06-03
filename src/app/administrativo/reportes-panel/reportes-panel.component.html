@@ -1,0 +1,79 @@
+<section class="card reportes-section">
+  <div class="card-head">
+    <h3>Reportes y métricas</h3>
+    <p class="help">Panel exclusivo para el dueño del gimnasio.</p>
+  </div>
+
+  <p class="help" *ngIf="isLoading">Cargando reportes…</p>
+  <p class="error-text" *ngIf="!isLoading && errorMsg">{{ errorMsg }}</p>
+
+  <ng-container *ngIf="!isLoading && !errorMsg">
+    <div class="kpi-grid">
+      <article class="kpi-card">
+        <span class="kpi-label">Total de usuarios</span>
+        <strong class="kpi-value">{{ totalUsuarios?.total ?? 0 }}</strong>
+        <ul class="kpi-detalle" *ngIf="totalUsuarios?.por_rol?.length">
+          <li *ngFor="let r of totalUsuarios!.por_rol">
+            {{ r.rol }}: {{ r.cantidad }}
+          </li>
+        </ul>
+      </article>
+
+      <article class="kpi-card kpi-card-accent">
+        <span class="kpi-label">Dinero ingresado (mes actual)</span>
+        <strong class="kpi-value">{{ formatearMoneda(ingresos?.mes_actual?.total ?? 0) }}</strong>
+        <span class="kpi-sub" *ngIf="ingresos?.mes_actual?.mes">
+          {{ formatearMes(ingresos!.mes_actual.mes) }}
+        </span>
+      </article>
+    </div>
+
+    <div class="charts-grid">
+      <article class="chart-card">
+        <h4>Usuarios nuevos (últimos 6 meses)</h4>
+        <div class="chart-wrap">
+          <canvas #chartUsuariosNuevos aria-label="Gráfico de usuarios nuevos"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card">
+        <h4>Dinero ingresado por mes</h4>
+        <div class="chart-wrap">
+          <canvas #chartIngresosMes aria-label="Gráfico de ingresos mensuales"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card">
+        <h4>Ingresos por método de pago</h4>
+        <div class="chart-wrap chart-wrap-pie">
+          <canvas #chartIngresosMetodo aria-label="Gráfico de ingresos por método"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card chart-card-wide">
+        <h4>Horarios más seleccionados</h4>
+        <div class="chart-wrap chart-wrap-horizontal">
+          <canvas #chartHorarios aria-label="Gráfico de horarios populares"></canvas>
+        </div>
+
+        <div class="ranking-table" *ngIf="horariosPopulares.length > 0">
+          <div class="ranking-row head">
+            <span>#</span>
+            <span>Clase / horario</span>
+            <span>Reservas</span>
+            <span>Cupo</span>
+            <span>Ocupación</span>
+          </div>
+          <div class="ranking-row" *ngFor="let h of horariosPopulares; let i = index">
+            <span>{{ i + 1 }}</span>
+            <span>{{ labelHorario(h) }}</span>
+            <span>{{ h.total_reservas }}</span>
+            <span>{{ h.cupo }}</span>
+            <span>{{ h.ocupacion_pct != null ? h.ocupacion_pct + '%' : '—' }}</span>
+          </div>
+        </div>
+        <p class="help" *ngIf="horariosPopulares.length === 0">No hay reservas activas para analizar.</p>
+      </article>
+    </div>
+  </ng-container>
+</section>

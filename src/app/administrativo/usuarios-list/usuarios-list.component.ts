@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged, switchMap, startWith, of, catchError } from 'rxjs';
 
@@ -12,6 +12,7 @@ import {
   UsuarioListado,
   UsuariosFiltro,
 } from '../../services/gestion-usuarios.service';
+import { NotificacionesService } from '../../services/notificaciones.service';
 
 @Component({
   selector: 'app-usuarios-list',
@@ -31,7 +32,21 @@ export class UsuariosListComponent implements OnInit {
   isLoading = false;
   errorMsg = '';
 
-  constructor(private readonly gestion: GestionUsuariosService) {}
+  showModalNotificar = false;
+  selectedUsuario: UsuarioListado | null = null;
+  notificarSubmitting = false;
+  notificarError = '';
+  notificarSuccess = '';
+
+  readonly notificarForm = new FormGroup({
+    asunto: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    mensaje: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+  });
+
+  constructor(
+    private readonly gestion: GestionUsuariosService,
+    private readonly notificaciones: NotificacionesService,
+  ) {}
 
   ngOnInit(): void {
     this.filtros.valueChanges
@@ -80,5 +95,50 @@ export class UsuariosListComponent implements OnInit {
     return this.gestion.tipoInscripcion(usuario.email) === 'ABONADO'
       ? 'Abonado'
       : 'No abonado';
+  }
+
+  abrirModalNotificar(usuario: UsuarioListado): void {
+    this.selectedUsuario = usuario;
+    this.notificarError = '';
+    this.notificarSuccess = '';
+    this.notificarForm.reset({ asunto: '', mensaje: '' });
+    this.showModalNotificar = true;
+  }
+
+  cerrarModalNotificar(): void {
+    this.showModalNotificar = false;
+    this.selectedUsuario = null;
+    this.notificarError = '';
+    this.notificarSubmitting = false;
+  }
+
+  enviarNotificacion(): void {
+    this.notificarForm.markAllAsTouched();
+    if (this.notificarForm.invalid || !this.selectedUsuario) {
+      return;
+    }
+
+    this.notificarSubmitting = true;
+    this.notificarError = '';
+    this.notificarSuccess = '';
+
+    const { asunto, mensaje } = this.notificarForm.getRawValue();
+    this.notificaciones
+      .enviarManual({
+        cliente_email: this.selectedUsuario.email,
+        asunto,
+        mensaje,
+      })
+      .subscribe({
+        next: (res) => {
+          this.notificarSuccess = res.message;
+          this.notificarSubmitting = false;
+          this.cerrarModalNotificar();
+        },
+        error: (err) => {
+          this.notificarError = this.notificaciones.mensajeError(err);
+          this.notificarSubmitting = false;
+        },
+      });
   }
 }
