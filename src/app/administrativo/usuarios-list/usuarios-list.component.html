@@ -4,7 +4,7 @@
   </div>
 
   <!-- Filtros -->
-  <form class="usuarios-filtros form" [formGroup]="filtros">
+  <form class="usuarios-filtros form" [formGroup]="filtros" *ngIf="usuarios.length > 0 || hayFiltrosAplicados()">
     <div class="filtros-row">
       <div class="field">
         <div class="label">Buscar</div>
@@ -34,8 +34,11 @@
   <!-- Estados -->
   <p class="muted" *ngIf="isLoading">Cargando…</p>
   <p class="error" *ngIf="!isLoading && errorMsg">{{ errorMsg }}</p>
-  <p class="muted" *ngIf="!isLoading && !errorMsg && usuarios.length === 0">
-    No se han encontrado clientes
+  <p class="muted" *ngIf="!isLoading && !errorMsg && usuarios.length === 0 && !hayFiltrosAplicados()">
+    No hay clientes registrados
+  </p>
+  <p class="muted" *ngIf="!isLoading && !errorMsg && usuarios.length === 0 && hayFiltrosAplicados()">
+    No se encontraron clientes con esos filtros
   </p>
 
   <!-- Tabla -->

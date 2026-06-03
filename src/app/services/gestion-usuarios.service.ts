@@ -74,7 +74,10 @@ export class GestionUsuariosService {
         this.abonadosEmails = abonados;
       }),
       map(({ usuarios }) =>
-        this.aplicarFiltroTipoInscripcion(usuarios ?? [], filtros.tipoInscripcion),
+        this.aplicarFiltroTipoInscripcion(
+          this.normalizarListaUsuarios(usuarios),
+          filtros.tipoInscripcion,
+        ),
       ),
     );
   }
@@ -159,6 +162,19 @@ export class GestionUsuariosService {
     const target = dni.trim();
     if (!target) return false;
     return lista.some((u) => u.dni === target && u.email !== emailEditado);
+  }
+
+  /** GET /usuarios devuelve un array o `{ message, data: [] }` cuando no hay resultados. */
+  private normalizarListaUsuarios(response: unknown): UsuarioListado[] {
+    if (Array.isArray(response)) return response;
+    if (
+      response &&
+      typeof response === 'object' &&
+      Array.isArray((response as { data?: unknown }).data)
+    ) {
+      return (response as { data: UsuarioListado[] }).data;
+    }
+    return [];
   }
 
   private cargarEmailsAbonados(): Observable<Set<string>> {

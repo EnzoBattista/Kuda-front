@@ -139,7 +139,7 @@
     <p class="success-msg" *ngIf="createEmpleadoSuccess">{{ createEmpleadoSuccess }}</p>
 
     <!-- Filtros -->
-    <div class="usuarios-filtros">
+    <div class="usuarios-filtros" *ngIf="empleados.length > 0">
       <div class="filtros-row filtros-row-2col">
         <div class="field">
           <div class="label">Buscar</div>
@@ -163,8 +163,11 @@
     </div>
 
     <!-- Tabla de empleados -->
-    <p class="muted" *ngIf="!loading.empleados && !error.empleados && empleadosFiltrados.length === 0">
-      No hay recepcionistas registrados en el sistema
+    <p class="muted" *ngIf="!loading.empleados && !error.empleados && empleados.length === 0">
+      No hay recepcionistas registrados
+    </p>
+    <p class="muted" *ngIf="!loading.empleados && !error.empleados && empleados.length > 0 && empleadosFiltrados.length === 0">
+      No se encontraron recepcionistas con esos filtros
     </p>
     <div class="table" *ngIf="!loading.empleados && empleadosFiltrados.length > 0">
       <div class="row row-emp head">
