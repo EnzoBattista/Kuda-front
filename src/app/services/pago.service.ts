@@ -99,13 +99,30 @@ export interface CreatePreferenceRequest {
   tituloPlan: string;
   precio: number;
   cliente_email?: string;
-  external_reference?: string;
+  reserva_id?: number;
+  inscripcion_mensual_id?: number;
+  origen?: string;
+  origen_id?: number;
 }
 
 export interface CreatePreferenceResponse {
+  pago_id: number;
+  estado: EstadoPago;
   id: string;
   init_point: string;
   sandbox_init_point?: string;
+  external_reference?: string;
+}
+
+export interface EstadoPagoResponse {
+  id: number;
+  estado: EstadoPago;
+  metodo: MetodoPago;
+  monto: number;
+  concepto?: string;
+  mp_status?: string | null;
+  mp_status_detail?: string | null;
+  message: string;
 }
 
 export interface FiltrosPagos {
@@ -155,6 +172,10 @@ export class PagoService {
 
   createPreference(data: CreatePreferenceRequest): Observable<CreatePreferenceResponse> {
     return this.http.post<CreatePreferenceResponse>(`${this.apiUrl}/create-preference`, data);
+  }
+
+  consultarEstado(pagoId: number): Observable<EstadoPagoResponse> {
+    return this.http.get<EstadoPagoResponse>(`${this.apiUrl}/${pagoId}/estado`);
   }
 
   mensajeError(err: unknown): string {

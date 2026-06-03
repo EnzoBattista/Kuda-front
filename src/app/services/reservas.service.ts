@@ -529,12 +529,12 @@ export class ReservasService {
       .pipe(
         switchMap((inscripcion) => {
           const monto = Number(inscripcion.monto ?? clase.precioActividad ?? 0);
-          const reservaId = inscripcion.reservas?.[0]?.id ?? inscripcion.id;
+          const reservaId = this.reservaIdDesdeInscripcion(inscripcion);
 
           if (monto <= 0) {
             return of({
               message: MSG_RESERVA_CONFIRMADA,
-              reservaId,
+              reservaId: reservaId || inscripcion.id,
             });
           }
 
@@ -786,6 +786,7 @@ export class ReservasService {
 
     const titulo = `${clase.actividad} — ${clase.proximaFecha}`;
     const email = this.auth.getCurrentUser()?.email;
+    const idReserva = reservaId > 0 ? reservaId : 0;
 
     if (medioCobro === 'QR') {
       return this.pagoService
@@ -793,24 +794,29 @@ export class ReservasService {
           monto,
           concepto: titulo,
           cliente_email: email,
-          reserva_id: reservaId || undefined,
+          reserva_id: idReserva > 0 ? idReserva : undefined,
           inscripcion_mensual_id: inscripcionMensualId,
           origen: inscripcionMensualId ? 'MENSUALIDAD' : 'CLASE_SUELTA',
           origen_id: inscripcionMensualId ?? inscripcionIndividualId,
         })
         .pipe(
-          map((qr) => ({
-            message: okMessage,
-            reservaId,
-            qrData: qr.qr_data,
-            pagoId: qr.pago_id,
-            medioCobro: 'QR' as MedioCobro,
-          })),
-          catchError(() =>
+          map((qr) => {
+            if (!qr.qr_data?.trim()) {
+              throw new Error('No se pudo generar el código QR de pago');
+            }
+            return {
+              message: okMessage,
+              reservaId: idReserva,
+              qrData: qr.qr_data,
+              pagoId: qr.pago_id,
+              medioCobro: 'QR' as MedioCobro,
+            } satisfies ResultadoReserva;
+          }),
+          catchError((err) =>
             of({
-              message: MSG_RESERVA_INCOMPLETA,
-              reservaId,
-            }),
+              message: this.mensajeErrorPago(err),
+              reservaId: idReserva,
+            } satisfies ResultadoReserva),
           ),
         );
     }
@@ -820,21 +826,47 @@ export class ReservasService {
         tituloPlan: titulo,
         precio: monto,
         cliente_email: email,
+        reserva_id: idReserva > 0 ? idReserva : undefined,
+        inscripcion_mensual_id: inscripcionMensualId,
+        origen: inscripcionMensualId ? 'MENSUALIDAD' : 'CLASE_SUELTA',
+        origen_id: inscripcionMensualId ?? inscripcionIndividualId,
       })
       .pipe(
-        map((pref) => ({
-          message: okMessage,
-          reservaId,
-          redirectUrl: pref.init_point,
-          medioCobro: 'MERCADO_PAGO' as MedioCobro,
-        })),
-        catchError(() =>
+        map((pref) => {
+          const redirectUrl = pref.init_point || pref.sandbox_init_point;
+          if (!redirectUrl) {
+            throw new Error('Mercado Pago no devolvió URL de checkout');
+          }
+          return {
+            message: okMessage,
+            reservaId: idReserva,
+            redirectUrl,
+            pagoId: pref.pago_id,
+            medioCobro: 'MERCADO_PAGO' as MedioCobro,
+          } satisfies ResultadoReserva;
+        }),
+        catchError((err) =>
           of({
-            message: MSG_RESERVA_INCOMPLETA,
-            reservaId,
-          }),
+            message: this.mensajeErrorPago(err),
+            reservaId: idReserva,
+          } satisfies ResultadoReserva),
         ),
       );
+  }
+
+  /** Id de reserva real; nunca usar el id de inscripción como reserva_id en pagos. */
+  private reservaIdDesdeInscripcion(inscripcion: {
+    reservas?: { id: number }[];
+  }): number {
+    return inscripcion.reservas?.[0]?.id ?? 0;
+  }
+
+  private mensajeErrorPago(err: unknown): string {
+    const detalle = this.pagoService.mensajeError(err);
+    if (detalle && detalle !== 'Error inesperado.' && detalle !== 'Error de conexión con el servidor.') {
+      return detalle;
+    }
+    return MSG_RESERVA_INCOMPLETA;
   }
 
   private enrichClaseDisponible(

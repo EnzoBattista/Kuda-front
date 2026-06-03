@@ -179,6 +179,12 @@
   font-size: 1.2rem;
 }
 
+.banner-pago-en-curso {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: linear-gradient(180deg, #eff6ff 0%, #fff 100%);
+}
+
 .qr-pago-panel {
   display: flex;
   flex-direction: column;
