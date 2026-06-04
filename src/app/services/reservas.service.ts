@@ -21,6 +21,8 @@ export type TipoListaEspera = 'ABONADO' | 'INDIVIDUAL';
 export const MSG_RESERVA_CONFIRMADA = 'Tu pago fue registrado exitosamente.';
 export const MSG_RESERVA_CONFIRMADA_SEÑA = 'Tu seña fue registrada exitosamente';
 export const MSG_RESERVA_INCOMPLETA = 'Hubo un problema con el pago.';
+export const MSG_RESERVA_PAGO_INCOMPLETO =
+  'El pago no se completó. Tu reserva no fue confirmada. Elegí la clase nuevamente para intentarlo otra vez.';
 export const MSG_RESERVA_CANCELADA = 'La cancelación se realizó con éxito.';
 export const HORAS_MINIMAS_SEÑA = 10;
 
