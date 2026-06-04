@@ -262,11 +262,20 @@ export class AuthService {
   }
 
   getRol(): string | null {
-    return this.getCurrentUser()?.rol?.nombre ?? null;
+    const user = this.getCurrentUser();
+    console.log('DEBUG CURRENT USER:', user);
+    const rol = user?.rol?.nombre ?? null;
+    console.log('DEBUG ROL NAME:', rol);
+    return rol ? rol.toUpperCase() : null;
   }
 
   isDueno(): boolean {
     return this.getRol() === 'DUEÑO';
+  }
+
+  isAdmin(): boolean {
+    const rol = this.getRol();
+    return rol === 'ADMIN' || rol === 'DUEÑO';
   }
 
   isRecepcionista(): boolean {
@@ -274,7 +283,7 @@ export class AuthService {
   }
 
   isAdministrativo(): boolean {
-    return this.isDueno() || this.isRecepcionista();
+    return this.isAdmin() || this.isRecepcionista();
   }
 
   private setToken(token: string): void {
