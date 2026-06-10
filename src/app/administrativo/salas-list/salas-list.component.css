@@ -65,20 +65,9 @@
 
 .sala-identificador {
   margin: 0;
-  padding: 0;
-  border: none;
-  background: none;
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--brand-blue-700, #1d4ed8);
-  cursor: pointer;
-  text-align: left;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.sala-identificador:hover {
-  color: var(--brand-blue, #1e40af);
+  color: var(--text, #0f172a);
 }
 
 .sala-badge {
@@ -240,4 +229,29 @@
   .modal-panel .form-actions {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* Acciones de estado: colores pastel para diferenciar de Modificar/Eliminar */
+.btn-habilitar {
+  background: #e7f6ec;
+  border-color: #b6e0c4;
+  color: #1a7f43;
+}
+
+.btn-habilitar:hover {
+  background: #d7efe0;
+  border-color: #97d3ab;
+  text-decoration: none;
+}
+
+.btn-deshabilitar {
+  background: #fdeceb;
+  border-color: #f3c1bd;
+  color: #b42318;
+}
+
+.btn-deshabilitar:hover {
+  background: #fadfdc;
+  border-color: #eda9a3;
+  text-decoration: none;
 }
