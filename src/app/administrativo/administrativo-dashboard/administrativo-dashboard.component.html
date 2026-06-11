@@ -56,7 +56,7 @@
 
     <!-- Filtro de búsqueda -->
     <div class="usuarios-filtros" *ngIf="profesores.length > 0">
-      <div class="filtros-row filtros-row-1col">
+      <div class="filtros-row filtros-row-2col">
         <div class="field">
           <div class="label">Buscar</div>
           <input
@@ -67,6 +67,13 @@
             autocomplete="off"
           />
         </div>
+        <div class="field">
+          <div class="label">Actividad</div>
+          <select class="control" [(ngModel)]="filtroProfesorActividadId">
+            <option value="">Todas</option>
+            <option *ngFor="let act of actividades" [value]="act.id">{{ act.nombre }}</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -75,7 +82,7 @@
       No hay profesores registrados
     </p>
     <p class="muted" *ngIf="!loading.profesores && !error.profesores && profesores.length > 0 && profesoresFiltrados.length === 0">
-      No se encontraron profesores con esos filtros
+      No existen profesores que coincidan
     </p>
     <div class="table" *ngIf="!loading.profesores && profesoresFiltrados.length > 0">
       <div class="row row-prof head">
@@ -161,38 +168,13 @@
     <p class="muted" *ngIf="loading.empleados">Cargando…</p>
     <p class="success-msg" *ngIf="createEmpleadoSuccess">{{ createEmpleadoSuccess }}</p>
 
-    <!-- Filtros -->
-    <div class="usuarios-filtros" *ngIf="empleados.length > 0">
-      <div class="filtros-row filtros-row-2col">
-        <div class="field">
-          <div class="label">Buscar</div>
-          <input
-            class="control"
-            type="search"
-            [(ngModel)]="filtroEmpleadosQ"
-            placeholder="Nombre, apellido, DNI o email"
-            autocomplete="off"
-          />
-        </div>
-        <div class="field">
-          <div class="label">Estado</div>
-          <select class="control" [(ngModel)]="filtroEmpleadosEstado">
-            <option value="">Todos</option>
-            <option value="ACTIVO">Activo</option>
-            <option value="INACTIVO">Inactivo</option>
-          </select>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Tabla de empleados -->
     <p class="muted" *ngIf="!loading.empleados && !error.empleados && empleados.length === 0">
       No hay recepcionistas registrados
     </p>
-    <p class="muted" *ngIf="!loading.empleados && !error.empleados && empleados.length > 0 && empleadosFiltrados.length === 0">
-      No se encontraron recepcionistas con esos filtros
-    </p>
-    <div class="table" *ngIf="!loading.empleados && empleadosFiltrados.length > 0">
+    <div class="table" *ngIf="!loading.empleados && empleados.length > 0">
       <div class="row row-emp head">
         <div>Nombre</div>
         <div>Email</div>
@@ -200,7 +182,7 @@
         <div>Estado</div>
         <div></div>
       </div>
-      <div class="row row-emp" *ngFor="let u of empleadosFiltrados">
+      <div class="row row-emp" *ngFor="let u of empleados">
         <div>{{ u.nombre }} {{ u.apellido }}</div>
         <div>{{ u.email }}</div>
         <div>{{ u.dni }}</div>
@@ -211,6 +193,7 @@
         </div>
         <div class="right">
           <button class="btn-tabla" (click)="empleadoDetalle = u">Ver detalle</button>
+          <button *ngIf="isDueno" class="btn-tabla btn-tabla-primary" (click)="abrirModalCrearEmpleado(u)">Modificar</button>
           <button *ngIf="isDueno && u.activo" class="btn-tabla btn-tabla-danger" (click)="empleadoAEliminar = u; eliminarEmpleadoError = ''">Eliminar</button>
         </div>
       </div>
@@ -290,15 +273,30 @@
 
       <div class="field" *ngIf="!loadingActividades && actividades.length > 0">
         <div class="label">Actividades que dicta</div>
-        <div class="checkboxes-grid">
-          <label class="checkbox-label" *ngFor="let act of actividades">
-            <input
-              type="checkbox"
-              [checked]="isActividadSeleccionada(act.id)"
-              (change)="toggleActividad(act.id)"
-            />
-            {{ act.nombre }}
-          </label>
+        <div class="custom-multiselect" style="position: relative;">
+          <div 
+            class="control" 
+            style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+            (click)="showActividadesDropdown = !showActividadesDropdown"
+          >
+            <span>{{ textoActividadesSeleccionadas }}</span>
+            <span style="font-size: 0.8em; user-select: none;">▼</span>
+          </div>
+          <div 
+            *ngIf="showActividadesDropdown" 
+            class="dropdown-menu card" 
+            style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; max-height: 200px; overflow-y: auto; padding: 10px; margin-top: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
+          >
+            <label class="checkbox-label" *ngFor="let act of actividades" style="display: block; margin-bottom: 8px; cursor: pointer;">
+              <input
+                type="checkbox"
+                [checked]="isActividadSeleccionada(act.id)"
+                (change)="toggleActividad(act.id)"
+                style="margin-right: 8px;"
+              />
+              {{ act.nombre }}
+            </label>
+          </div>
         </div>
       </div>
       <p class="muted" *ngIf="loadingActividades">Cargando actividades…</p>
@@ -314,7 +312,7 @@
   <!-- Modal: crear recepcionista -->
   <div class="modal-overlay" *ngIf="showModalCrearEmpleado" (click)="cerrarModalCrearEmpleado()">
     <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
-      <h4 class="modal-title">Registrar recepcionista</h4>
+      <h4 class="modal-title">{{ empleadoAEditarEmail ? 'Modificar recepcionista' : 'Registrar recepcionista' }}</h4>
       <p class="error-text" *ngIf="createEmpleadoError">{{ createEmpleadoError }}</p>
 
       <div class="form-row form-row-2">
@@ -339,13 +337,13 @@
           <input class="control" [(ngModel)]="createEmpleadoForm.telefono" />
         </div>
         <div class="field">
-          <div class="label">Contraseña</div>
+          <div class="label">Contraseña <span *ngIf="empleadoAEditarEmail" class="muted" style="font-size: 0.8em; font-weight: normal;">(Opcional: dejalo en blanco para mantener la actual)</span></div>
           <input class="control" type="password" [(ngModel)]="createEmpleadoForm.password" />
         </div>
       </div>
 
       <div class="modal-actions">
-        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()" [disabled]="!createEmpleadoForm.nombre.trim() || !createEmpleadoForm.apellido.trim() || !createEmpleadoForm.dni.trim() || !createEmpleadoForm.email.trim() || !createEmpleadoForm.telefono.trim() || !createEmpleadoForm.password.trim()">Registrar recepcionista</button>
+        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()" [disabled]="!createEmpleadoForm.nombre.trim() || !createEmpleadoForm.apellido.trim() || !createEmpleadoForm.dni.trim() || !createEmpleadoForm.email.trim() || !createEmpleadoForm.telefono.trim() || (!empleadoAEditarEmail && !createEmpleadoForm.password.trim())">{{ empleadoAEditarEmail ? 'Modificar recepcionista' : 'Registrar recepcionista' }}</button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalCrearEmpleado()">Cancelar</button>
       </div>
     </div>
