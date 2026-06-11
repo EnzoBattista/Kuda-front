@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QRCodeComponent } from 'angularx-qrcode';
 import {
@@ -13,16 +13,12 @@ import {
   templateUrl: './mi-qr.component.html',
   styleUrl: './mi-qr.component.css',
 })
-export class MiQrComponent implements OnInit {
+export class MiQrComponent {
   private readonly asistenciasService = inject(AsistenciasService);
 
   loading = false;
   errorMsg = '';
   qrData: QrGeneradoResponse | null = null;
-
-  ngOnInit(): void {
-    this.generarQr();
-  }
 
   generarQr(): void {
     this.loading = true;

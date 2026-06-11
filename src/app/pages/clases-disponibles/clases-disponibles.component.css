@@ -8,6 +8,40 @@
   font-weight: 700;
 }
 
+.cupos-pendientes {
+  margin-bottom: 1.25rem;
+}
+
+.cupos-pendientes-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.cupos-pendientes-ayuda {
+  margin: 0 0 0.75rem;
+}
+
+.cupo-pendiente-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #ffc107;
+  background: #fffdf5;
+}
+
+.cupo-pendiente-nombre {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+}
+
+.cupo-pendiente-acciones {
+  margin: 0;
+  flex-wrap: wrap;
+}
+
 .page-head { margin-bottom: 1rem; }
 
 /* Filtros */

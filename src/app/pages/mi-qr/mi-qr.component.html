@@ -2,8 +2,9 @@
   <div class="card card-pad">
     <h2>Mi código QR de acceso</h2>
     <p class="help">
-      Presentá este código en recepción para ingresar a tu clase. Solo podés generarlo el
-      <strong>día de la clase</strong>, desde 30 minutos antes del horario hasta que termine.
+      Presioná <strong>Generar QR</strong> para obtener tu código personal de acceso.
+      Solo se habilita si tenés una reserva activa para el turno actual (desde 30 minutos antes
+      del horario hasta que termine la clase) y tu cuota al día.
     </p>
 
     <div class="qr-actions">
@@ -12,9 +13,9 @@
       </button>
     </div>
 
-    <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
+    <p class="error-text" role="alert" *ngIf="errorMsg">{{ errorMsg }}</p>
 
-    <div class="qr-panel" *ngIf="qrData && !errorMsg">
+    <div class="qr-panel" *ngIf="qrData">
       <qrcode
         [qrdata]="qrData.token"
         [width]="240"

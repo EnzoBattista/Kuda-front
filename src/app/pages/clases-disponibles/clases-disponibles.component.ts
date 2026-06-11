@@ -21,6 +21,10 @@ import { Vale, ValesService } from '../../services/vales.service';
 import { MedioCobro, PagoService } from '../../services/pago.service';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
+import {
+  CupoPendienteLista,
+  ListaEsperaService,
+} from '../../services/lista-espera.service';
 
 type PasoModal =
   | 'detalle'
@@ -85,17 +89,23 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
   aplicarValesToggle = false;
   private readonly clasesEnListaEspera = new Set<number>();
 
+  cuposPendientes: CupoPendienteLista[] = [];
+  cuposPendientesLoading = false;
+  cupoAccionId: number | null = null;
+
   constructor(
     private readonly reservasService: ReservasService,
     private readonly authService: AuthService,
     private readonly valesService: ValesService,
     private readonly pagoService: PagoService,
+    private readonly listaEsperaService: ListaEsperaService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
     this.cargarListaEsperaLocal();
+    this.cargarCuposPendientes();
     this.recargarClases();
     this.filtros.valueChanges.subscribe(() => this.aplicarFiltros());
 
@@ -660,6 +670,43 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     this.pasoModal = 'espera';
   }
 
+  confirmarCupoLista(cupo: CupoPendienteLista): void {
+    this.cupoAccionId = cupo.id;
+    this.bannerError = '';
+    this.listaEsperaService.confirmarCupo(cupo.id).subscribe({
+      next: (res) => {
+        this.cupoAccionId = null;
+        this.bannerSuccess = res.message;
+        this.desmarcarListaEsperaLocal(cupo.claseId);
+        this.cargarCuposPendientes();
+        this.recargarClases();
+      },
+      error: (err) => {
+        this.cupoAccionId = null;
+        this.bannerError = this.listaEsperaService.mensajeError(err);
+        this.cargarCuposPendientes();
+      },
+    });
+  }
+
+  rechazarCupoLista(cupo: CupoPendienteLista): void {
+    this.cupoAccionId = cupo.id;
+    this.bannerError = '';
+    this.listaEsperaService.rechazarCupo(cupo.id).subscribe({
+      next: (res) => {
+        this.cupoAccionId = null;
+        this.bannerSuccess = res.message;
+        this.desmarcarListaEsperaLocal(cupo.claseId);
+        this.cargarCuposPendientes();
+      },
+      error: (err) => {
+        this.cupoAccionId = null;
+        this.bannerError = this.listaEsperaService.mensajeError(err);
+        this.cargarCuposPendientes();
+      },
+    });
+  }
+
   confirmarEspera(tipo: TipoListaEspera): void {
     if (!this.claseSeleccionada) return;
     if (this.yaEnListaEspera(this.claseSeleccionada.id)) return;
@@ -751,6 +798,27 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     const key = this.listaEsperaStorageKey();
     if (!key) return;
     localStorage.setItem(key, JSON.stringify([...this.clasesEnListaEspera]));
+  }
+
+  private desmarcarListaEsperaLocal(claseId: number): void {
+    this.clasesEnListaEspera.delete(claseId);
+    const key = this.listaEsperaStorageKey();
+    if (!key) return;
+    localStorage.setItem(key, JSON.stringify([...this.clasesEnListaEspera]));
+  }
+
+  private cargarCuposPendientes(): void {
+    this.cuposPendientesLoading = true;
+    this.listaEsperaService.getMisPendientes().subscribe({
+      next: (items) => {
+        this.cuposPendientes = items;
+        this.cuposPendientesLoading = false;
+      },
+      error: () => {
+        this.cuposPendientes = [];
+        this.cuposPendientesLoading = false;
+      },
+    });
   }
 
   private readonly ORDEN_DIA: Record<string, number> = {

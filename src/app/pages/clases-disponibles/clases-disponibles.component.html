@@ -18,6 +18,41 @@
     <button type="button" (click)="bannerError = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
   </div>
 
+  <!-- Cupos liberados desde lista de espera -->
+  <section class="cupos-pendientes" *ngIf="cuposPendientes.length > 0">
+    <h3 class="cupos-pendientes-titulo">Cupos disponibles para vos</h3>
+    <p class="help cupos-pendientes-ayuda">
+      Se liberó un lugar en una clase donde estabas en lista de espera. Tenés tiempo limitado para decidir.
+    </p>
+    <article class="card card-pad cupo-pendiente-card" *ngFor="let cupo of cuposPendientes">
+      <div class="cupo-pendiente-info">
+        <p class="cupo-pendiente-nombre">{{ cupo.actividad }}</p>
+        <p class="help">
+          {{ cupo.diaSemana }} · {{ cupo.horaInicio }} – {{ cupo.horaFin }} · Sala {{ cupo.sede }}
+          <ng-container *ngIf="cupo.fechaClase"> · {{ cupo.fechaClase | fechaAr }}</ng-container>
+        </p>
+      </div>
+      <div class="form-actions cupo-pendiente-acciones">
+        <button
+          class="btn btn-primary"
+          type="button"
+          [disabled]="cupoAccionId === cupo.id"
+          (click)="confirmarCupoLista(cupo)"
+        >
+          Confirmar asistencia
+        </button>
+        <button
+          class="btn btn-secondary"
+          type="button"
+          [disabled]="cupoAccionId === cupo.id"
+          (click)="rechazarCupoLista(cupo)"
+        >
+          Rechazar lugar
+        </button>
+      </div>
+    </article>
+  </section>
+
   <!-- Filtros -->
   <form class="filtros-form" [formGroup]="filtros">
     <div class="filtros-row">
