@@ -54,10 +54,12 @@ export class AdministrativoDashboardComponent {
   profesorAEditarId: number | null = null;
 
   filtroProfesorQ = '';
+  filtroProfesorActividadId: number | '' = '';
 
   // ─── Modales de alta ──────────────────────────────────────────────────────
   showModalFormProfesor = false;
   showModalCrearEmpleado = false;
+  showActividadesDropdown = false;
 
   // ─── Detalle ──────────────────────────────────────────────────────────────
   profesorDetalle: Profesor | null = null;
@@ -76,10 +78,10 @@ export class AdministrativoDashboardComponent {
   // ─── Empleados ────────────────────────────────────────────────────────────
   empleados: UsuarioListado[] = [];
 
-  filtroEmpleadosQ = '';
-  filtroEmpleadosEstado: '' | 'ACTIVO' | 'INACTIVO' = '';
+
 
   createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
+  empleadoAEditarEmail: string | null = null;
   createEmpleadoError = '';
   createEmpleadoSuccess = '';
 
@@ -162,7 +164,6 @@ export class AdministrativoDashboardComponent {
       },
     });
   }
-
   toggleActividad(id: number): void {
     const sel = this.formProfesor.actividadesSeleccionadas;
     const idx = sel.indexOf(id);
@@ -174,19 +175,40 @@ export class AdministrativoDashboardComponent {
     return this.formProfesor.actividadesSeleccionadas.includes(id);
   }
 
+  get textoActividadesSeleccionadas(): string {
+    const selIds = this.formProfesor.actividadesSeleccionadas;
+    if (selIds.length === 0) return 'Seleccionar actividades...';
+    
+    const nombres = selIds
+      .map(id => this.actividades.find(a => a.id === id)?.nombre)
+      .filter(Boolean);
+      
+    return nombres.join(', ');
+  }
+
   actividadesProfesorLabel(p: Profesor): string {
     return p.actividades?.map((a) => a.nombre).join(', ') || '—';
   }
 
   get profesoresFiltrados(): Profesor[] {
+    let list = this.profesores;
+
+    if (this.filtroProfesorActividadId !== '') {
+      const actId = Number(this.filtroProfesorActividadId);
+      list = list.filter((p) => p.actividades?.some((a) => a.id === actId));
+    }
+
     const q = this.filtroProfesorQ.trim().toLowerCase();
-    if (!q) return this.profesores;
-    return this.profesores.filter(
-      (p) =>
-        p.nombre.toLowerCase().includes(q) ||
-        p.apellido.toLowerCase().includes(q) ||
-        p.dni.toLowerCase().includes(q),
-    );
+    if (q) {
+      list = list.filter(
+        (p) =>
+          p.nombre.toLowerCase().includes(q) ||
+          p.apellido.toLowerCase().includes(q) ||
+          p.dni.toLowerCase().includes(q),
+      );
+    }
+    
+    return list;
   }
 
   abrirModalProfesor(p?: Profesor): void {
@@ -213,6 +235,7 @@ export class AdministrativoDashboardComponent {
   cerrarModalProfesor(): void {
     this.showModalFormProfesor = false;
     this.formProfesorError = '';
+    this.showActividadesDropdown = false;
   }
 
   onGuardarProfesor(): void {
@@ -304,25 +327,23 @@ export class AdministrativoDashboardComponent {
     });
   }
 
-  get empleadosFiltrados(): UsuarioListado[] {
-    let list = this.empleados;
-    const q = this.filtroEmpleadosQ.trim().toLowerCase();
-    if (q) {
-      list = list.filter(
-        (u) =>
-          u.nombre.toLowerCase().includes(q) ||
-          u.apellido.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          u.dni.toLowerCase().includes(q),
-      );
-    }
-    if (this.filtroEmpleadosEstado === 'ACTIVO') list = list.filter((u) => u.activo);
-    if (this.filtroEmpleadosEstado === 'INACTIVO') list = list.filter((u) => !u.activo);
-    return list;
-  }
 
-  abrirModalCrearEmpleado(): void {
-    this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
+
+  abrirModalCrearEmpleado(emp?: UsuarioListado): void {
+    if (emp) {
+      this.empleadoAEditarEmail = emp.email;
+      this.createEmpleadoForm = { 
+        nombre: emp.nombre, 
+        apellido: emp.apellido, 
+        dni: emp.dni, 
+        email: emp.email, 
+        telefono: emp.telefono || '', 
+        password: '' 
+      };
+    } else {
+      this.empleadoAEditarEmail = null;
+      this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
+    }
     this.createEmpleadoError = '';
     this.createEmpleadoSuccess = '';
     this.showModalCrearEmpleado = true;
@@ -345,20 +366,27 @@ export class AdministrativoDashboardComponent {
     const telefono = (f.telefono || '').trim();
     const password = f.password || '';
 
-    if (!nombre || !apellido || !dni || !email || !telefono || !password) {
-      this.createEmpleadoError = 'Completá todos los campos.';
+    if (!nombre || !apellido || !dni || !email || !telefono) {
+      this.createEmpleadoError = 'Completá todos los campos obligatorios.';
       return;
     }
-    if (password.length < 8) {
+    if (!this.empleadoAEditarEmail && (!password || password.length < 8)) {
       this.createEmpleadoError = 'La contraseña debe tener al menos 8 caracteres.';
       return;
     }
     
     const request = { nombre, apellido, dni, email, telefono, password };
-    this.gestionUsuariosService.createAdministrativo(request).subscribe({
+    
+    const operacion = this.empleadoAEditarEmail 
+      ? this.gestionUsuariosService.updateAdministrativo(this.empleadoAEditarEmail, request)
+      : this.gestionUsuariosService.createAdministrativo(request);
+
+    operacion.subscribe({
       next: () => {
         this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
-        this.createEmpleadoSuccess = 'Recepcionista registrado con éxito';
+        this.createEmpleadoSuccess = this.empleadoAEditarEmail 
+            ? 'Recepcionista modificado con exito' 
+            : 'Recepcionista registrado con éxito';
         this.showModalCrearEmpleado = false;
         this.refreshEmpleados();
       },
@@ -375,6 +403,12 @@ export class AdministrativoDashboardComponent {
       (lower.includes('uso') || lower.includes('registrado') || lower.includes('existe'))
     ) {
       return 'El correo electrónico ya está en uso por otro usuario';
+    }
+    if (
+      (lower.includes('dni') || lower.includes('documento')) &&
+      (lower.includes('ya') || lower.includes('existe') || lower.includes('registrado'))
+    ) {
+      return 'El DNI ya se encuentra registrado';
     }
     return msg || 'No se pudo registrar el recepcionista.';
   }

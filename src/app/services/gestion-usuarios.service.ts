@@ -132,6 +132,15 @@ export class GestionUsuariosService {
     return this.http.post<unknown>(`${environment.apiUrl}/recepcionistas`, data);
   }
 
+  updateAdministrativo(email: string, data: {
+    nombre: string;
+    apellido: string;
+    dni: string;
+    telefono?: string;
+  }): Observable<unknown> {
+    return this.http.put<unknown>(`${environment.apiUrl}/recepcionistas/${encodeURIComponent(email)}`, data);
+  }
+
   eliminarRecepcionista(email: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
       `${environment.apiUrl}/recepcionistas/${encodeURIComponent(email)}`,
