@@ -169,7 +169,7 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
           y: {
             beginAtZero: true,
             ticks: {
-              callback: (v) => this.formatearMoneda(Number(v)),
+              callback: (v: string | number) => this.formatearMoneda(Number(v)),
             },
           },
         },

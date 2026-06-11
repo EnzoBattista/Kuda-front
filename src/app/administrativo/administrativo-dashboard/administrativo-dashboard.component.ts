@@ -47,6 +47,8 @@ export class AdministrativoDashboardComponent {
     nombre: '',
     apellido: '',
     dni: '',
+    telefono: '',
+    email: '',
     actividadesSeleccionadas: [] as number[],
   };
   profesorAEditarId: number | null = null;
@@ -194,11 +196,13 @@ export class AdministrativoDashboardComponent {
         nombre: p.nombre,
         apellido: p.apellido,
         dni: p.dni,
+        telefono: p.telefono || '',
+        email: p.email || '',
         actividadesSeleccionadas: p.actividades?.map(a => a.id) ?? [],
       };
     } else {
       this.profesorAEditarId = null;
-      this.formProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
+      this.formProfesor = { nombre: '', apellido: '', dni: '', telefono: '', email: '', actividadesSeleccionadas: [] };
     }
     this.formProfesorError = '';
     this.formProfesorSuccess = '';
@@ -229,6 +233,8 @@ export class AdministrativoDashboardComponent {
       nombre: p.nombre,
       apellido: p.apellido,
       dni: p.dni,
+      telefono: p.telefono || undefined,
+      email: p.email || undefined,
       actividades: p.actividadesSeleccionadas.length ? p.actividadesSeleccionadas : undefined,
     };
 
@@ -238,7 +244,7 @@ export class AdministrativoDashboardComponent {
 
     operacion.subscribe({
         next: () => {
-          this.formProfesor = { nombre: '', apellido: '', dni: '', actividadesSeleccionadas: [] };
+          this.formProfesor = { nombre: '', apellido: '', dni: '', telefono: '', email: '', actividadesSeleccionadas: [] };
           this.formProfesorSuccess = this.profesorAEditarId
             ? 'Profesor modificado con éxito'
             : 'Profesor registrado con éxito';

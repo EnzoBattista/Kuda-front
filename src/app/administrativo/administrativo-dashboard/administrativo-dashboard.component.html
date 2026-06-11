@@ -111,6 +111,14 @@
           <span class="info-value">{{ profesorDetalle.dni }}</span>
         </div>
         <div class="info-item">
+          <span class="info-label">Teléfono</span>
+          <span class="info-value">{{ profesorDetalle.telefono || '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Email</span>
+          <span class="info-value">{{ profesorDetalle.email || '—' }}</span>
+        </div>
+        <div class="info-item">
           <span class="info-label">Actividades</span>
           <span class="info-value">{{ actividadesProfesorLabel(profesorDetalle) }}</span>
         </div>
@@ -269,6 +277,14 @@
         <div class="field">
           <div class="label">DNI</div>
           <input class="control" [(ngModel)]="formProfesor.dni" />
+        </div>
+        <div class="field">
+          <div class="label">Teléfono</div>
+          <input class="control" [(ngModel)]="formProfesor.telefono" />
+        </div>
+        <div class="field">
+          <div class="label">Email</div>
+          <input class="control" type="email" [(ngModel)]="formProfesor.email" />
         </div>
       </div>
 

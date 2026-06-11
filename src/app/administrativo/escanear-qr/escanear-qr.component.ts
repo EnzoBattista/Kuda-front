@@ -51,7 +51,7 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
       await this.scanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decoded) => void this.onQrLeido(decoded),
+        (decoded: string) => void this.onQrLeido(decoded),
         () => {},
       );
       this.escaneando = true;

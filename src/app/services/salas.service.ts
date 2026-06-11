@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Sala, SalaDetalle } from '../models/sala.model';
+import { Sala } from '../models/sala.model';
 import { environment } from '../../environments/environment';
 
 interface SalaMutationResponse {
@@ -25,10 +25,6 @@ export class SalasService {
     return this.getAll().pipe(map((salas) => salas.filter((s) => s.estado_activo !== false)));
   }
 
-  getById(id: number): Observable<SalaDetalle> {
-    return this.http.get<SalaDetalle>(`${this.apiUrl}/${id}`);
-  }
-
   create(payload: Pick<Sala, 'identificador' | 'cupo'>): Observable<SalaMutationResponse> {
     return this.http.post<SalaMutationResponse>(this.apiUrl, payload);
   }
@@ -38,6 +34,10 @@ export class SalasService {
     payload: Partial<Pick<Sala, 'identificador' | 'cupo'>>,
   ): Observable<SalaMutationResponse> {
     return this.http.put<SalaMutationResponse>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  habilitar(id: number): Observable<{ message: string }> {
+    return this.http.patch<{ message: string }>(`${this.apiUrl}/${id}/habilitar`, {});
   }
 
   deshabilitar(id: number): Observable<{ message: string }> {

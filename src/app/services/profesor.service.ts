@@ -8,6 +8,8 @@ export interface Profesor {
   nombre: string;
   apellido: string;
   dni: string;
+  telefono?: string;
+  email?: string;
   activo: boolean;
   actividades?: { id: number; nombre: string }[];
 }
@@ -16,6 +18,8 @@ export interface CreateProfesorDto {
   nombre: string;
   apellido: string;
   dni: string;
+  telefono?: string;
+  email?: string;
   actividades?: number[];
 }
 
