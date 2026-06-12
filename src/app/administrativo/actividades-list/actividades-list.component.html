@@ -10,6 +10,14 @@
       >
         Agregar actividad
       </button>
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="onRefrescar()"
+        [disabled]="isLoading"
+      >
+        Refrescar
+      </button>
     </div>
   </div>
 
@@ -20,7 +28,7 @@
 
   <div class="card card-pad" *ngIf="bannerError" style="display: flex; justify-content: space-between; align-items: center;">
     <p class="error-text" style="margin: 0;">{{ bannerError }}</p>
-    <button type="button" (click)="bannerError = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
+    <button type="button" (click)="bannerError = ''" aria-label="Cerrar" class="banner-close">&times;</button>
   </div>
 
   <div class="card card-pad" *ngIf="isLoading">
@@ -67,6 +75,7 @@
           type="button"
           class="btn btn-secondary"
           (click)="onModificarPrecio(actividad)"
+          *ngIf="isDueno"
         >
           Modificar precio
         </button>
@@ -130,10 +139,42 @@
         />
       </div>
 
+      <div class="field">
+        <label class="label">Profesores</label>
+        <div class="prof-dropdown" style="position: relative;">
+          <div
+            class="control prof-dropdown-trigger"
+            (click)="profesoresDropdownOpen = !profesoresDropdownOpen"
+            style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;"
+          >
+            <span>{{ textoProfesorSeleccionado }}</span>
+            <span style="font-size: 0.8em;">{{ profesoresDropdownOpen ? '▲' : '▼' }}</span>
+          </div>
+          <div
+            *ngIf="profesoresDropdownOpen"
+            class="prof-dropdown-menu card"
+          >
+            <p class="help" *ngIf="profesoresDisponiblesLoading" style="margin:0.5rem;">Cargando profesores…</p>
+            <p class="help" *ngIf="!profesoresDisponiblesLoading && profesoresDisponibles.length === 0" style="margin:0.5rem;">Sin profesores disponibles</p>
+            <label
+              *ngFor="let p of profesoresDisponibles"
+              class="prof-checkbox-label"
+            >
+              <input
+                type="checkbox"
+                [checked]="isProfesorSeleccionado(p.id)"
+                (change)="toggleProfesorSeleccionado(p.id)"
+              />
+              {{ p.nombre }} {{ p.apellido }}
+            </label>
+          </div>
+        </div>
+      </div>
+
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || !formNombre.trim() || formPrecio === null || formPrecio <= 0">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
           Agregar actividad
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalAgregar()" [disabled]="modalSubmitting">
@@ -179,10 +220,42 @@
         ></textarea>
       </div>
 
+      <div class="field">
+        <label class="label">Profesores</label>
+        <div class="prof-dropdown" style="position: relative;">
+          <div
+            class="control prof-dropdown-trigger"
+            (click)="profesoresDropdownOpen = !profesoresDropdownOpen"
+            style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;"
+          >
+            <span>{{ textoProfesorSeleccionado }}</span>
+            <span style="font-size: 0.8em;">{{ profesoresDropdownOpen ? '▲' : '▼' }}</span>
+          </div>
+          <div
+            *ngIf="profesoresDropdownOpen"
+            class="prof-dropdown-menu card"
+          >
+            <p class="help" *ngIf="profesoresDisponiblesLoading" style="margin:0.5rem;">Cargando profesores…</p>
+            <p class="help" *ngIf="!profesoresDisponiblesLoading && profesoresDisponibles.length === 0" style="margin:0.5rem;">Sin profesores disponibles</p>
+            <label
+              *ngFor="let p of profesoresDisponibles"
+              class="prof-checkbox-label"
+            >
+              <input
+                type="checkbox"
+                [checked]="isProfesorSeleccionado(p.id)"
+                (change)="toggleProfesorSeleccionado(p.id)"
+              />
+              {{ p.nombre }} {{ p.apellido }}
+            </label>
+          </div>
+        </div>
+      </div>
+
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || !formNombre.trim()">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
           Modificar actividad
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalModificar()" [disabled]="modalSubmitting">
@@ -222,7 +295,7 @@
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || formPrecio === null || formPrecio <= 0">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
           Guardar cambios
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalPrecio()" [disabled]="modalSubmitting">

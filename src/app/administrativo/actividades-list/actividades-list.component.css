@@ -197,3 +197,55 @@ textarea.control {
   min-height: 5rem;
   resize: vertical;
 }
+
+.banner-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0;
+  color: inherit;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Dropdown de profesores (modal Agregar) ─────────────────────────────── */
+
+.prof-dropdown {
+  position: relative;
+}
+
+.prof-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.prof-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.prof-checkbox-label:hover {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+.prof-checkbox-label input[type="checkbox"] {
+  flex-shrink: 0;
+  accent-color: var(--brand-blue, #1d4ed8);
+}
+
