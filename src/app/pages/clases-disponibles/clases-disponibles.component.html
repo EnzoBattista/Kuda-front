@@ -25,13 +25,27 @@
         </select>
       </div>
       <div class="field">
-        <div class="label">Sala</div>
-        <select class="control" formControlName="sede">
-          <option value="">Todas</option>
-          <option *ngFor="let s of sedes" [value]="s">{{ s }}</option>
+        <div class="label">Día</div>
+        <select class="control" formControlName="dia">
+          <option value="">Todos</option>
+          <option *ngFor="let d of dias" [value]="d">{{ d }}</option>
         </select>
       </div>
-
+      <div class="field">
+        <div class="label">Hora de inicio</div>
+        <select class="control" formControlName="hora">
+          <option value="">Todas</option>
+          <option *ngFor="let h of horas" [value]="h">{{ h }}</option>
+        </select>
+      </div>
+      <button
+        *ngIf="hayFiltros()"
+        type="button"
+        class="btn-limpiar"
+        (click)="limpiarFiltros()"
+      >
+        Limpiar
+      </button>
     </div>
   </form>
 
@@ -45,7 +59,7 @@
   </div>
 
   <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && clasesFiltradas.length === 0">
-    <p class="help">No hay clases disponibles{{ hayFiltros() ? ' con los filtros seleccionados' : '' }}.</p>
+    <p class="help">No existen clases para mostrar{{ hayFiltros() ? ' con los filtros seleccionados' : '' }}.</p>
   </div>
 
   <!-- Secciones por actividad -->

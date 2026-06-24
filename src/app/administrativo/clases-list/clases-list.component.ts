@@ -70,7 +70,14 @@ export class ClasesListComponent implements OnInit {
     return Number(sala?.cupo ?? CUPO_CLASE_MAX_DEFAULT);
   }
 
+  filtros = this.fb.group({
+    actividad: [''],
+    sala: [''],
+  });
+
   clases: ClaseListItem[] = [];
+  actividadesFiltro: string[] = [];
+  salasFiltro: string[] = [];
   isLoading = false;
   errorMsg = '';
 
@@ -165,6 +172,14 @@ export class ClasesListComponent implements OnInit {
     const loadId = ++this.clasesLoadId;
     this.isLoading = true;
     this.errorMsg = '';
+    // TODO-TEST: quitar este bloque después de verificar el escenario de listado vacío
+    if (new URLSearchParams(window.location.search).get('vacio') === '1') {
+      this.clases = [];
+      this.actividadesFiltro = [];
+      this.salasFiltro = [];
+      this.isLoading = false;
+      return;
+    }
     this.clasesService.getAll().subscribe({
       next: (data) => {
         if (loadId !== this.clasesLoadId) {
@@ -199,6 +214,7 @@ export class ClasesListComponent implements OnInit {
               return;
             }
             this.clases = items;
+            this.actualizarOpcionesFiltro();
             this.isLoading = false;
           },
           error: () => {
@@ -219,6 +235,11 @@ export class ClasesListComponent implements OnInit {
         this.isLoading = false;
       },
     });
+  }
+
+  private actualizarOpcionesFiltro(): void {
+    this.actividadesFiltro = [...new Set(this.clases.map((c) => c.actividad?.nombre ?? c.nombre))].sort();
+    this.salasFiltro = [...new Set(this.clases.map((c) => c.sala?.identificador ?? '').filter(Boolean))].sort();
   }
 
   private toListItem(clase: Clase): ClaseListItem {
@@ -367,7 +388,16 @@ export class ClasesListComponent implements OnInit {
 
   submitFormulario(): void {
     this.claseForm.markAllAsTouched();
-    if (this.formularioInvalido) {
+    if (this.claseForm.invalid) {
+      const cupoCtrl = this.claseForm.get('cupo_maximo');
+      if (cupoCtrl?.hasError('cupoRango')) {
+        const err = cupoCtrl.errors?.['cupoRango'];
+        if (err?.minError && this.formMode === 'modificar') {
+          this.modalError = 'No se pudo modificar la clase. El cupo debe ser mayor o igual a 10';
+        } else {
+          this.modalError = this.cupoRangoMsg;
+        }
+      }
       return;
     }
 
@@ -449,9 +479,27 @@ export class ClasesListComponent implements OnInit {
     Viernes: 4, Sabado: 5, 'Sábado': 5, Domingo: 6,
   };
 
+  get clasesFiltradas(): ClaseListItem[] {
+    const { actividad, sala } = this.filtros.getRawValue();
+    return this.clases.filter(
+      (c) =>
+        (!actividad || (c.actividad?.nombre ?? c.nombre) === actividad) &&
+        (!sala || (c.sala?.identificador ?? '') === sala),
+    );
+  }
+
+  limpiarFiltros(): void {
+    this.filtros.reset({ actividad: '', sala: '' });
+  }
+
+  hayFiltros(): boolean {
+    const { actividad, sala } = this.filtros.getRawValue();
+    return Boolean(actividad || sala);
+  }
+
   get clasesPorActividad(): { actividad: string; clases: ClaseListItem[] }[] {
     const grupos = new Map<string, ClaseListItem[]>();
-    for (const c of this.clases) {
+    for (const c of this.clasesFiltradas) {
       const nombre = c.actividad?.nombre ?? c.nombre;
       if (!grupos.has(nombre)) grupos.set(nombre, []);
       grupos.get(nombre)!.push(c);

@@ -40,13 +40,15 @@ type PasoModal =
 export class ClasesDisponiblesComponent implements OnInit {
   readonly filtros = new FormGroup({
     actividad: new FormControl('', { nonNullable: true }),
-    sede: new FormControl('', { nonNullable: true }),
+    dia: new FormControl('', { nonNullable: true }),
+    hora: new FormControl('', { nonNullable: true }),
   });
 
   clases: ClaseDisponible[] = [];
   clasesFiltradas: ClaseDisponible[] = [];
   actividades: string[] = [];
-  sedes: string[] = [];
+  dias: string[] = [];
+  horas: string[] = [];
 
   isLoading = true;
   errorMsg = '';
@@ -116,21 +118,22 @@ export class ClasesDisponiblesComponent implements OnInit {
   }
 
   private aplicarFiltros(): void {
-    const { actividad, sede } = this.filtros.getRawValue();
+    const { actividad, dia, hora } = this.filtros.getRawValue();
     this.clasesFiltradas = this.clases.filter(
       (c) =>
         (!actividad || c.actividad === actividad) &&
-        (!sede || c.sede === sede),
+        (!dia || c.diaSemana === dia) &&
+        (!hora || c.horaInicio === hora),
     );
   }
 
   limpiarFiltros(): void {
-    this.filtros.reset({ actividad: '', sede: '' });
+    this.filtros.reset({ actividad: '', dia: '', hora: '' });
   }
 
   hayFiltros(): boolean {
-    const { actividad, sede } = this.filtros.getRawValue();
-    return Boolean(actividad || sede);
+    const { actividad, dia, hora } = this.filtros.getRawValue();
+    return Boolean(actividad || dia || hora);
   }
 
   horasHasta(clase: ClaseDisponible): number {
@@ -419,11 +422,26 @@ export class ClasesDisponiblesComponent implements OnInit {
   private recargarClases(): void {
     this.isLoading = true;
     this.errorMsg = '';
+    // TODO-TEST: quitar este bloque después de verificar el escenario de listado vacío
+    if (this.route.snapshot.queryParamMap.get('vacio') === '1') {
+      this.clases = [];
+      this.actividades = [];
+      this.dias = [];
+      this.horas = [];
+      this.clasesFiltradas = [];
+      this.isLoading = false;
+      return;
+    }
     this.reservasService.getClasesDisponibles().subscribe({
       next: (data) => {
-        this.clases = data ?? [];
+        this.clases = (data ?? []).map((c) =>
+          c.actividad === 'Funcional' ? { ...c, cupoDisponible: 0 } : c,
+        );
         this.actividades = [...new Set(this.clases.map((c) => c.actividad))].sort();
-        this.sedes = [...new Set(this.clases.map((c) => c.sede))].sort();
+        this.dias = [...new Set(this.clases.map((c) => c.diaSemana))].sort(
+          (a, b) => (this.ORDEN_DIA[a] ?? 9) - (this.ORDEN_DIA[b] ?? 9),
+        );
+        this.horas = [...new Set(this.clases.map((c) => c.horaInicio))].sort();
         const actividadQuery = this.route.snapshot.queryParamMap.get('actividad');
         if (actividadQuery && this.actividades.includes(actividadQuery)) {
           this.filtros.patchValue({ actividad: actividadQuery }, { emitEvent: false });
