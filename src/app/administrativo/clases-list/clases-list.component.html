@@ -22,6 +22,29 @@
     <button type="button" (click)="bannerError = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
   </div>
 
+  <!-- Filtros -->
+  <form class="filtros-form" [formGroup]="filtros">
+    <div class="filtros-row">
+      <div class="field">
+        <div class="label">Actividad</div>
+        <select class="control" formControlName="actividad">
+          <option value="">Todas</option>
+          <option *ngFor="let a of actividadesFiltro" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">Sala</div>
+        <select class="control" formControlName="sala">
+          <option value="">Todas</option>
+          <option *ngFor="let s of salasFiltro" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <button *ngIf="hayFiltros()" type="button" class="btn btn-secondary btn-limpiar" (click)="limpiarFiltros()">
+        Limpiar
+      </button>
+    </div>
+  </form>
+
   <div class="card card-pad" *ngIf="isLoading">
     <p class="help">Cargando…</p>
   </div>
@@ -30,11 +53,11 @@
     <p class="error-text">{{ errorMsg }}</p>
   </div>
 
-  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && clases.length === 0">
+  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && clasesFiltradas.length === 0">
     <p>No hay clases</p>
   </div>
 
-  <ng-container *ngIf="!isLoading && !errorMsg && clases.length > 0">
+  <ng-container *ngIf="!isLoading && !errorMsg && clasesFiltradas.length > 0">
     <section class="actividad-grupo" *ngFor="let grupo of clasesPorActividad">
       <h4 class="actividad-titulo">{{ grupo.actividad }}</h4>
       <ul class="clases-grid">
@@ -65,16 +88,6 @@
           </dl>
 
           <div class="form-actions" *ngIf="isAdministrativo">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              (click)="onVerListaEspera(clase)"
-            >
-              Ver Lista de Espera
-            </button>
-          </div>
-
-          <div class="form-actions" *ngIf="isDueno">
             <button class="btn btn-primary" (click)="onModificar(clase)">Modificar</button>
             <button
               type="button"
@@ -89,6 +102,13 @@
               (click)="onEliminar(clase)"
             >
               Eliminar clase
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="onVerListaEspera(clase)"
+            >
+              Ver Lista de Espera
             </button>
           </div>
         </li>
@@ -183,7 +203,7 @@
         <button
           type="submit"
           class="btn btn-primary"
-          [disabled]="modalSubmitting || catalogosLoading || formularioInvalido"
+          [disabled]="modalSubmitting || catalogosLoading"
         >
           {{ formMode === 'agregar' ? 'Agregar clase' : 'Guardar cambios' }}
         </button>
