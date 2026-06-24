@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Actividad, ProfesorActividad } from '../../models/actividad.model';
 import { ActividadesService } from '../../services/actividades.service';
 import { AuthService } from '../../services/auth.service';
+import { ProfesorService, Profesor } from '../../services/profesor.service';
 
 @Component({
   selector: 'app-actividades-list',
@@ -15,6 +16,7 @@ import { AuthService } from '../../services/auth.service';
 export class ActividadesListComponent implements OnInit {
   private readonly actividadesService = inject(ActividadesService);
   private readonly authService = inject(AuthService);
+  private readonly profesorService = inject(ProfesorService);
 
   actividades: Actividad[] = [];
   isLoading = false;
@@ -41,6 +43,12 @@ export class ActividadesListComponent implements OnInit {
   profesoresLoading = false;
   profesoresEmptyHu = false;
 
+  // ── Selector de profesores (modal Agregar / Modificar) ─────────────────
+  profesoresDisponibles: Profesor[] = [];
+  profesoresDisponiblesLoading = false;
+  formProfesoresSeleccionados: number[] = [];
+  profesoresDropdownOpen = false;
+
   readonly precioHuError = 'El precio debe ser mayor a cero';
 
   ngOnInit(): void {
@@ -49,6 +57,10 @@ export class ActividadesListComponent implements OnInit {
 
   get isAdministrativo(): boolean {
     return this.authService.isAdministrativo();
+  }
+
+  get isDueno(): boolean {
+    return this.authService.isDueno();
   }
 
   cargarActividades(): void {
@@ -73,6 +85,10 @@ export class ActividadesListComponent implements OnInit {
     this.bannerError = '';
   }
 
+  onRefrescar(): void {
+    this.cargarActividades();
+  }
+
   private clearModalState(): void {
     this.modalError = '';
     this.modalSubmitting = false;
@@ -83,6 +99,8 @@ export class ActividadesListComponent implements OnInit {
     this.profesores = [];
     this.profesoresLoading = false;
     this.profesoresEmptyHu = false;
+    this.formProfesoresSeleccionados = [];
+    this.profesoresDropdownOpen = false;
   }
 
   cerrarTodosModales(): void {
@@ -98,6 +116,7 @@ export class ActividadesListComponent implements OnInit {
     this.clearBanners();
     this.clearModalState();
     this.showModalAgregar = true;
+    this.cargarProfesoresDisponibles();
   }
 
   cerrarModalAgregar(): void {
@@ -106,6 +125,9 @@ export class ActividadesListComponent implements OnInit {
     this.modalSubmitting = false;
     this.formNombre = '';
     this.formDescripcion = '';
+    this.formPrecio = null;
+    this.formProfesoresSeleccionados = [];
+    this.profesoresDropdownOpen = false;
   }
 
   submitAgregar(): void {
@@ -117,7 +139,7 @@ export class ActividadesListComponent implements OnInit {
 
     const precio = this.formPrecio;
     if (precio === null || isNaN(precio) || precio <= 0) {
-      this.modalError = 'El precio de la actividad debe ser mayor a 0';
+      this.modalError = 'El precio de la actividad debe ser mayor a cero';
       return;
     }
 
@@ -128,6 +150,9 @@ export class ActividadesListComponent implements OnInit {
         nombre,
         descripcion: this.formDescripcion.trim() || undefined,
         precio: Number(precio),
+        profesores: this.formProfesoresSeleccionados.length > 0
+          ? [...this.formProfesoresSeleccionados]
+          : undefined,
       })
       .subscribe({
         next: (res) => {
@@ -149,6 +174,17 @@ export class ActividadesListComponent implements OnInit {
     this.formNombre = actividad.nombre;
     this.formDescripcion = actividad.descripcion ?? '';
     this.showModalModificar = true;
+    // Cargamos la lista completa de profesores disponibles
+    this.cargarProfesoresDisponibles();
+    // Pre-seleccionamos los profesores ya asociados a esta actividad
+    this.actividadesService.getProfesores(actividad.id).subscribe({
+      next: (data) => {
+        this.formProfesoresSeleccionados = (data ?? []).map((p) => p.id);
+      },
+      error: () => {
+        // Si falla la precarga, se abre el modal igual pero sin pre-selección
+      },
+    });
   }
 
   cerrarModalModificar(): void {
@@ -156,6 +192,8 @@ export class ActividadesListComponent implements OnInit {
     this.selectedActividad = null;
     this.modalError = '';
     this.modalSubmitting = false;
+    this.formProfesoresSeleccionados = [];
+    this.profesoresDropdownOpen = false;
   }
 
   submitModificar(): void {
@@ -175,6 +213,7 @@ export class ActividadesListComponent implements OnInit {
       .update(this.selectedActividad.id, {
         nombre,
         descripcion: this.formDescripcion.trim() || undefined,
+        profesores: [...this.formProfesoresSeleccionados],
       })
       .subscribe({
         next: (res) => {
@@ -269,6 +308,43 @@ export class ActividadesListComponent implements OnInit {
         this.cargarActividades();
       },
     });
+  }
+
+  // ── Selector de profesores (modal Agregar / Modificar) ──────────────────────
+
+  private cargarProfesoresDisponibles(): void {
+    if (this.profesoresDisponibles.length > 0) return; // ya cargados
+    this.profesoresDisponiblesLoading = true;
+    this.profesorService.getAll().subscribe({
+      next: (data) => {
+        this.profesoresDisponibles = (data ?? []).filter((p) => p.activo);
+        this.profesoresDisponiblesLoading = false;
+      },
+      error: () => {
+        this.profesoresDisponiblesLoading = false;
+      },
+    });
+  }
+
+  toggleProfesorSeleccionado(id: number): void {
+    const idx = this.formProfesoresSeleccionados.indexOf(id);
+    this.formProfesoresSeleccionados =
+      idx === -1
+        ? [...this.formProfesoresSeleccionados, id]
+        : this.formProfesoresSeleccionados.filter((x) => x !== id);
+  }
+
+  isProfesorSeleccionado(id: number): boolean {
+    return this.formProfesoresSeleccionados.includes(id);
+  }
+
+  get textoProfesorSeleccionado(): string {
+    const sel = this.formProfesoresSeleccionados;
+    if (sel.length === 0) return 'Seleccionar profesores...';
+    return this.profesoresDisponibles
+      .filter((p) => sel.includes(p.id))
+      .map((p) => `${p.nombre} ${p.apellido}`.trim())
+      .join(', ');
   }
 
   onVerProfesores(actividad: Actividad): void {

@@ -12,6 +12,8 @@ import { isClaseActiva } from './clases.service';
 import { PagoService, MedioCobro } from './pago.service';
 import { Clase } from '../models/clase.model';
 import { environment } from '../../environments/environment';
+import { CupoPendienteLista } from './lista-espera.service';
+
 
 export type ModalidadReserva = 'ABONADO' | 'INDIVIDUAL';
 export type EstadoHistorial = 'ACTIVA' | 'CANCELADA' | 'COMPLETADA' | 'EN_ESPERA';
@@ -21,6 +23,8 @@ export type TipoListaEspera = 'ABONADO' | 'INDIVIDUAL';
 export const MSG_RESERVA_CONFIRMADA = 'Tu pago fue registrado exitosamente.';
 export const MSG_RESERVA_CONFIRMADA_SEÑA = 'Tu seña fue registrada exitosamente';
 export const MSG_RESERVA_INCOMPLETA = 'Hubo un problema con el pago.';
+export const MSG_RESERVA_PAGO_INCOMPLETO =
+  'El pago no se completó. Tu reserva no fue confirmada. Elegí la clase nuevamente para intentarlo otra vez.';
 export const MSG_RESERVA_CANCELADA = 'La cancelación se realizó con éxito.';
 export const HORAS_MINIMAS_SEÑA = 10;
 
@@ -53,6 +57,9 @@ export interface ReservaHistorial {
   periodoFin?: string;
   /** Solo presente si estado === 'CANCELADA'. */
   canceladaPor?: CanceladaPor;
+  inscripcionIndividualId?: number;
+  estadoSena?: 'PENDIENTE' | 'COMPLETADA' | 'VENCIDA';
+  montoTotal?: number;
 }
 
 export interface ClaseDisponible {
@@ -68,10 +75,12 @@ export interface ClaseDisponible {
   cupoTotal: number;
   cupoDisponible: number;
   proximaFecha: string;
+  proximasFechas?: string[];
   precioActividad?: number;
   /** Ya tiene mensualidad VIGENTE/EN_GRACIA para esta actividad. */
   /** El cliente ya tiene una mensualidad activa para ESTA clase puntual. */
   abonoClaseVigente?: boolean;
+  yaReservada?: boolean;
   profesor?: string;
 }
 
@@ -127,6 +136,8 @@ interface InscripcionIndividualApi {
   modalidad: 'COMPLETO' | 'SEÑA';
   monto_pagado: number | string;
   monto_total?: number | string;
+  estado_seña?: 'PENDIENTE' | 'COMPLETADA' | 'VENCIDA';
+  vencimiento_seña?: string;
   reservas?: { id: number; fecha_exacta?: string; estado?: string }[];
   actividad?: { id: number; nombre: string };
   clase?: {
@@ -466,22 +477,36 @@ export class ReservasService {
   }
 
   getClasesDisponibles(): Observable<ClaseDisponible[]> {
+    const email = this.auth.getCurrentUser()?.email;
+    const reservasObs = email
+      ? this.http
+          .get<unknown>(this.reservasUrl, {
+            headers: this.noCacheHeaders,
+            params: new HttpParams().set('cliente_email', email),
+          })
+          .pipe(
+            map((body) => parseReservasActivasResponse(body)),
+            catchError(() => of([])),
+          )
+      : of([]);
+
     return forkJoin({
       clases: this.http.get<Clase[]>(this.clasesUrl, {
         headers: this.noCacheHeaders,
       }),
       mensuales: this.getMensualesActivas(),
+      reservas: reservasObs,
     }).pipe(
-      map(({ clases, mensuales }) =>
-        (clases ?? []).filter(isClaseActiva).map((c) => ({ c, mensuales })),
+      map(({ clases, mensuales, reservas }) =>
+        (clases ?? []).filter(isClaseActiva).map((c) => ({ c, mensuales, reservas })),
       ),
       switchMap((items) => {
         if (items.length === 0) {
           return of([]);
         }
         return forkJoin(
-          items.map(({ c, mensuales }) =>
-            this.enrichClaseDisponible(c, mensuales),
+          items.map(({ c, mensuales, reservas }) =>
+            this.enrichClaseDisponible(c, mensuales, reservas),
           ),
         );
       }),
@@ -529,12 +554,12 @@ export class ReservasService {
       .pipe(
         switchMap((inscripcion) => {
           const monto = Number(inscripcion.monto ?? clase.precioActividad ?? 0);
-          const reservaId = inscripcion.reservas?.[0]?.id ?? inscripcion.id;
+          const reservaId = this.reservaIdDesdeInscripcion(inscripcion);
 
           if (monto <= 0) {
             return of({
               message: MSG_RESERVA_CONFIRMADA,
-              reservaId,
+              reservaId: reservaId || inscripcion.id,
             });
           }
 
@@ -624,6 +649,14 @@ export class ReservasService {
       );
   }
 
+  completarSena(inscripcionId: number): Observable<any> {
+    return this.http
+      .post<any>(`${this.inscripcionesIndUrl}/${inscripcionId}/completar-sena`, {})
+      .pipe(
+        catchError((err) => throwError(() => this.toHttpError(err)))
+      );
+  }
+
   olvidarReservaLocal(claseId: number, fecha: string): void {
     try {
       sessionStorage.removeItem(
@@ -657,6 +690,97 @@ export class ReservasService {
         catchError((err) => throwError(() => this.toHttpError(err))),
       );
   }
+
+  confirmarCupoListaEspera(
+    cupo: CupoPendienteLista,
+    tipoPago: TipoPago,
+    medioCobro: MedioCobro = 'MERCADO_PAGO',
+    valeId?: number,
+  ): Observable<ResultadoReserva> {
+    const email = this.auth.getCurrentUser()?.email;
+    if (!email) {
+      return throwError(() => ({
+        error: { message: 'Sesión no válida' },
+      }));
+    }
+
+    const body: Record<string, unknown> = {
+      tipoPago,
+    };
+    if (tipoPago === 'SEÑA' && cupo.fechaClase) {
+      body['vencimiento_seña'] = this.calcularVencimientoSeña(cupo.fechaClase);
+    }
+    if (valeId) {
+      body['valeId'] = valeId;
+    }
+
+    return this.http
+      .post<{
+        message: string;
+        reservaId?: number;
+        clase_id: number;
+        monto_pagado: number;
+        inscripcion_mensual_id?: number;
+        inscripcion_individual_id?: number;
+      }>(`${this.listaEsperaUrl}/${cupo.id}/confirmar`, body)
+      .pipe(
+        switchMap((res) => {
+          const monto = Number(res.monto_pagado ?? 0);
+          const reservaId = res.reservaId ?? 0;
+
+          // Pseudo ClaseDisponible for finalizarConPagoOpcional
+          const pseudoClase: ClaseDisponible = {
+            id: res.clase_id,
+            actividad: cupo.actividad,
+            actividadId: 0,
+            sede: cupo.sede,
+            diaSemana: '',
+            horaInicio: cupo.horaInicio,
+            horaFin: cupo.horaFin,
+            proximaFecha: cupo.fechaClase || '',
+            cupoTotal: 0,
+            cupoDisponible: 0,
+            precioActividad: monto,
+          };
+
+          return this.finalizarConPagoOpcional(
+            pseudoClase,
+            monto,
+            reservaId,
+            tipoPago,
+            medioCobro,
+            res.inscripcion_mensual_id,
+            res.inscripcion_individual_id,
+          );
+        }),
+        catchError((err) => throwError(() => this.toHttpError(err))),
+      );
+  }
+
+  /**
+   * Verifica si el cliente ya tiene una reserva en esta clase o un conflicto
+   * de horario con otra clase en la misma fecha.
+   * Respuesta: { conflicto: boolean, tipo: 'MISMA_CLASE'|'HORARIO'|null, mensaje: string|null }
+   */
+  checkConflicto(
+    claseId: number,
+    fecha: string,
+  ): Observable<{ conflicto: boolean; tipo: string | null; mensaje: string | null }> {
+    const email = this.auth.getCurrentUser()?.email;
+    if (!email) {
+      return of({ conflicto: false, tipo: null, mensaje: null });
+    }
+    const params = new HttpParams()
+      .set('fecha', fecha)
+      .set('cliente_email', email);
+    return this.http
+      .get<{ conflicto: boolean; tipo: string | null; mensaje: string | null }>(
+        `${this.clasesUrl}/${claseId}/conflicto`,
+        { params },
+      )
+      .pipe(catchError(() => of({ conflicto: false, tipo: null, mensaje: null })));
+  }
+
 
   /**
    * Busca una mensualidad activa del cliente para la clase puntual indicada.
@@ -786,6 +910,7 @@ export class ReservasService {
 
     const titulo = `${clase.actividad} — ${clase.proximaFecha}`;
     const email = this.auth.getCurrentUser()?.email;
+    const idReserva = reservaId > 0 ? reservaId : 0;
 
     if (medioCobro === 'QR') {
       return this.pagoService
@@ -793,24 +918,29 @@ export class ReservasService {
           monto,
           concepto: titulo,
           cliente_email: email,
-          reserva_id: reservaId || undefined,
+          reserva_id: idReserva > 0 ? idReserva : undefined,
           inscripcion_mensual_id: inscripcionMensualId,
           origen: inscripcionMensualId ? 'MENSUALIDAD' : 'CLASE_SUELTA',
           origen_id: inscripcionMensualId ?? inscripcionIndividualId,
         })
         .pipe(
-          map((qr) => ({
-            message: okMessage,
-            reservaId,
-            qrData: qr.qr_data,
-            pagoId: qr.pago_id,
-            medioCobro: 'QR' as MedioCobro,
-          })),
-          catchError(() =>
+          map((qr) => {
+            if (!qr.qr_data?.trim()) {
+              throw new Error('No se pudo generar el código QR de pago');
+            }
+            return {
+              message: okMessage,
+              reservaId: idReserva,
+              qrData: qr.qr_data,
+              pagoId: qr.pago_id,
+              medioCobro: 'QR' as MedioCobro,
+            } satisfies ResultadoReserva;
+          }),
+          catchError((err) =>
             of({
-              message: MSG_RESERVA_INCOMPLETA,
-              reservaId,
-            }),
+              message: this.mensajeErrorPago(err),
+              reservaId: idReserva,
+            } satisfies ResultadoReserva),
           ),
         );
     }
@@ -820,26 +950,53 @@ export class ReservasService {
         tituloPlan: titulo,
         precio: monto,
         cliente_email: email,
+        reserva_id: idReserva > 0 ? idReserva : undefined,
+        inscripcion_mensual_id: inscripcionMensualId,
+        origen: inscripcionMensualId ? 'MENSUALIDAD' : 'CLASE_SUELTA',
+        origen_id: inscripcionMensualId ?? inscripcionIndividualId,
       })
       .pipe(
-        map((pref) => ({
-          message: okMessage,
-          reservaId,
-          redirectUrl: pref.init_point,
-          medioCobro: 'MERCADO_PAGO' as MedioCobro,
-        })),
-        catchError(() =>
+        map((pref) => {
+          const redirectUrl = pref.init_point || pref.sandbox_init_point;
+          if (!redirectUrl) {
+            throw new Error('Mercado Pago no devolvió URL de checkout');
+          }
+          return {
+            message: okMessage,
+            reservaId: idReserva,
+            redirectUrl,
+            pagoId: pref.pago_id,
+            medioCobro: 'MERCADO_PAGO' as MedioCobro,
+          } satisfies ResultadoReserva;
+        }),
+        catchError((err) =>
           of({
-            message: MSG_RESERVA_INCOMPLETA,
-            reservaId,
-          }),
+            message: this.mensajeErrorPago(err),
+            reservaId: idReserva,
+          } satisfies ResultadoReserva),
         ),
       );
+  }
+
+  /** Id de reserva real; nunca usar el id de inscripción como reserva_id en pagos. */
+  private reservaIdDesdeInscripcion(inscripcion: {
+    reservas?: { id: number }[];
+  }): number {
+    return inscripcion.reservas?.[0]?.id ?? 0;
+  }
+
+  private mensajeErrorPago(err: unknown): string {
+    const detalle = this.pagoService.mensajeError(err);
+    if (detalle && detalle !== 'Error inesperado.' && detalle !== 'Error de conexión con el servidor.') {
+      return detalle;
+    }
+    return MSG_RESERVA_INCOMPLETA;
   }
 
   private enrichClaseDisponible(
     clase: Clase,
     mensuales: InscripcionMensualApi[] = [],
+    reservas: ReservaApiDto[] = [],
   ): Observable<ClaseDisponible> {
     const params = new HttpParams().set('clase_id', String(clase.id));
 
@@ -868,6 +1025,13 @@ export class ReservasService {
         const cupoTotal = Number(clase.cupo ?? 0);
 
         const prox = proximaFecha;
+        const yaReservada = (reservas ?? []).some(
+          (r) =>
+            r.clase?.id === clase.id &&
+            String(r.fecha_exacta).slice(0, 10) === prox &&
+            r.estado === 'ACTIVA',
+        );
+
         return {
           id: clase.id,
           actividadId: clase.actividad_id,
@@ -880,17 +1044,25 @@ export class ReservasService {
           cupoTotal,
           cupoDisponible: Math.max(0, cupoTotal - ocupadas),
           proximaFecha: prox,
+          proximasFechas: detalle.proximas_fechas ?? [prox],
           precioActividad: Number(
             (clase.actividad as { precio?: number })?.precio ?? 0,
           ),
           abonoClaseVigente: Boolean(
             this.buscarAbonoVigente(mensuales, clase.id, prox),
           ),
+          yaReservada,
           profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
         };
       }),
       catchError(() => {
         const prox = calcularProximaFecha(clase.dia_semana);
+        const yaReservada = (reservas ?? []).some(
+          (r) =>
+            r.clase?.id === clase.id &&
+            String(r.fecha_exacta).slice(0, 10) === prox &&
+            r.estado === 'ACTIVA',
+        );
         return of({
           id: clase.id,
           actividadId: clase.actividad_id,
@@ -903,9 +1075,11 @@ export class ReservasService {
           cupoTotal: Number(clase.cupo ?? 0),
           cupoDisponible: Number(clase.cupo ?? 0),
           proximaFecha: prox,
+          proximasFechas: [prox],
           abonoClaseVigente: Boolean(
             this.buscarAbonoVigente(mensuales, clase.id, prox),
           ),
+          yaReservada,
           profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
         });
       }),
@@ -993,6 +1167,9 @@ export class ReservasService {
       periodoInicio: mensual ? String(mensual.periodo_inicio).slice(0, 10) : undefined,
       periodoFin: mensual ? String(mensual.periodo_fin).slice(0, 10) : undefined,
       canceladaPor: dto.cancelada_por,
+      inscripcionIndividualId: individual?.id,
+      estadoSena: individual?.estado_seña,
+      montoTotal: individual ? Number(individual.monto_total) : undefined,
     };
   }
 

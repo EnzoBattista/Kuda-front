@@ -1,4 +1,5 @@
+/** En dev el proxy (/api → backend) evita mixed content con HTTPS en el celular. */
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3001/api',
+  apiUrl: '/api',
 };

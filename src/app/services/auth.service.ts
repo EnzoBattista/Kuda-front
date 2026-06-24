@@ -89,7 +89,7 @@ export class AuthService {
   private readonly tokenKey = 'kuda_token';
   private readonly userKey = 'kuda_user';
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(private readonly http: HttpClient) { }
 
   register(data: RegisterRequest): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/register`, data);
@@ -173,7 +173,7 @@ export class AuthService {
       nombre: data.nombre.trim(),
       apellido: data.apellido.trim(),
     };
-    
+
     if (!this.isAdministrativo()) {
       body['genero'] = data.genero;
       body['fechaNacimiento'] = data.fechaNacimiento;
@@ -184,7 +184,7 @@ export class AuthService {
       body['telefono'] = tel;
     }
 
-    const url = this.isAdministrativo() 
+    const url = this.isAdministrativo()
       ? `${environment.apiUrl}/usuarios/${encodeURIComponent(actual.email)}`
       : `${this.clientesUrl}/${encodeURIComponent(actual.email)}`;
 
@@ -263,9 +263,7 @@ export class AuthService {
 
   getRol(): string | null {
     const user = this.getCurrentUser();
-    console.log('DEBUG CURRENT USER:', user);
     const rol = user?.rol?.nombre ?? null;
-    console.log('DEBUG ROL NAME:', rol);
     return rol ? rol.toUpperCase() : null;
   }
 

@@ -2,6 +2,24 @@
   margin: 0 0 0.35rem;
 }
 
+.https-aviso {
+  margin-top: 1rem;
+  border: 2px solid #ffc107;
+  background: #fffdf5;
+}
+
+.https-aviso-titulo {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.url-https {
+  word-break: break-all;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
 .scanner-wrap {
   margin-top: 1rem;
   display: flex;
@@ -13,10 +31,27 @@
 .qr-reader {
   width: 100%;
   max-width: 420px;
-  min-height: 280px;
+  min-height: 200px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px dashed var(--border);
+  background: #f8fafc;
+}
+
+.qr-reader--activo {
+  min-height: 280px;
+  border-style: solid;
+}
+
+.camara-actions {
+  margin-top: 0.75rem;
+}
+
+.ios-hint {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: rgba(30, 64, 175, 0.06);
+  border-radius: var(--radius-sm);
 }
 
 .scanner-status {

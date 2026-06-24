@@ -5,7 +5,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Sala, SalaDetalle, estadoSalaLabel } from '../../models/sala.model';
+import { Sala, estadoSalaLabel } from '../../models/sala.model';
 import { SalasService } from '../../services/salas.service';
 import { AuthService } from '../../services/auth.service';
 
@@ -30,22 +30,23 @@ export class SalasListComponent implements OnInit {
 
   showModalAgregar = false;
   showModalModificar = false;
-  showModalVer = false;
+  showModalHabilitar = false;
   showModalDeshabilitar = false;
   showModalEliminar = false;
 
   selectedSala: Sala | null = null;
-  salaDetalle: SalaDetalle | null = null;
-  detalleLoading = false;
 
   modalError = '';
   modalSubmitting = false;
 
   readonly estadoSalaLabel = estadoSalaLabel;
 
-  formSala = this.fb.nonNullable.group({
-    identificador: ['', [Validators.required, Validators.maxLength(50)]],
-    cupo: [10, [Validators.required, Validators.min(10)]],
+  // Solo "required": el botón se bloquea hasta completar los campos, pero la
+  // validación del cupo mínimo NO bloquea el botón para poder mostrar el
+  // mensaje del Escenario 3 al presionar Agregar.
+  formSala = this.fb.group({
+    identificador: this.fb.nonNullable.control('', [Validators.required]),
+    cupo: this.fb.control<number | null>(null, [Validators.required]),
   });
 
   ngOnInit(): void {
@@ -86,7 +87,7 @@ export class SalasListComponent implements OnInit {
     this.clearBanners();
     this.clearModalState();
     this.selectedSala = null;
-    this.formSala.reset({ identificador: '', cupo: 10 });
+    this.formSala.reset({ identificador: '', cupo: null });
     this.showModalAgregar = true;
   }
 
@@ -101,24 +102,11 @@ export class SalasListComponent implements OnInit {
     this.showModalModificar = true;
   }
 
-  onVerSala(sala: Sala): void {
+  onHabilitar(sala: Sala): void {
     this.clearBanners();
     this.clearModalState();
     this.selectedSala = sala;
-    this.salaDetalle = null;
-    this.detalleLoading = true;
-    this.showModalVer = true;
-
-    this.salasService.getById(sala.id).subscribe({
-      next: (detalle) => {
-        this.salaDetalle = detalle;
-        this.detalleLoading = false;
-      },
-      error: (err) => {
-        this.modalError = this.salasService.mensajeError(err);
-        this.detalleLoading = false;
-      },
-    });
+    this.showModalHabilitar = true;
   }
 
   onDeshabilitar(sala: Sala): void {
@@ -138,12 +126,12 @@ export class SalasListComponent implements OnInit {
   cerrarModales(): void {
     this.showModalAgregar = false;
     this.showModalModificar = false;
-    this.showModalVer = false;
+    this.showModalHabilitar = false;
     this.showModalDeshabilitar = false;
     this.showModalEliminar = false;
     this.selectedSala = null;
-    this.salaDetalle = null;
     this.modalError = '';
+    this.modalSubmitting = false;
   }
 
   onSubmitAgregar(): void {
@@ -152,11 +140,19 @@ export class SalasListComponent implements OnInit {
       return;
     }
 
+    const { identificador, cupo } = this.formSala.getRawValue();
+    const cupoNum = Number(cupo);
+
+    // Escenario 3: cupo inválido. No se llama al backend; se muestra el mensaje.
+    if (cupoNum < 10) {
+      this.modalError = 'El cupo debe ser mayor o igual a 10.';
+      return;
+    }
+
     this.modalSubmitting = true;
     this.modalError = '';
-    const { identificador, cupo } = this.formSala.getRawValue();
 
-    this.salasService.create({ identificador: identificador.trim(), cupo }).subscribe({
+    this.salasService.create({ identificador: (identificador ?? '').trim(), cupo: cupoNum }).subscribe({
       next: (res) => {
         this.bannerSuccess = res.message;
         this.cerrarModales();
@@ -170,17 +166,29 @@ export class SalasListComponent implements OnInit {
   }
 
   onSubmitModificar(): void {
-    if (!this.selectedSala || this.formSala.invalid) {
-      this.formSala.markAllAsTouched();
+    if (!this.selectedSala || this.modalSubmitting) return;
+
+    const { identificador, cupo } = this.formSala.getRawValue();
+    const identificadorTrim = (identificador ?? '').trim();
+    const cupoNum = Number(cupo);
+
+    // Sin identificador no hay nada para validar contra la HU; no se informa nada.
+    if (!identificadorTrim) return;
+
+    // Escenario 4: cupo inválido. No se llama al backend; se muestra el mensaje.
+    if (cupoNum < 10) {
+      this.modalError = 'El cupo debe ser mayor o igual a 10.';
       return;
     }
 
     this.modalSubmitting = true;
     this.modalError = '';
-    const { identificador, cupo } = this.formSala.getRawValue();
 
     this.salasService
-      .update(this.selectedSala.id, { identificador: identificador.trim(), cupo })
+      .update(this.selectedSala.id, {
+        identificador: identificadorTrim,
+        cupo: cupoNum,
+      })
       .subscribe({
         next: (res) => {
           this.bannerSuccess = res.message;
@@ -194,13 +202,13 @@ export class SalasListComponent implements OnInit {
       });
   }
 
-  onConfirmarDeshabilitar(): void {
+  onConfirmarHabilitar(): void {
     if (!this.selectedSala) return;
 
     this.modalSubmitting = true;
     this.modalError = '';
 
-    this.salasService.deshabilitar(this.selectedSala.id).subscribe({
+    this.salasService.habilitar(this.selectedSala.id).subscribe({
       next: (res) => {
         this.bannerSuccess = res.message;
         this.cerrarModales();
@@ -209,30 +217,47 @@ export class SalasListComponent implements OnInit {
       error: (err) => {
         this.modalError = this.salasService.mensajeError(err);
         this.modalSubmitting = false;
+      },
+    });
+  }
+
+  onConfirmarDeshabilitar(): void {
+    if (!this.selectedSala || this.modalSubmitting) return;
+
+    this.modalSubmitting = true;
+
+    this.salasService.deshabilitar(this.selectedSala.id).subscribe({
+      next: (res) => {
+        // Escenario 1: la sala fue deshabilitada exitosamente.
+        this.bannerSuccess = res.message;
+        this.cerrarModales();
+        this.cargarSalas();
+      },
+      error: (err) => {
+        // Escenario 2: la sala aún tiene clases próximas.
+        this.bannerError = this.salasService.mensajeError(err);
+        this.cerrarModales();
       },
     });
   }
 
   onConfirmarEliminar(): void {
-    if (!this.selectedSala) return;
+    if (!this.selectedSala || this.modalSubmitting) return;
 
     this.modalSubmitting = true;
-    this.modalError = '';
 
     this.salasService.delete(this.selectedSala.id).subscribe({
       next: (res) => {
+        // Escenario 1: la sala fue eliminada exitosamente y deja de listarse.
         this.bannerSuccess = res.message;
         this.cerrarModales();
         this.cargarSalas();
       },
       error: (err) => {
-        this.modalError = this.salasService.mensajeError(err);
-        this.modalSubmitting = false;
+        // Escenario 2: la sala aún tiene clases próximas.
+        this.bannerError = this.salasService.mensajeError(err);
+        this.cerrarModales();
       },
     });
-  }
-
-  formatHora(hora: string): string {
-    return hora?.slice(0, 5) ?? '';
   }
 }

@@ -8,6 +8,40 @@
   font-weight: 700;
 }
 
+.cupos-pendientes {
+  margin-bottom: 1.25rem;
+}
+
+.cupos-pendientes-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.cupos-pendientes-ayuda {
+  margin: 0 0 0.75rem;
+}
+
+.cupo-pendiente-card {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #ffc107;
+  background: #fffdf5;
+}
+
+.cupo-pendiente-nombre {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+}
+
+.cupo-pendiente-acciones {
+  margin: 0;
+  flex-wrap: wrap;
+}
+
 .page-head { margin-bottom: 1rem; }
 
 /* Filtros */
@@ -99,6 +133,24 @@
   color: var(--brand-blue);
 }
 
+.reserva-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.espera-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: rgba(243, 156, 18, 0.12);
+  color: #d35400;
+}
+
 .clase-nombre {
   margin: 0;
   font-size: 1.1rem;
@@ -181,6 +233,12 @@
 .modal-titulo {
   margin: 0;
   font-size: 1.2rem;
+}
+
+.banner-pago-en-curso {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: linear-gradient(180deg, #eff6ff 0%, #fff 100%);
 }
 
 .qr-pago-panel {

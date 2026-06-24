@@ -17,12 +17,14 @@ export interface CreateActividadDto {
   nombre: string;
   descripcion?: string;
   precio?: number;
+  profesores?: number[];
 }
 
 export interface UpdateActividadDto {
   nombre?: string;
   descripcion?: string;
   activa?: boolean;
+  profesores?: number[];
 }
 
 export interface ActividadMutationResponse {

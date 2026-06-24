@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
   AsistenciasService,
@@ -15,7 +16,7 @@ import {
 @Component({
   selector: 'app-escanear-qr',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './escanear-qr.component.html',
   styleUrl: './escanear-qr.component.css',
 })
@@ -26,6 +27,7 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
   readonly scannerId = 'qr-reader';
 
   escaneando = false;
+  iniciandoCamara = false;
   errorMsg = '';
   successMsg = '';
 
@@ -36,37 +38,146 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
   modalError = '';
   modalSubmitting = false;
 
+  readonly httpsCeluPort = 4201;
+
+  get requiereHttpsEnCelu(): boolean {
+    return typeof window !== 'undefined' && !window.isSecureContext;
+  }
+
+  get urlEscaneoHttps(): string {
+    if (typeof window === 'undefined') return '';
+    const host = window.location.hostname;
+    return `https://${host}:${this.httpsCeluPort}/administrativo/escanear-qr`;
+  }
+
+  get esDispositivoMovil(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
   ngOnInit(): void {
+    if (this.requiereHttpsEnCelu) {
+      this.errorMsg =
+        'Estás en HTTP. En iPhone Safari la cámara solo funciona con HTTPS (puerto 4201).';
+    }
+  }
+
+  abrirVersionHttps(): void {
+    if (typeof window !== 'undefined') {
+      window.location.href = this.urlEscaneoHttps;
+    }
+  }
+
+  /** iOS exige un toque del usuario antes de abrir la cámara. */
+  activarCamara(): void {
+    if (this.requiereHttpsEnCelu) {
+      this.abrirVersionHttps();
+      return;
+    }
     void this.iniciarCamara();
+  }
+
+  reintentarCamara(): void {
+    this.activarCamara();
   }
 
   ngOnDestroy(): void {
     void this.detenerCamara();
   }
 
+  private configEscaneo() {
+    return {
+      fps: 10,
+      qrbox: (w: number, h: number) => {
+        const edge = Math.min(w, h);
+        const size = Math.max(180, Math.floor(edge * 0.65));
+        return { width: size, height: size };
+      },
+      aspectRatio: 1.0,
+    };
+  }
+
   async iniciarCamara(): Promise<void> {
+    if (this.iniciandoCamara || this.escaneando) return;
+
     this.errorMsg = '';
+    this.iniciandoCamara = true;
+    await this.detenerCamara();
+
+    await new Promise((r) => setTimeout(r, 150));
+
     try {
+      const host = document.getElementById(this.scannerId);
+      if (!host) {
+        throw new Error('Contenedor de cámara no disponible');
+      }
+
       this.scanner = new Html5Qrcode(this.scannerId);
-      await this.scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decoded: string) => void this.onQrLeido(decoded),
-        () => {},
-      );
+      const config = this.configEscaneo();
+      const onScan = (decoded: string) => void this.onQrLeido(decoded);
+
+      const intentarFacing = () =>
+        this.scanner!.start({ facingMode: 'environment' }, config, onScan, () => {});
+
+      const intentarUser = () =>
+        this.scanner!.start({ facingMode: 'user' }, config, onScan, () => {});
+
+      const intentarPorId = async () => {
+        const cameras = await Html5Qrcode.getCameras();
+        if (!cameras.length) throw new Error('Sin cámaras');
+        const trasera =
+          cameras.find((c) => /back|rear|trás|trasera|environment/i.test(c.label)) ??
+          cameras[cameras.length - 1];
+        await this.scanner!.start(trasera.id, config, onScan, () => {});
+      };
+
+      try {
+        await intentarFacing();
+      } catch {
+        try {
+          await intentarUser();
+        } catch {
+          await intentarPorId();
+        }
+      }
+
       this.escaneando = true;
-    } catch {
-      this.errorMsg =
-        'No se pudo acceder a la cámara. Verificá permisos del navegador o usá asistencia manual.';
+    } catch (err) {
+      console.error('[escanear-qr] cámara:', err);
+      this.errorMsg = this.mensajeErrorCamara();
       this.escaneando = false;
+    } finally {
+      this.iniciandoCamara = false;
     }
+  }
+
+  private mensajeErrorCamara(): string {
+    if (this.requiereHttpsEnCelu) {
+      return 'Estás en HTTP. Usá https en el puerto 4201.';
+    }
+    if (this.esDispositivoMovil) {
+      return (
+        'Safari no abrió la cámara. Tocá otra vez «Activar cámara», cerrá otras pestañas que la usen, ' +
+        'recargá la página y verificá Ajustes → Safari → Cámara → Preguntar. ' +
+        'Si persiste, usá Asistencia manual.'
+      );
+    }
+    return 'No se pudo acceder a la cámara. Revisá permisos del navegador o usá Asistencia manual.';
   }
 
   async detenerCamara(): Promise<void> {
     if (this.scanner?.isScanning) {
-      await this.scanner.stop();
+      try {
+        await this.scanner.stop();
+      } catch {
+        /* ignore */
+      }
     }
-    this.scanner?.clear();
+    try {
+      this.scanner?.clear();
+    } catch {
+      /* ignore */
+    }
     this.scanner = null;
     this.escaneando = false;
   }
@@ -86,7 +197,6 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.errorMsg = this.asistenciasService.mensajeError(err);
-        void this.iniciarCamara();
       },
     });
   }
@@ -96,7 +206,6 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
     this.escaneoData = null;
     this.modalError = '';
     this.motivoDenegado = 'Identidad no coincide';
-    void this.iniciarCamara();
   }
 
   confirmarIngreso(): void {
@@ -133,7 +242,6 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
           this.showModalValidacion = false;
           this.escaneoData = null;
           this.modalSubmitting = false;
-          void this.iniciarCamara();
         },
         error: (err) => {
           this.modalError = this.asistenciasService.mensajeError(err);
