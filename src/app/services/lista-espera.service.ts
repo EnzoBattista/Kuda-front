@@ -64,12 +64,24 @@ export class ListaEsperaService {
     return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`);
   }
 
+  cancelarMiListaEspera(id: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/me/${id}`);
+  }
+
   getMisPendientes(): Observable<CupoPendienteLista[]> {
     return this.http
       .get<ListaEsperaItem[] | { message: string; data: ListaEsperaItem[] }>(
         `${this.apiUrl}/me/pendientes`,
       )
       .pipe(map((res) => this.normalizarLista(res).map((item) => this.mapCupoPendiente(item))));
+  }
+
+  getMisInscripciones(): Observable<ListaEsperaItem[]> {
+    return this.http
+      .get<ListaEsperaItem[] | { message: string; data: ListaEsperaItem[] }>(
+        `${this.apiUrl}/me`,
+      )
+      .pipe(map((res) => this.normalizarLista(res)));
   }
 
   confirmarCupo(id: number): Observable<{ message: string; reservaId?: number }> {

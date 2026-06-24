@@ -108,14 +108,32 @@
                 </span>
               </dd>
             </div>
+            <div class="reserva-info-row" *ngIf="r.tipoPago === 'SEÑA'">
+              <dt>Estado de seña</dt>
+              <dd>
+                <span [style.color]="r.estadoSena === 'COMPLETADA' ? 'var(--success-color, #2ecc71)' : 'var(--warning-color, #e67e22)'" style="font-weight: bold; font-size: 0.85rem;">
+                  {{ r.estadoSena === 'COMPLETADA' ? 'Completada' : 'Pendiente' }}
+                </span>
+              </dd>
+            </div>
             <div class="reserva-info-row" *ngIf="r.proximaFecha">
               <dt>Fecha</dt>
               <dd>{{ r.proximaFecha | fechaAr }}</dd>
             </div>
           </dl>
 
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" (click)="abrirDetalle(r)">
+          <div class="form-actions" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            <button
+              *ngIf="r.tipoPago === 'SEÑA' && r.estadoSena === 'PENDIENTE'"
+              type="button"
+              class="btn btn-primary"
+              [disabled]="isCompletandoSena"
+              (click)="completarSenaReserva(r)"
+              style="width: 100%;"
+            >
+              {{ isCompletandoSena ? 'Completando…' : 'Completar seña' }}
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="abrirDetalle(r)" style="flex: 1; min-width: 100px;">
               Ver detalle
             </button>
             <button
@@ -123,6 +141,7 @@
               type="button"
               class="btn btn-danger"
               (click)="abrirCancelacion(r)"
+              style="flex: 1; min-width: 100px;"
             >
               Cancelar Clase
             </button>
@@ -290,8 +309,20 @@
           <dt>Tipo de pago</dt>
           <dd>{{ tipoPagoLabel(r) }}</dd>
         </div>
+        <div class="reserva-info-row" *ngIf="r.tipoPago === 'SEÑA'">
+          <dt>Estado de seña</dt>
+          <dd>
+            <span [style.color]="r.estadoSena === 'COMPLETADA' ? 'var(--success-color, #2ecc71)' : 'var(--warning-color, #e67e22)'" style="font-weight: bold;">
+              {{ r.estadoSena === 'COMPLETADA' ? 'Completada' : 'Pendiente' }}
+            </span>
+          </dd>
+        </div>
+        <div class="reserva-info-row" *ngIf="r.tipoPago === 'SEÑA' && r.montoTotal">
+          <dt>Monto total</dt>
+          <dd>${{ r.montoTotal | number }}</dd>
+        </div>
         <div class="reserva-info-row" *ngIf="r.montoAbonado">
-          <dt>Monto abonado</dt>
+          <dt>{{ r.tipoPago === 'SEÑA' ? 'Monto señado' : 'Monto abonado' }}</dt>
           <dd>${{ r.montoAbonado | number }}</dd>
         </div>
         <div class="reserva-info-row">
@@ -308,11 +339,16 @@
         </div>
       </dl>
 
-      <div class="form-actions">
-        <button *ngIf="esCancelable(r)" class="btn btn-danger" type="button" (click)="irACancelar()">
-          Cancelar Clase
+      <div class="form-actions" style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <button *ngIf="r.tipoPago === 'SEÑA' && r.estadoSena === 'PENDIENTE'" class="btn btn-primary" type="button" [disabled]="isCompletandoSena" (click)="completarSenaReserva(r)" style="width: 100%;">
+          {{ isCompletandoSena ? 'Completando…' : 'Completar seña' }}
         </button>
-        <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cerrar</button>
+        <div style="display: flex; gap: 0.5rem; width: 100%;">
+          <button *ngIf="esCancelable(r)" class="btn btn-danger" type="button" (click)="irACancelar()" style="flex: 1;">
+            Cancelar Clase
+          </button>
+          <button class="btn btn-secondary" type="button" (click)="cerrarModal()" style="flex: 1;">Cerrar</button>
+        </div>
       </div>
     </ng-container>
 
@@ -353,6 +389,41 @@
       </div>
       <div class="form-actions">
         <button class="btn btn-primary" type="button" (click)="cerrarModal()">Aceptar</button>
+      </div>
+    </ng-container>
+
+    <!-- Paso: medio de cobro para completar seña -->
+    <ng-container *ngIf="modalPaso === 'seleccion-medio-cobro' && reservaSeleccionada as r">
+      <h3 class="modal-titulo">Completar pago de seña</h3>
+      <p class="help">Restante a abonar: ${{ (r.montoTotal ?? 0) - (r.montoAbonado ?? 0) | number }}</p>
+      <p class="error-text" *ngIf="errorCompletarSena">{{ errorCompletarSena }}</p>
+
+      <div class="opciones-pago" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem;">
+        <button class="opcion-btn btn btn-primary" type="button" (click)="seleccionarMedioCobroSena('MERCADO_PAGO')" [disabled]="isCompletandoSena" style="display: flex; flex-direction: column; align-items: center; padding: 1rem;">
+          <strong>Pagar con Mercado Pago</strong>
+          <span class="help" style="font-size: 0.8rem; opacity: 0.8;">Redirección al checkout de MP</span>
+        </button>
+        <button class="opcion-btn btn btn-secondary" type="button" (click)="seleccionarMedioCobroSena('QR')" [disabled]="isCompletandoSena" style="display: flex; flex-direction: column; align-items: center; padding: 1rem;">
+          <strong>Pagar con QR</strong>
+          <span class="help" style="font-size: 0.8rem; opacity: 0.8;">Escaneá el código en recepción o con tu billetera</span>
+        </button>
+      </div>
+
+      <div class="form-actions" style="margin-top: 1.5rem;">
+        <button class="btn btn-secondary" type="button" (click)="modalPaso = 'detalle'" [disabled]="isCompletandoSena" style="width: 100%;">Volver</button>
+      </div>
+    </ng-container>
+
+    <!-- Paso: QR de pago -->
+    <ng-container *ngIf="modalPaso === 'qr-pago' && reservaSeleccionada as r">
+      <h3 class="modal-titulo">Pagá con QR</h3>
+      <p class="help" style="text-align: center; margin-bottom: 1rem;">Monto a pagar: ${{ (r.montoTotal ?? 0) - (r.montoAbonado ?? 0) | number }}</p>
+      <div class="qr-pago-panel" *ngIf="qrDataPago" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 1rem; background: #fff; border-radius: 8px;">
+        <qrcode [qrdata]="qrDataPago" [width]="220" errorCorrectionLevel="M" elementType="canvas"></qrcode>
+        <p class="help" style="text-align: center; margin-top: 0.5rem;">Mostrá este código en recepción o escanealo con tu app de pagos.</p>
+      </div>
+      <div class="form-actions" style="margin-top: 1.5rem;">
+        <button class="btn btn-primary" type="button" (click)="cerrarModal()" style="width: 100%;">Listo</button>
       </div>
     </ng-container>
 

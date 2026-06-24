@@ -22,7 +22,7 @@
   <section class="cupos-pendientes" *ngIf="cuposPendientes.length > 0">
     <h3 class="cupos-pendientes-titulo">Cupos disponibles para vos</h3>
     <p class="help cupos-pendientes-ayuda">
-      Se liberó un lugar en una clase donde estabas en lista de espera. Tenés tiempo limitado para decidir.
+      Se liberó un lugar en una clase donde estabas en lista de espera. Confirmá tu asistencia o rechazá el lugar.
     </p>
     <article class="card card-pad cupo-pendiente-card" *ngFor="let cupo of cuposPendientes">
       <div class="cupo-pendiente-info">
@@ -104,6 +104,8 @@
             </div>
             <div class="clase-badges">
               <span class="abono-badge" *ngIf="c.abonoClaseVigente">Abonado</span>
+              <span class="reserva-badge" *ngIf="c.yaReservada">Reservada</span>
+              <span class="espera-badge" *ngIf="yaEnListaEspera(c.id)">En espera</span>
               <span class="cupo-badge" [class.sin-cupo]="c.cupoDisponible === 0">
                 {{ c.cupoDisponible === 0 ? 'Sin cupo' : c.cupoDisponible + ' lugares' }}
               </span>
@@ -169,28 +171,45 @@
       </dl>
 
       <div class="form-actions">
+        <p class="error-text" *ngIf="errorModalMsg" style="margin-bottom: 0;">{{ errorModalMsg }}</p>
+        <!-- Caso 1: El usuario ya está anotado en la lista de espera (independientemente del cupo) -->
+        <ng-container *ngIf="yaEnListaEspera(c.id)">
+          <p class="help lista-espera-inscripto" style="color: var(--brand-red, #dc2626); font-weight: bold; margin-bottom: 0;">
+            <span *ngIf="estaEnListaIndividual(c.id)">Estás anotado en la lista de espera individual para esta clase.</span>
+            <span *ngIf="estaEnListaMensual(c.id)">Estás anotado en la lista de espera de abonados para esta clase.</span>
+            <span *ngIf="!estaEnListaIndividual(c.id) && !estaEnListaMensual(c.id)">Estás anotado en la lista de espera para esta clase.</span>
+          </p>
+          <button
+            class="btn btn-danger"
+            style="width: 100%; display: block;"
+            type="button"
+            [disabled]="isSubmitting"
+            (click)="salirListaEspera(c.id)"
+          >
+            Salir de la lista de espera
+          </button>
+        </ng-container>
+
+        <!-- Caso 2: No está en lista de espera (o está en lista mensual) y hay cupo disponible -->
         <button
-          *ngIf="c.cupoDisponible > 0"
+          *ngIf="(!yaEnListaEspera(c.id) || estaEnListaMensual(c.id)) && c.cupoDisponible > 0"
           class="btn btn-primary"
           type="button"
+          [disabled]="isSubmitting || c.yaReservada"
           (click)="abrirReserva()"
         >
           Reservar
         </button>
+
+        <!-- Caso 3: No está en lista de espera y NO hay cupo disponible -->
         <button
-          *ngIf="c.cupoDisponible === 0 && !yaEnListaEspera(c.id)"
+          *ngIf="!yaEnListaEspera(c.id) && c.cupoDisponible === 0"
           class="btn btn-secondary"
           type="button"
           (click)="abrirEspera()"
         >
           Anotarse en lista de espera
         </button>
-        <p
-          *ngIf="c.cupoDisponible === 0 && yaEnListaEspera(c.id)"
-          class="help lista-espera-inscripto"
-        >
-          Ya estás en la lista de espera
-        </p>
         <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cancelar</button>
       </div>
     </ng-container>
@@ -202,6 +221,9 @@
       <p class="help" *ngIf="c.abonoClaseVigente">
         Ya tenés mensualidad activa en esta clase. No podés reservar otra mensualidad ni individualmente en esta misma clase.
       </p>
+      <p class="help" *ngIf="estaEnListaMensual(c.id) && !c.abonoClaseVigente">
+        Ya estás anotado en la lista de espera de abonados. Podés reservar esta clase de forma individual.
+      </p>
 
       <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
 
@@ -210,7 +232,7 @@
           class="opcion-btn btn btn-primary"
           type="button"
           (click)="seleccionarModalidad('ABONADO')"
-          [disabled]="c.abonoClaseVigente"
+          [disabled]="c.abonoClaseVigente || estaEnListaMensual(c.id)"
         >
           <strong>Abonado (mensualidad)</strong>
           <span class="help">Inscripción mensual a la actividad</span>
@@ -319,10 +341,48 @@
 
       <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
 
+      <!-- Botones de acción -->
       <div class="form-actions">
-        <button class="btn btn-primary" type="button" [disabled]="isSubmitting" (click)="irAMedioCobro()">
+        <!-- Caso: Falla por falta de cupo en mensualidad (se muestra Anotarse en lista de espera en lugar de confirmar) -->
+        <ng-container *ngIf="modalidadElegida === 'ABONADO' && errorModalMsg && errorModalMsg.includes('No hay cupo suficiente en todas las fechas del mes')">
+          <button
+            *ngIf="!yaEnListaEspera(c.id)"
+            class="btn btn-primary"
+            type="button"
+            [disabled]="isSubmitting"
+            (click)="confirmarEspera('ABONADO')"
+          >
+            Anotarse en lista de espera (Abonado)
+          </button>
+          <ng-container *ngIf="yaEnListaEspera(c.id)">
+            <p class="help lista-espera-inscripto" style="width: 100%; text-align: center; color: var(--brand-red, #dc2626); font-weight: bold; margin: 0;">
+              <span *ngIf="estaEnListaIndividual(c.id)">Estás anotado en la lista de espera individual para esta clase.</span>
+              <span *ngIf="estaEnListaMensual(c.id)">Estás anotado en la lista de espera de abonados para esta clase.</span>
+              <span *ngIf="!estaEnListaIndividual(c.id) && !estaEnListaMensual(c.id)">Estás anotado en la lista de espera para esta clase.</span>
+            </p>
+            <button
+              class="btn btn-danger"
+              style="width: 100%; display: block;"
+              type="button"
+              [disabled]="isSubmitting"
+              (click)="salirListaEspera(c.id)"
+            >
+              Salir de la lista de espera
+            </button>
+          </ng-container>
+        </ng-container>
+
+        <!-- Caso normal: Confirmar reserva -->
+        <button
+          *ngIf="!(modalidadElegida === 'ABONADO' && errorModalMsg && errorModalMsg.includes('No hay cupo suficiente en todas las fechas del mes'))"
+          class="btn btn-primary"
+          type="button"
+          [disabled]="isSubmitting"
+          (click)="irAMedioCobro()"
+        >
           {{ isSubmitting ? 'Reservando…' : 'Confirmar reserva' }}
         </button>
+
         <button
           class="btn btn-secondary"
           type="button"
@@ -420,7 +480,7 @@
     <ng-container *ngIf="pasoModal === 'resultado-espera'">
       <div class="resultado-ok">
         <span class="resultado-icono">✓</span>
-        <h3>¡Te anotaste en la lista!</h3>
+        <h3>{{ resultadoEsperaTitulo() }}</h3>
         <p class="help">{{ resultadoMsg }}</p>
       </div>
       <div class="form-actions">
