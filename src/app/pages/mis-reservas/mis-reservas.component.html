@@ -190,13 +190,16 @@
             </div>
             <div class="reserva-info-row">
               <dt>Clases reservadas</dt>
-              <dd>{{ g.cantidadActivas }} activas / {{ g.reservas.length }} totales</dd>
+              <dd>{{ g.cantidadActivas }} activas / {{ g.totalClases || g.reservas.length }} totales</dd>
             </div>
           </dl>
 
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" (click)="abrirDetalleGrupo(g)">
+          <div class="form-actions" style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-secondary" (click)="abrirDetalleGrupo(g)" style="flex: 1;">
               Ver detalle
+            </button>
+            <button type="button" class="btn btn-danger" (click)="abrirCancelacionMensual(g)" style="flex: 1;">
+              Cancelar Pase
             </button>
           </div>
         </ng-container>
@@ -267,8 +270,11 @@
         </li>
       </ul>
 
-      <div class="form-actions">
-        <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cerrar</button>
+      <div class="form-actions" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button class="btn btn-danger" type="button" (click)="abrirCancelacionMensual(g)" style="flex: 1;">
+          Cancelar Pase Completo
+        </button>
+        <button class="btn btn-secondary" type="button" (click)="cerrarModal()" style="flex: 1;">Cerrar</button>
       </div>
     </ng-container>
 
@@ -353,16 +359,32 @@
     </ng-container>
 
     <!-- Paso: confirmar cancelación -->
-    <ng-container *ngIf="modalPaso === 'confirmar-cancelacion' && reservaSeleccionada as r">
-      <h3 class="modal-titulo">Cancelar reserva</h3>
+    <ng-container *ngIf="modalPaso === 'confirmar-cancelacion'">
+      <!-- Cancelar reserva individual -->
+      <ng-container *ngIf="reservaSeleccionada as r">
+        <h3 class="modal-titulo">Cancelar reserva</h3>
 
-      <p class="help">
-        ¿Estás seguro de que deseas cancelar esta reserva?
-      </p>
+        <p class="help">
+          ¿Estás seguro de que deseas cancelar esta reserva?
+        </p>
 
-      <div class="aviso-cancelacion">
-        <p>{{ mensajeCancelacionPreview(r) }}</p>
-      </div>
+        <div class="aviso-cancelacion">
+          <p>{{ mensajeCancelacionPreview(r) }}</p>
+        </div>
+      </ng-container>
+
+      <!-- Cancelar mensualidad completa -->
+      <ng-container *ngIf="grupoSeleccionado && !reservaSeleccionada">
+        <h3 class="modal-titulo">Cancelar Pase Mensual</h3>
+
+        <p class="help">
+          ¿Estás seguro de que deseas dar de baja este pase mensual? Se cancelarán todas las clases futuras y se liberarán los cupos correspondientes.
+        </p>
+
+        <div class="aviso-cancelacion">
+          <p>Se generarán cupones de crédito por el monto abonado de las clases futuras que falten más de 24 horas para comenzar.</p>
+        </div>
+      </ng-container>
 
       <p class="error-text" *ngIf="errorCancelacion">{{ errorCancelacion }}</p>
 

@@ -60,6 +60,7 @@ export interface ReservaHistorial {
   inscripcionIndividualId?: number;
   estadoSena?: 'PENDIENTE' | 'COMPLETADA' | 'VENCIDA';
   montoTotal?: number;
+  totalReservas?: number;
 }
 
 export interface ClaseDisponible {
@@ -649,6 +650,14 @@ export class ReservasService {
       );
   }
 
+  cancelarMensualidad(mensualId: number): Observable<any> {
+    return this.http
+      .patch<any>(`${this.inscripcionesMenUrl}/${mensualId}/cancelar`, {})
+      .pipe(
+        catchError((err) => throwError(() => this.toHttpError(err)))
+      );
+  }
+
   completarSena(inscripcionId: number): Observable<any> {
     return this.http
       .post<any>(`${this.inscripcionesIndUrl}/${inscripcionId}/completar-sena`, {})
@@ -764,15 +773,20 @@ export class ReservasService {
    */
   checkConflicto(
     claseId: number,
-    fecha: string,
+    fecha?: string,
+    tipo?: string,
   ): Observable<{ conflicto: boolean; tipo: string | null; mensaje: string | null }> {
     const email = this.auth.getCurrentUser()?.email;
     if (!email) {
       return of({ conflicto: false, tipo: null, mensaje: null });
     }
-    const params = new HttpParams()
-      .set('fecha', fecha)
-      .set('cliente_email', email);
+    let params = new HttpParams().set('cliente_email', email);
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
+    if (tipo) {
+      params = params.set('tipo', tipo);
+    }
     return this.http
       .get<{ conflicto: boolean; tipo: string | null; mensaje: string | null }>(
         `${this.clasesUrl}/${claseId}/conflicto`,
@@ -1080,6 +1094,9 @@ export class ReservasService {
             this.buscarAbonoVigente(mensuales, clase.id, prox),
           ),
           yaReservada,
+          precioActividad: Number(
+            (clase.actividad as { precio?: number })?.precio ?? 0,
+          ),
           profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
         });
       }),
@@ -1166,6 +1183,7 @@ export class ReservasService {
       inscripcionMensualId: mensual?.id,
       periodoInicio: mensual ? String(mensual.periodo_inicio).slice(0, 10) : undefined,
       periodoFin: mensual ? String(mensual.periodo_fin).slice(0, 10) : undefined,
+      totalReservas: mensual?.reservas ? mensual.reservas.length : undefined,
       canceladaPor: dto.cancelada_por,
       inscripcionIndividualId: individual?.id,
       estadoSena: individual?.estado_seña,

@@ -122,10 +122,10 @@ export class AdministrativoDashboardComponent {
     this.tab = tab;
 
     if (tab === 'profesores') {
-      if (this.profesores.length === 0) this.refreshProfesores();
-      if (this.actividades.length === 0) this.loadActividades();
+      this.refreshProfesores();
+      this.loadActividades();
     }
-    if (tab === 'empleados' && this.empleados.length === 0) {
+    if (tab === 'empleados') {
       this.refreshEmpleados();
     }
   }

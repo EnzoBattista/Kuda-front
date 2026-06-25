@@ -43,11 +43,7 @@ export class ActividadesListComponent implements OnInit {
   profesoresLoading = false;
   profesoresEmptyHu = false;
 
-  // ── Selector de profesores (modal Agregar / Modificar) ─────────────────
-  profesoresDisponibles: Profesor[] = [];
-  profesoresDisponiblesLoading = false;
-  formProfesoresSeleccionados: number[] = [];
-  profesoresDropdownOpen = false;
+
 
   readonly precioHuError = 'El precio debe ser mayor a cero';
 
@@ -99,8 +95,6 @@ export class ActividadesListComponent implements OnInit {
     this.profesores = [];
     this.profesoresLoading = false;
     this.profesoresEmptyHu = false;
-    this.formProfesoresSeleccionados = [];
-    this.profesoresDropdownOpen = false;
   }
 
   cerrarTodosModales(): void {
@@ -116,7 +110,6 @@ export class ActividadesListComponent implements OnInit {
     this.clearBanners();
     this.clearModalState();
     this.showModalAgregar = true;
-    this.cargarProfesoresDisponibles();
   }
 
   cerrarModalAgregar(): void {
@@ -126,8 +119,6 @@ export class ActividadesListComponent implements OnInit {
     this.formNombre = '';
     this.formDescripcion = '';
     this.formPrecio = null;
-    this.formProfesoresSeleccionados = [];
-    this.profesoresDropdownOpen = false;
   }
 
   submitAgregar(): void {
@@ -150,9 +141,6 @@ export class ActividadesListComponent implements OnInit {
         nombre,
         descripcion: this.formDescripcion.trim() || undefined,
         precio: Number(precio),
-        profesores: this.formProfesoresSeleccionados.length > 0
-          ? [...this.formProfesoresSeleccionados]
-          : undefined,
       })
       .subscribe({
         next: (res) => {
@@ -174,17 +162,6 @@ export class ActividadesListComponent implements OnInit {
     this.formNombre = actividad.nombre;
     this.formDescripcion = actividad.descripcion ?? '';
     this.showModalModificar = true;
-    // Cargamos la lista completa de profesores disponibles
-    this.cargarProfesoresDisponibles();
-    // Pre-seleccionamos los profesores ya asociados a esta actividad
-    this.actividadesService.getProfesores(actividad.id).subscribe({
-      next: (data) => {
-        this.formProfesoresSeleccionados = (data ?? []).map((p) => p.id);
-      },
-      error: () => {
-        // Si falla la precarga, se abre el modal igual pero sin pre-selección
-      },
-    });
   }
 
   cerrarModalModificar(): void {
@@ -192,8 +169,6 @@ export class ActividadesListComponent implements OnInit {
     this.selectedActividad = null;
     this.modalError = '';
     this.modalSubmitting = false;
-    this.formProfesoresSeleccionados = [];
-    this.profesoresDropdownOpen = false;
   }
 
   submitModificar(): void {
@@ -213,7 +188,6 @@ export class ActividadesListComponent implements OnInit {
       .update(this.selectedActividad.id, {
         nombre,
         descripcion: this.formDescripcion.trim() || undefined,
-        profesores: [...this.formProfesoresSeleccionados],
       })
       .subscribe({
         next: (res) => {
@@ -311,41 +285,6 @@ export class ActividadesListComponent implements OnInit {
   }
 
   // ── Selector de profesores (modal Agregar / Modificar) ──────────────────────
-
-  private cargarProfesoresDisponibles(): void {
-    if (this.profesoresDisponibles.length > 0) return; // ya cargados
-    this.profesoresDisponiblesLoading = true;
-    this.profesorService.getAll().subscribe({
-      next: (data) => {
-        this.profesoresDisponibles = (data ?? []).filter((p) => p.activo);
-        this.profesoresDisponiblesLoading = false;
-      },
-      error: () => {
-        this.profesoresDisponiblesLoading = false;
-      },
-    });
-  }
-
-  toggleProfesorSeleccionado(id: number): void {
-    const idx = this.formProfesoresSeleccionados.indexOf(id);
-    this.formProfesoresSeleccionados =
-      idx === -1
-        ? [...this.formProfesoresSeleccionados, id]
-        : this.formProfesoresSeleccionados.filter((x) => x !== id);
-  }
-
-  isProfesorSeleccionado(id: number): boolean {
-    return this.formProfesoresSeleccionados.includes(id);
-  }
-
-  get textoProfesorSeleccionado(): string {
-    const sel = this.formProfesoresSeleccionados;
-    if (sel.length === 0) return 'Seleccionar profesores...';
-    return this.profesoresDisponibles
-      .filter((p) => sel.includes(p.id))
-      .map((p) => `${p.nombre} ${p.apellido}`.trim())
-      .join(', ');
-  }
 
   onVerProfesores(actividad: Actividad): void {
     this.clearBanners();

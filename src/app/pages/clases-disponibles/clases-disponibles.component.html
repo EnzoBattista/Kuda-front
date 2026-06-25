@@ -204,25 +204,15 @@
           </button>
         </ng-container>
 
-        <!-- Caso 2: No está en lista de espera (o está en lista mensual) y hay cupo disponible -->
+        <!-- Botón Reservar: siempre visible si no está en lista de espera (o si está anotado en lista de espera de abonados) -->
         <button
-          *ngIf="(!yaEnListaEspera(c.id) || estaEnListaMensual(c.id)) && c.cupoDisponible > 0"
+          *ngIf="!yaEnListaEspera(c.id) || estaEnListaMensual(c.id)"
           class="btn btn-primary"
           type="button"
-          [disabled]="isSubmitting || c.yaReservada"
+          [disabled]="isSubmitting"
           (click)="abrirReserva()"
         >
           Reservar
-        </button>
-
-        <!-- Caso 3: No está en lista de espera y NO hay cupo disponible -->
-        <button
-          *ngIf="!yaEnListaEspera(c.id) && c.cupoDisponible === 0"
-          class="btn btn-secondary"
-          type="button"
-          (click)="abrirEspera()"
-        >
-          Anotarse en lista de espera
         </button>
         <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cancelar</button>
       </div>
@@ -357,38 +347,8 @@
 
       <!-- Botones de acción -->
       <div class="form-actions">
-        <!-- Caso: Falla por falta de cupo en mensualidad (se muestra Anotarse en lista de espera en lugar de confirmar) -->
-        <ng-container *ngIf="modalidadElegida === 'ABONADO' && errorModalMsg && errorModalMsg.includes('No hay cupo suficiente en todas las fechas del mes')">
-          <button
-            *ngIf="!yaEnListaEspera(c.id)"
-            class="btn btn-primary"
-            type="button"
-            [disabled]="isSubmitting"
-            (click)="confirmarEspera('ABONADO')"
-          >
-            Anotarse en lista de espera (Abonado)
-          </button>
-          <ng-container *ngIf="yaEnListaEspera(c.id)">
-            <p class="help lista-espera-inscripto" style="width: 100%; text-align: center; color: var(--brand-red, #dc2626); font-weight: bold; margin: 0;">
-              <span *ngIf="estaEnListaIndividual(c.id)">Estás anotado en la lista de espera individual para esta clase.</span>
-              <span *ngIf="estaEnListaMensual(c.id)">Estás anotado en la lista de espera de abonados para esta clase.</span>
-              <span *ngIf="!estaEnListaIndividual(c.id) && !estaEnListaMensual(c.id)">Estás anotado en la lista de espera para esta clase.</span>
-            </p>
-            <button
-              class="btn btn-danger"
-              style="width: 100%; display: block;"
-              type="button"
-              [disabled]="isSubmitting"
-              (click)="salirListaEspera(c.id)"
-            >
-              Salir de la lista de espera
-            </button>
-          </ng-container>
-        </ng-container>
-
         <!-- Caso normal: Confirmar reserva -->
         <button
-          *ngIf="!(modalidadElegida === 'ABONADO' && errorModalMsg && errorModalMsg.includes('No hay cupo suficiente en todas las fechas del mes'))"
           class="btn btn-primary"
           type="button"
           [disabled]="isSubmitting"
@@ -400,7 +360,7 @@
         <button
           class="btn btn-secondary"
           type="button"
-          (click)="pasoModal = c.abonoClaseVigente ? 'seleccion-modalidad' : 'seleccion-pago'"
+          (click)="volverDesdeConfirmacion()"
         >
           Volver
         </button>

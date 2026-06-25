@@ -204,7 +204,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     this.claseSeleccionada = clase;
     this.pasoModal = 'detalle';
     this.resultadoMsg = '';
-    this.errorModalMsg = clase.yaReservada ? 'Ya tenés una reserva activa para esta clase.' : '';
+    this.errorModalMsg = '';
     this.isSubmitting = false;
     this.isReservaIncompleta = false;
     this.cargarValesParaClase(clase.id);
@@ -235,28 +235,9 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Verificación 2 (async): reserva duplicada o superposición de horario
-    this.isSubmitting = true; // reutilizamos el flag para deshabilitar el botón mientras consulta
-    this.reservasService.checkConflicto(c.id, c.proximaFecha).subscribe({
-      next: (res) => {
-        this.isSubmitting = false;
-        if (res.conflicto) {
-          this.errorModalMsg = res.mensaje ?? 'No podés reservar esta clase.';
-          this.pasoModal = 'detalle';
-          return;
-        }
-        this.modalidadElegida = 'INDIVIDUAL';
-        this.tipoPagoElegido = 'PAGO_COMPLETO';
-        this.pasoModal = 'seleccion-modalidad';
-      },
-      error: () => {
-        // Si el check falla (red, etc.) dejamos avanzar: el backend rechazará igual
-        this.isSubmitting = false;
-        this.modalidadElegida = 'INDIVIDUAL';
-        this.tipoPagoElegido = 'PAGO_COMPLETO';
-        this.pasoModal = 'seleccion-modalidad';
-      },
-    });
+    this.modalidadElegida = 'INDIVIDUAL';
+    this.tipoPagoElegido = 'PAGO_COMPLETO';
+    this.pasoModal = 'seleccion-modalidad';
   }
 
   private cargarValesParaClase(claseId: number): void {
@@ -306,18 +287,57 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     this.modalidadElegida = modalidad;
     this.errorModalMsg = '';
 
-    if (modalidad === 'ABONADO') {
-      this.pasoModal = 'confirmacion';
-      return;
-    }
-
     if (this.claseSeleccionada?.abonoClaseVigente) {
       this.errorModalMsg =
         'Ya tenés una membresía mensual activa para esta clase.';
       return;
     }
 
-    this.pasoModal = 'seleccion-pago';
+    const c = this.claseSeleccionada;
+    if (!c) return;
+
+    this.isSubmitting = true;
+    if (modalidad === 'ABONADO') {
+      this.reservasService.checkConflicto(c.id, undefined, 'MENSUAL').subscribe({
+        next: (res) => {
+          this.isSubmitting = false;
+          if (res.conflicto && res.tipo === 'SIN_CUPO') {
+            // Sin cupo mensual: abrir directamente el modal de lista de espera
+            this.abrirEspera();
+            return;
+          }
+          if (res.conflicto) {
+            this.errorModalMsg = res.mensaje ?? 'No podés reservar esta clase.';
+            return;
+          }
+          this.pasoModal = 'confirmacion';
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.pasoModal = 'confirmacion';
+        },
+      });
+    } else {
+      this.reservasService.checkConflicto(c.id, c.proximaFecha).subscribe({
+        next: (res) => {
+          this.isSubmitting = false;
+          if (res.conflicto) {
+            this.errorModalMsg = res.mensaje ?? 'No podés reservar esta clase.';
+            return;
+          }
+          // Sin cupo individual: abrir directamente el modal de lista de espera
+          if (c.cupoDisponible === 0) {
+            this.abrirEspera();
+            return;
+          }
+          this.pasoModal = 'seleccion-pago';
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.pasoModal = 'seleccion-pago';
+        },
+      });
+    }
   }
 
   seleccionarTipoPago(tipo: TipoPago): void {
@@ -745,9 +765,10 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
       this.isSubmitting = false;
       this.isReservaIncompleta = false;
     }
-    if (!this.claseSeleccionada || this.yaEnListaEspera(this.claseSeleccionada.id)) {
-      return;
-    }
+    if (!this.claseSeleccionada) return;
+    // Bloquear solo si ya está en ambas listas (no quedan opciones)
+    const id = this.claseSeleccionada.id;
+    if (this.estaEnListaIndividual(id) && this.estaEnListaMensual(id)) return;
     this.pasoModal = 'espera';
   }
 
@@ -834,6 +855,19 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     });
   }
 
+  volverDesdeConfirmacion(): void {
+    const c = this.claseSeleccionada;
+    if (!c) {
+      this.cerrarModal();
+      return;
+    }
+    if (this.modalidadElegida === 'ABONADO' || c.abonoClaseVigente || !this.puedePagarSena(c)) {
+      this.pasoModal = 'seleccion-modalidad';
+    } else {
+      this.pasoModal = 'seleccion-pago';
+    }
+  }
+
   confirmacionTitulo(): string {
     if (this.modalidadElegida === 'ABONADO') {
       return 'Confirmá tu inscripción mensual';
@@ -865,9 +899,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
 
     this.reservasService.getClasesDisponibles().subscribe({
       next: (data) => {
-        this.clases = (data ?? []).map((c) =>
-          c.actividad === 'Funcional' ? { ...c, cupoDisponible: 0 } : c,
-        );
+        this.clases = data ?? [];
         this.actividades = [...new Set(this.clases.map((c) => c.actividad))].sort();
         this.dias = [...new Set(this.clases.map((c) => c.diaSemana))].sort(
           (a, b) => (this.ORDEN_DIA[a] ?? 9) - (this.ORDEN_DIA[b] ?? 9),
@@ -957,22 +989,24 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     });
   }
 
-  obtenerWaitlistIdParaClase(claseId: number): number {
+  obtenerWaitlistIdParaClase(claseId: number, tipo?: string): number {
     const entry = this.misWaitlists.find(
-      (e) => Number(e.clase_id || e.clase?.id) === claseId
+      (e) => Number(e.clase_id || e.clase?.id) === claseId && (!tipo || e.tipo === tipo)
     );
     return entry ? entry.id : 0;
   }
 
   salirListaEspera(claseId: number): void {
-    const id = this.obtenerWaitlistIdParaClase(claseId);
+    // Determinar qué tipo de lista de espera tiene el usuario para esta clase
+    const tipo = this.estaEnListaMensual(claseId) ? 'MENSUAL' : 'INDIVIDUAL';
+    const id = this.obtenerWaitlistIdParaClase(claseId, tipo);
     if (!id) return;
 
     this.isSubmitting = true;
     this.errorModalMsg = '';
 
     this.listaEsperaService.cancelarMiListaEspera(id).subscribe({
-      next: (res) => {
+      next: () => {
         this.isSubmitting = false;
         this.desmarcarListaEsperaLocal(claseId);
         this.sincronizarListaEspera();
