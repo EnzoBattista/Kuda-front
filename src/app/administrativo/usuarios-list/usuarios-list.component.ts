@@ -13,6 +13,7 @@ import {
   UsuariosFiltro,
 } from '../../services/gestion-usuarios.service';
 import { NotificacionesService } from '../../services/notificaciones.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-usuarios-list',
@@ -36,7 +37,6 @@ export class UsuariosListComponent implements OnInit {
   selectedUsuario: UsuarioListado | null = null;
   notificarSubmitting = false;
   notificarError = '';
-  notificarSuccess = '';
 
   readonly notificarForm = new FormGroup({
     asunto: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -46,6 +46,7 @@ export class UsuariosListComponent implements OnInit {
   constructor(
     private readonly gestion: GestionUsuariosService,
     private readonly notificaciones: NotificacionesService,
+    private readonly toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -87,6 +88,9 @@ export class UsuariosListComponent implements OnInit {
   }
 
   estadoLabel(usuario: UsuarioListado): string {
+    if (usuario.estado === 'ACTIVO') return 'Activo';
+    if (usuario.estado === 'PENDIENTE') return 'Pendiente confirmación';
+    if (usuario.estado === 'ELIMINADO') return 'Eliminado';
     return usuario.activo ? 'Activo' : 'Inactivo';
   }
 
@@ -100,7 +104,6 @@ export class UsuariosListComponent implements OnInit {
   abrirModalNotificar(usuario: UsuarioListado): void {
     this.selectedUsuario = usuario;
     this.notificarError = '';
-    this.notificarSuccess = '';
     this.notificarForm.reset({ asunto: '', mensaje: '' });
     this.showModalNotificar = true;
   }
@@ -120,7 +123,6 @@ export class UsuariosListComponent implements OnInit {
 
     this.notificarSubmitting = true;
     this.notificarError = '';
-    this.notificarSuccess = '';
 
     const { asunto, mensaje } = this.notificarForm.getRawValue();
     this.notificaciones
@@ -131,14 +133,96 @@ export class UsuariosListComponent implements OnInit {
       })
       .subscribe({
         next: (res) => {
-          this.notificarSuccess = res.message;
+          this.toast.showSuccess(res.message);
           this.notificarSubmitting = false;
           this.cerrarModalNotificar();
         },
         error: (err) => {
           this.notificarError = this.notificaciones.mensajeError(err);
+          this.toast.showError(this.notificarError);
           this.notificarSubmitting = false;
         },
       });
+  }
+
+  showModalRecordatorio = false;
+  recordatorioSubmitting = false;
+  readonly recordatorioForm = new FormGroup({
+    dia: new FormControl<number | null>(null, { nonNullable: false, validators: [Validators.required, Validators.min(1), Validators.max(10)] }),
+  });
+
+  abrirModalRecordatorio(usuario: UsuarioListado): void {
+    this.selectedUsuario = usuario;
+    // We ideally should fetch current preferencies, but if we don't have them we can just start empty.
+    this.recordatorioForm.reset({ dia: null });
+    this.showModalRecordatorio = true;
+  }
+
+  cerrarModalRecordatorio(): void {
+    this.showModalRecordatorio = false;
+    this.selectedUsuario = null;
+    this.recordatorioSubmitting = false;
+  }
+
+  guardarRecordatorio(): void {
+    this.recordatorioForm.markAllAsTouched();
+    if (this.recordatorioForm.invalid || !this.selectedUsuario) return;
+
+    this.recordatorioSubmitting = true;
+    const dia = this.recordatorioForm.value.dia;
+
+    this.notificaciones.actualizarPreferenciasCliente(this.selectedUsuario.email, {
+      recordatorio_pago_dia: dia,
+    }).subscribe({
+      next: (res) => {
+        this.toast.showSuccess(res.message);
+        this.cerrarModalRecordatorio();
+      },
+      error: (err) => {
+        this.toast.showError(this.notificaciones.mensajeError(err));
+        this.recordatorioSubmitting = false;
+      }
+    });
+  }
+
+  showModalEliminar = false;
+  selectedUsuarioEliminar: UsuarioListado | null = null;
+  eliminarSubmitting = false;
+
+  abrirModalEliminar(usuario: UsuarioListado): void {
+    this.selectedUsuarioEliminar = usuario;
+    this.showModalEliminar = true;
+  }
+
+  cerrarModalEliminar(): void {
+    this.showModalEliminar = false;
+    this.selectedUsuarioEliminar = null;
+    this.eliminarSubmitting = false;
+  }
+
+  confirmarEliminacion(): void {
+    if (!this.selectedUsuarioEliminar) return;
+
+    this.eliminarSubmitting = true;
+    this.isLoading = true;
+    this.gestion.eliminarCliente(this.selectedUsuarioEliminar.email).subscribe({
+      next: (res) => {
+        this.toast.showSuccess(res.message || 'Cliente eliminado con éxito');
+        this.cerrarModalEliminar();
+        // Reload list
+        const valores: UsuariosFiltro = this.filtros.getRawValue();
+        valores.rol = 'CLIENTE';
+        this.gestion.getAll(valores).subscribe((data) => {
+          this.usuarios = data ?? [];
+          this.isLoading = false;
+        });
+      },
+      error: () => {
+        this.toast.showError('Error al eliminar el cliente');
+        this.isLoading = false;
+        this.eliminarSubmitting = false;
+        this.cerrarModalEliminar();
+      }
+    });
   }
 }

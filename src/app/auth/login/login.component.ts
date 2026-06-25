@@ -9,6 +9,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -30,15 +31,14 @@ export class LoginComponent {
   });
 
   isSubmitting = false;
-  submitError = '';
 
   constructor(
     private readonly auth: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly toast: ToastService
   ) {}
 
   onSubmit(): void {
-    this.submitError = '';
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
 
@@ -57,9 +57,9 @@ export class LoginComponent {
         this.isSubmitting = false;
         const msg = err?.error?.message?.toLowerCase() || '';
         if (msg.includes('confirm')) {
-          this.submitError = 'La cuenta aún no fue confirmada. Revisá tu casilla de email para activar el registro.';
+          this.toast.showError('La cuenta aún no fue confirmada. Revisá tu casilla de email para activar el registro.');
         } else {
-          this.submitError = 'Datos de inicio de sesión incorrectos';
+          this.toast.showError('Datos de inicio de sesión incorrectos');
         }
       },
     });

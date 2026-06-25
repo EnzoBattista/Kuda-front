@@ -10,6 +10,7 @@ import {
 import { RouterLink } from '@angular/router';
 
 import { AuthService, RegisterRequest } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-register',
@@ -21,8 +22,6 @@ import { AuthService, RegisterRequest } from '../../services/auth.service';
 export class RegisterComponent {
   isSubmitting = false;
   submitted = false;
-  submitError = '';
-  successMessage = '';
 
   readonly form = new FormGroup(
     {
@@ -66,19 +65,20 @@ export class RegisterComponent {
   fichaMedicaFileName = '';
   fichaMedicaEncoded: string | null = null;
 
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly toast: ToastService
+  ) {}
 
   onSubmit(): void {
     this.submitted = true;
-    this.submitError = '';
-    this.successMessage = '';
 
     if (this.isUnder14()) {
-      this.submitError = 'Se debe ser mayor de 14 años.';
+      this.toast.showError('Se debe ser mayor de 14 años.');
       return;
     }
     if (this.form.hasError('passwordsMismatch')) {
-      this.submitError = 'Las contraseñas no coinciden.';
+      this.toast.showError('Las contraseñas no coinciden.');
       return;
     }
     if (this.form.invalid) return;
@@ -101,12 +101,11 @@ export class RegisterComponent {
     this.auth.register(req).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.successMessage =
-          'Se ha enviado un enlace de confirmación a su casilla de email. Tiene 48hs para confirmar su registro.';
+        this.toast.showSuccess('Se ha enviado un enlace de confirmación a su casilla de email. Tiene 48hs para confirmar su registro.');
       },
       error: (err) => {
         this.isSubmitting = false;
-        this.submitError = this.mapRegisterError(err?.error?.message ?? '');
+        this.toast.showError(this.mapRegisterError(err?.error?.message ?? ''));
       },
     });
   }
@@ -129,7 +128,6 @@ export class RegisterComponent {
   }
 
   onFichaMedicaSelected(event: Event): void {
-    this.submitError = '';
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     this.form.controls.fichaMedicaFile.setValue(file);

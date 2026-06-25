@@ -2,11 +2,13 @@ import { Component } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { CommonModule, Location } from '@angular/common';
 import { AuthService } from './services/auth.service';
+import { ToastComponent } from './components/toast/toast.component';
+import { NotificacionesBellComponent } from './components/notificaciones-bell/notificaciones-bell.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ToastComponent, NotificacionesBellComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })

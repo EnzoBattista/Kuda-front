@@ -123,6 +123,14 @@
   text-decoration: none;
 }
 
+.btn-danger {
+  background: var(--brand-red, #dc2626);
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
 .row-actions {
   display: flex;
   gap: 0.45rem;

@@ -3,11 +3,6 @@
     <h3>Clientes</h3>
   </div>
 
-  <div class="card card-pad success-banner" *ngIf="notificarSuccess" role="status" style="display: flex; justify-content: space-between; align-items: center;">
-    <span>{{ notificarSuccess }}</span>
-    <button type="button" (click)="notificarSuccess = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
-  </div>
-
   <!-- Filtros -->
   <form class="usuarios-filtros form" [formGroup]="filtros" *ngIf="usuarios.length > 0 || hayFiltrosAplicados()">
     <div class="filtros-row">
@@ -27,12 +22,10 @@
         <select class="control" formControlName="estado">
           <option value="">Todos</option>
           <option value="ACTIVO">Activo</option>
-          <option value="INACTIVO">Inactivo</option>
+          <option value="PENDIENTE">Pendiente confirmación</option>
+          <option value="ELIMINADO">Eliminado</option>
         </select>
       </div>
-
-
-
     </div>
   </form>
 
@@ -60,11 +53,17 @@
       <div>{{ u.email }}</div>
       <div>{{ u.dni }}</div>
       <div>
-        <span class="badge" [class.badge-inactivo]="!u.activo">{{ estadoLabel(u) }}</span>
+        <span class="badge" [class.badge-inactivo]="u.estado === 'ELIMINADO' || u.estado === 'PENDIENTE'">{{ estadoLabel(u) }}</span>
       </div>
       <div class="right row-actions">
+        <button type="button" class="btn-tabla" (click)="abrirModalRecordatorio(u)" aria-label="Modificar recordatorio" title="Modificar recordatorio">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" style="vertical-align: middle;">
+            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+          </svg>
+        </button>
         <button type="button" class="btn-tabla" (click)="abrirModalNotificar(u)">Notificar</button>
         <a class="btn-tabla" [routerLink]="['/administrativo/usuarios', u.email, 'editar']">Editar</a>
+        <button type="button" class="btn-tabla btn-danger" (click)="abrirModalEliminar(u)">Eliminar</button>
       </div>
     </div>
   </div>
@@ -99,13 +98,77 @@
         <textarea id="notif-mensaje" class="control" rows="5" formControlName="mensaje"></textarea>
       </div>
 
-      <p class="error-text" *ngIf="notificarError">{{ notificarError }}</p>
-
       <div class="form-actions">
         <button type="submit" class="btn btn-primary" [disabled]="notificarSubmitting || notificarForm.invalid">
           Enviar
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalNotificar()" [disabled]="notificarSubmitting">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Eliminar cliente -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalEliminar"
+  role="presentation"
+  (click)="cerrarModalEliminar()"
+>
+  <div
+    class="card card-pad modal-panel"
+    role="dialog"
+    aria-labelledby="modal-eliminar-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h4 id="modal-eliminar-title" class="modal-title">Eliminar cliente</h4>
+    <p class="help" *ngIf="selectedUsuarioEliminar">
+      ¿Estás seguro de que deseás eliminar al cliente <strong>{{ selectedUsuarioEliminar.nombre }} {{ selectedUsuarioEliminar.apellido }}</strong>?
+      Esta acción cancelará cualquier inscripción mensual activa y enviará un correo notificándole la baja.
+    </p>
+
+    <div class="form-actions" style="margin-top: 1.5rem;">
+      <button type="button" class="btn btn-danger" style="padding: 0.5rem 1rem; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;" (click)="confirmarEliminacion()" [disabled]="eliminarSubmitting">
+        Sí, eliminar cliente
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarModalEliminar()" [disabled]="eliminarSubmitting">
+        Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Recordatorio -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalRecordatorio"
+  role="presentation"
+  (click)="cerrarModalRecordatorio()"
+>
+  <div
+    class="card card-pad modal-panel"
+    role="dialog"
+    aria-labelledby="modal-recordatorio-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h4 id="modal-recordatorio-title" class="modal-title">Modificar recordatorio</h4>
+    <p class="help" *ngIf="selectedUsuario">
+      Día de aviso de pago para {{ selectedUsuario.nombre }} {{ selectedUsuario.apellido }} ({{ selectedUsuario.email }})
+    </p>
+
+    <form class="form" [formGroup]="recordatorioForm" (ngSubmit)="guardarRecordatorio()">
+      <div class="field">
+        <label class="label" for="recordatorio-dia">Día del mes (1-10)</label>
+        <input id="recordatorio-dia" type="number" class="control" formControlName="dia" min="1" max="10" />
+      </div>
+
+      <div class="form-actions" style="margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary" [disabled]="recordatorioSubmitting || recordatorioForm.invalid">
+          Modificar recordatorio
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalRecordatorio()" [disabled]="recordatorioSubmitting">
           Cancelar
         </button>
       </div>
