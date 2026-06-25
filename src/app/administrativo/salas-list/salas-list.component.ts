@@ -8,6 +8,7 @@ import {
 import { Sala, estadoSalaLabel } from '../../models/sala.model';
 import { SalasService } from '../../services/salas.service';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-salas-list',
@@ -20,13 +21,11 @@ export class SalasListComponent implements OnInit {
   private readonly salasService = inject(SalasService);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly toastService = inject(ToastService);
 
   salas: Sala[] = [];
   isLoading = false;
   errorMsg = '';
-
-  bannerSuccess = '';
-  bannerError = '';
 
   showModalAgregar = false;
   showModalModificar = false;
@@ -73,10 +72,6 @@ export class SalasListComponent implements OnInit {
     });
   }
 
-  private clearBanners(): void {
-    this.bannerSuccess = '';
-    this.bannerError = '';
-  }
 
   private clearModalState(): void {
     this.modalError = '';
@@ -84,7 +79,6 @@ export class SalasListComponent implements OnInit {
   }
 
   onAgregar(): void {
-    this.clearBanners();
     this.clearModalState();
     this.selectedSala = null;
     this.formSala.reset({ identificador: '', cupo: null });
@@ -92,7 +86,6 @@ export class SalasListComponent implements OnInit {
   }
 
   onModificar(sala: Sala): void {
-    this.clearBanners();
     this.clearModalState();
     this.selectedSala = sala;
     this.formSala.reset({
@@ -103,21 +96,18 @@ export class SalasListComponent implements OnInit {
   }
 
   onHabilitar(sala: Sala): void {
-    this.clearBanners();
     this.clearModalState();
     this.selectedSala = sala;
     this.showModalHabilitar = true;
   }
 
   onDeshabilitar(sala: Sala): void {
-    this.clearBanners();
     this.clearModalState();
     this.selectedSala = sala;
     this.showModalDeshabilitar = true;
   }
 
   onEliminar(sala: Sala): void {
-    this.clearBanners();
     this.clearModalState();
     this.selectedSala = sala;
     this.showModalEliminar = true;
@@ -154,12 +144,12 @@ export class SalasListComponent implements OnInit {
 
     this.salasService.create({ identificador: (identificador ?? '').trim(), cupo: cupoNum }).subscribe({
       next: (res) => {
-        this.bannerSuccess = res.message;
+        this.toastService.showSuccess(res.message);
         this.cerrarModales();
         this.cargarSalas();
       },
       error: (err) => {
-        this.modalError = this.salasService.mensajeError(err);
+        this.toastService.showError(this.salasService.mensajeError(err));
         this.modalSubmitting = false;
       },
     });
@@ -191,12 +181,12 @@ export class SalasListComponent implements OnInit {
       })
       .subscribe({
         next: (res) => {
-          this.bannerSuccess = res.message;
+          this.toastService.showSuccess(res.message);
           this.cerrarModales();
           this.cargarSalas();
         },
         error: (err) => {
-          this.modalError = this.salasService.mensajeError(err);
+          this.toastService.showError(this.salasService.mensajeError(err));
           this.modalSubmitting = false;
         },
       });
@@ -210,12 +200,12 @@ export class SalasListComponent implements OnInit {
 
     this.salasService.habilitar(this.selectedSala.id).subscribe({
       next: (res) => {
-        this.bannerSuccess = res.message;
+        this.toastService.showSuccess(res.message);
         this.cerrarModales();
         this.cargarSalas();
       },
       error: (err) => {
-        this.modalError = this.salasService.mensajeError(err);
+        this.toastService.showError(this.salasService.mensajeError(err));
         this.modalSubmitting = false;
       },
     });
@@ -228,14 +218,12 @@ export class SalasListComponent implements OnInit {
 
     this.salasService.deshabilitar(this.selectedSala.id).subscribe({
       next: (res) => {
-        // Escenario 1: la sala fue deshabilitada exitosamente.
-        this.bannerSuccess = res.message;
+        this.toastService.showSuccess(res.message);
         this.cerrarModales();
         this.cargarSalas();
       },
       error: (err) => {
-        // Escenario 2: la sala aún tiene clases próximas.
-        this.bannerError = this.salasService.mensajeError(err);
+        this.toastService.showError(this.salasService.mensajeError(err));
         this.cerrarModales();
       },
     });
@@ -248,14 +236,12 @@ export class SalasListComponent implements OnInit {
 
     this.salasService.delete(this.selectedSala.id).subscribe({
       next: (res) => {
-        // Escenario 1: la sala fue eliminada exitosamente y deja de listarse.
-        this.bannerSuccess = res.message;
+        this.toastService.showSuccess(res.message);
         this.cerrarModales();
         this.cargarSalas();
       },
       error: (err) => {
-        // Escenario 2: la sala aún tiene clases próximas.
-        this.bannerError = this.salasService.mensajeError(err);
+        this.toastService.showError(this.salasService.mensajeError(err));
         this.cerrarModales();
       },
     });

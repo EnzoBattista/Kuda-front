@@ -413,6 +413,10 @@ export class AdministrativoDashboardComponent {
     return msg || 'No se pudo registrar el recepcionista.';
   }
 
+  abrirModalEliminarEmpleado(emp: UsuarioListado): void {
+    this.empleadoAEliminar = emp;
+  }
+
   onConfirmarEliminarEmpleado(): void {
     if (!this.empleadoAEliminar) return;
     this.eliminandoEmpleado = true;

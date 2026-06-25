@@ -21,29 +21,17 @@
     </div>
   </div>
 
-  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status" style="display: flex; justify-content: space-between; align-items: center;">
-    <span>{{ bannerSuccess }}</span>
-    <button type="button" (click)="bannerSuccess = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
-  </div>
-
-  <div class="card card-pad" *ngIf="bannerError" style="display: flex; justify-content: space-between; align-items: center;">
-    <p class="error-text" style="margin: 0;">{{ bannerError }}</p>
-    <button type="button" (click)="bannerError = ''" aria-label="Cerrar" class="banner-close">&times;</button>
-  </div>
-
   <div class="card card-pad" *ngIf="isLoading">
     <p class="help">Cargando…</p>
   </div>
 
-  <div class="card card-pad" *ngIf="!isLoading && errorMsg && !bannerError">
-    <p class="error-text">{{ errorMsg }}</p>
-  </div>
 
-  <div class="card card-pad empty-state" *ngIf="!isLoading && !errorMsg && actividades.length === 0">
+
+  <div class="card card-pad empty-state" *ngIf="!isLoading && actividades.length === 0">
     <p>No hay actividades</p>
   </div>
 
-  <ul class="actividades-grid" *ngIf="!isLoading && !errorMsg && actividades.length > 0">
+  <ul class="actividades-grid" *ngIf="!isLoading && actividades.length > 0">
     <li class="card card-pad actividad-card" *ngFor="let actividad of actividades">
       <div class="actividad-card-head">
         <h4 class="actividad-nombre">{{ actividad.nombre }}</h4>
@@ -67,9 +55,9 @@
         <button
           type="button"
           class="btn btn-secondary"
-          (click)="onVerProfesores(actividad)"
+          (click)="onModificar(actividad)"
         >
-          Ver profesores
+          Modificar actividad
         </button>
         <button
           type="button"
@@ -125,7 +113,6 @@
           [(ngModel)]="formDescripcion"
         ></textarea>
       </div>
-      
       <div class="field">
         <label class="label" for="agregar-precio">Precio mensual</label>
         <input
@@ -137,38 +124,6 @@
           [(ngModel)]="formPrecio"
           autocomplete="off"
         />
-      </div>
-
-      <div class="field">
-        <label class="label">Profesores</label>
-        <div class="prof-dropdown" style="position: relative;">
-          <div
-            class="control prof-dropdown-trigger"
-            (click)="profesoresDropdownOpen = !profesoresDropdownOpen"
-            style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;"
-          >
-            <span>{{ textoProfesorSeleccionado }}</span>
-            <span style="font-size: 0.8em;">{{ profesoresDropdownOpen ? '▲' : '▼' }}</span>
-          </div>
-          <div
-            *ngIf="profesoresDropdownOpen"
-            class="prof-dropdown-menu card"
-          >
-            <p class="help" *ngIf="profesoresDisponiblesLoading" style="margin:0.5rem;">Cargando profesores…</p>
-            <p class="help" *ngIf="!profesoresDisponiblesLoading && profesoresDisponibles.length === 0" style="margin:0.5rem;">Sin profesores disponibles</p>
-            <label
-              *ngFor="let p of profesoresDisponibles"
-              class="prof-checkbox-label"
-            >
-              <input
-                type="checkbox"
-                [checked]="isProfesorSeleccionado(p.id)"
-                (change)="toggleProfesorSeleccionado(p.id)"
-              />
-              {{ p.nombre }} {{ p.apellido }}
-            </label>
-          </div>
-        </div>
       </div>
 
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
@@ -218,38 +173,6 @@
           rows="3"
           [(ngModel)]="formDescripcion"
         ></textarea>
-      </div>
-
-      <div class="field">
-        <label class="label">Profesores</label>
-        <div class="prof-dropdown" style="position: relative;">
-          <div
-            class="control prof-dropdown-trigger"
-            (click)="profesoresDropdownOpen = !profesoresDropdownOpen"
-            style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none;"
-          >
-            <span>{{ textoProfesorSeleccionado }}</span>
-            <span style="font-size: 0.8em;">{{ profesoresDropdownOpen ? '▲' : '▼' }}</span>
-          </div>
-          <div
-            *ngIf="profesoresDropdownOpen"
-            class="prof-dropdown-menu card"
-          >
-            <p class="help" *ngIf="profesoresDisponiblesLoading" style="margin:0.5rem;">Cargando profesores…</p>
-            <p class="help" *ngIf="!profesoresDisponiblesLoading && profesoresDisponibles.length === 0" style="margin:0.5rem;">Sin profesores disponibles</p>
-            <label
-              *ngFor="let p of profesoresDisponibles"
-              class="prof-checkbox-label"
-            >
-              <input
-                type="checkbox"
-                [checked]="isProfesorSeleccionado(p.id)"
-                (change)="toggleProfesorSeleccionado(p.id)"
-              />
-              {{ p.nombre }} {{ p.apellido }}
-            </label>
-          </div>
-        </div>
       </div>
 
       <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
@@ -332,38 +255,3 @@
     </div>
   </div>
 </div>
-
-<!-- Modal: Ver profesores -->
-<div
-  class="modal-overlay"
-  *ngIf="showModalProfesores"
-  role="presentation"
-  (click)="cerrarModalProfesores()"
->
-  <div class="card card-pad modal-panel" role="dialog" aria-labelledby="modal-profesores-title" (click)="$event.stopPropagation()">
-    <h4 id="modal-profesores-title" class="modal-title">Profesores asociados</h4>
-    <p class="help" *ngIf="selectedActividad">Actividad: {{ selectedActividad.nombre }}</p>
-
-    <p class="help" *ngIf="profesoresLoading">Cargando…</p>
-
-    <p class="error-text" *ngIf="modalError && !profesoresLoading">{{ modalError }}</p>
-
-    <p class="help profesores-empty" *ngIf="!profesoresLoading && !modalError && profesoresEmptyHu">
-      No existen profesores asociados a esta actividad
-    </p>
-
-    <ul class="profesores-list" *ngIf="!profesoresLoading && !modalError && profesores.length > 0">
-      <li *ngFor="let p of profesores">
-        <span class="profesor-nombre">{{ nombreProfesor(p) }}</span>
-        <span class="profesor-dni help">DNI {{ p.dni }}</span>
-      </li>
-    </ul>
-
-    <div class="form-actions">
-      <button type="button" class="btn btn-primary" (click)="cerrarModalProfesores()">
-        Cerrar
-      </button>
-    </div>
-  </div>
-</div>
-  

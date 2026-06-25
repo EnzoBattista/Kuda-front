@@ -13,15 +13,6 @@
     </div>
   </div>
 
-  <div class="card card-pad success-banner" *ngIf="bannerSuccess" role="status">
-    <span>{{ bannerSuccess }}</span>
-    <button type="button" class="banner-close" (click)="bannerSuccess = ''" aria-label="Cerrar">&times;</button>
-  </div>
-
-  <div class="card card-pad" *ngIf="bannerError">
-    <p class="error-text">{{ bannerError }}</p>
-  </div>
-
   <div class="card card-pad" *ngIf="isLoading">
     <p class="help">Cargando…</p>
   </div>

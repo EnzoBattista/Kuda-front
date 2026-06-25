@@ -11,6 +11,7 @@ import {
   PagoService,
 } from '../../services/pago.service';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-pagos-list',
@@ -23,12 +24,12 @@ export class PagosListComponent implements OnInit {
   private readonly pagoService = inject(PagoService);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+  private readonly toastService = inject(ToastService);
 
   pagos: PagoListado[] = [];
   isLoading = false;
   errorMsg = '';
   emptyMsg = '';
-  bannerSuccess = '';
 
   filtros = this.fb.nonNullable.group({
     cliente_email: [''],
@@ -127,7 +128,7 @@ export class PagosListComponent implements OnInit {
       })
       .subscribe({
         next: (res) => {
-          this.bannerSuccess = res.message;
+          this.toastService.showSuccess(res.message);
           this.cerrarRegistrar();
           this.cargarPagos();
           this.modalSubmitting = false;

@@ -22,6 +22,7 @@ import {
   cupoClaseRangoMsg,
   cupoClaseRangoValidator,
 } from '../../validators/cupo-clase.validator';
+import { ToastService } from '../../services/toast.service';
 
 export interface ClaseListItem extends Clase {
   proximaFecha: string | null;
@@ -54,6 +55,7 @@ export class ClasesListComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly listaEsperaService = inject(ListaEsperaService);
   private readonly fb = inject(FormBuilder);
+  private readonly toastService = inject(ToastService);
 
   readonly diasClase = DIAS_CLASE;
 
@@ -80,9 +82,6 @@ export class ClasesListComponent implements OnInit {
   salasFiltro: string[] = [];
   isLoading = false;
   errorMsg = '';
-
-  bannerSuccess = '';
-  bannerError = '';
 
   showModalCancelar = false;
   showModalEliminar = false;
@@ -304,7 +303,6 @@ export class ClasesListComponent implements OnInit {
   }
 
   onAgregar(): void {
-    this.clearBanners();
     this.formMode = 'agregar';
     this.selectedClase = null;
     this.modalError = '';
@@ -314,7 +312,6 @@ export class ClasesListComponent implements OnInit {
   }
 
   onModificar(clase: ClaseListItem): void {
-    this.clearBanners();
     this.formMode = 'modificar';
     this.selectedClase = clase;
     this.modalError = '';
@@ -408,12 +405,12 @@ export class ClasesListComponent implements OnInit {
     if (this.formMode === 'agregar') {
       this.clasesService.create(payload).subscribe({
         next: (res) => {
-          this.bannerSuccess = res.message;
+          this.toastService.showSuccess(res.message);
           this.cerrarModalFormulario();
           this.cargarClases();
         },
         error: (err) => {
-          this.modalError = err?.message ?? 'Ocurrió un error inesperado';
+          this.toastService.showError(err?.message ?? 'Ocurrió un error inesperado');
           this.modalSubmitting = false;
         },
       });
@@ -426,12 +423,12 @@ export class ClasesListComponent implements OnInit {
 
     this.clasesService.update(this.selectedClase.id, payload).subscribe({
       next: (res) => {
-        this.bannerSuccess = res.message;
+        this.toastService.showSuccess(res.message);
         this.cerrarModalFormulario();
         this.cargarClases();
       },
       error: (err) => {
-        this.modalError = err?.message ?? 'Ocurrió un error inesperado';
+        this.toastService.showError(err?.message ?? 'Ocurrió un error inesperado');
         this.modalSubmitting = false;
       },
     });
@@ -553,7 +550,6 @@ export class ClasesListComponent implements OnInit {
   }
 
   onCancelar(clase: ClaseListItem): void {
-    this.clearBanners();
     this.selectedClase = clase;
     this.fechasCancelacion = this.getProximasFechas(clase);
     this.fechaCancelacionIndex = 0;
@@ -615,19 +611,18 @@ export class ClasesListComponent implements OnInit {
             new Set<string>();
           set.add(this.cancelarFecha);
           this.fechasCanceladasLocales.set(this.selectedClase!.id, set);
-          this.bannerSuccess = res.message;
+          this.toastService.showSuccess(res.message);
           this.cerrarModalCancelar();
           this.cargarClases();
         },
         error: (err) => {
-          this.modalError = err?.message ?? 'Ocurrió un error inesperado';
+          this.toastService.showError(err?.message ?? 'Ocurrió un error inesperado');
           this.modalSubmitting = false;
         },
       });
   }
 
   onEliminar(clase: ClaseListItem): void {
-    this.clearBanners();
     this.selectedClase = clase;
     this.modalError = '';
     this.showModalEliminar = true;
@@ -653,13 +648,13 @@ export class ClasesListComponent implements OnInit {
         this.clases = this.clases.filter(
           (c) => c.id !== deletedId && isClaseActiva(c),
         );
-        this.bannerSuccess = res.message;
+        this.toastService.showSuccess(res.message);
         this.modalSubmitting = false;
         this.cerrarModalEliminar();
         this.cargarClases();
       },
       error: (err) => {
-        this.bannerError = err?.message ?? 'Ocurrió un error inesperado';
+        this.toastService.showError(err?.message ?? 'Ocurrió un error inesperado');
         this.modalSubmitting = false;
         this.cerrarModalEliminar();
         this.cargarClases();
@@ -667,10 +662,6 @@ export class ClasesListComponent implements OnInit {
     });
   }
 
-  private clearBanners(): void {
-    this.bannerSuccess = '';
-    this.bannerError = '';
-  }
 
   estadoLabel(clase: ClaseListItem): string {
     return clase.fechaCanceladaProxima ? 'Cancelada' : 'Activa';
@@ -719,7 +710,6 @@ export class ClasesListComponent implements OnInit {
   }
 
   onVerListaEspera(clase: ClaseListItem): void {
-    this.clearBanners();
     this.selectedClase = clase;
     this.listaEsperaItems = [];
     this.listaEsperaError = '';
@@ -755,14 +745,14 @@ export class ClasesListComponent implements OnInit {
     this.listaEsperaError = '';
     this.listaEsperaService.remover(item.id).subscribe({
       next: (res) => {
-        this.bannerSuccess = res.message;
+        this.toastService.showSuccess(res.message);
         this.modalSubmitting = false;
         if (this.selectedClase) {
           this.cargarListaEspera(this.selectedClase.id);
         }
       },
       error: (err) => {
-        this.listaEsperaError = this.listaEsperaService.mensajeError(err);
+        this.toastService.showError(this.listaEsperaService.mensajeError(err));
         this.modalSubmitting = false;
       },
     });
