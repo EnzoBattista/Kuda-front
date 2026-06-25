@@ -10,12 +10,13 @@ export interface UsuarioListado {
   apellido: string;
   telefono?: string;
   activo: boolean;
+  estado?: string;
   rol_id: number;
   rol?: { id: number; nombre: string };
 }
 
 export type RolFiltro = '' | 'DUEÑO' | 'RECEPCIONISTA' | 'CLIENTE';
-export type EstadoFiltro = '' | 'ACTIVO' | 'INACTIVO';
+export type EstadoFiltro = '' | 'ACTIVO' | 'PENDIENTE' | 'ELIMINADO';
 export type TipoInscripcionFiltro = '' | 'ABONADO' | 'NO_ABONADO';
 export type TipoInscripcion = 'ABONADO' | 'NO_ABONADO';
 
@@ -63,8 +64,7 @@ export class GestionUsuariosService {
     let params = new HttpParams();
     if (filtros.q?.trim()) params = params.set('q', filtros.q.trim());
     if (filtros.rol) params = params.set('rol', filtros.rol);
-    if (filtros.estado === 'ACTIVO') params = params.set('activo', 'true');
-    if (filtros.estado === 'INACTIVO') params = params.set('activo', 'false');
+    if (filtros.estado) params = params.set('estado', filtros.estado);
 
     const usuarios$ = this.http.get<UsuarioListado[]>(this.apiUrl, { params });
     const abonados$ = this.cargarEmailsAbonados();
@@ -144,6 +144,12 @@ export class GestionUsuariosService {
   eliminarRecepcionista(email: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
       `${environment.apiUrl}/recepcionistas/${encodeURIComponent(email)}`,
+    );
+  }
+
+  eliminarCliente(email: string): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.clientesUrl}/${encodeURIComponent(email)}`,
     );
   }
 

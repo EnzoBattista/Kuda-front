@@ -18,11 +18,11 @@
           <a class="nav-link" routerLink="/historial-asistencia" routerLinkActive="nav-link-active">Historial asistencia</a>
         </ng-container>
         <ng-container *ngIf="auth.isAdministrativo()">
-          <a class="nav-link" routerLink="/administrativo/escanear-qr" routerLinkActive="nav-link-active">Escanear QR</a>
-          <a class="nav-link" routerLink="/administrativo/asistencia-manual" routerLinkActive="nav-link-active">Asistencia manual</a>
+          <a class="nav-link" routerLink="/administrativo" routerLinkActive="nav-link-active" [routerLinkActiveOptions]="{exact: true}">Panel administrativo</a>
           <a class="nav-link" routerLink="/historial-asistencia" routerLinkActive="nav-link-active">Historial asistencia</a>
         </ng-container>
         <a class="nav-link" routerLink="/mi-informacion" routerLinkActive="nav-link-active">Mi información</a>
+        <app-notificaciones-bell *ngIf="!auth.isAdministrativo()"></app-notificaciones-bell>
         <button class="nav-link nav-logout" (click)="logout()">Cerrar sesión</button>
       </ng-container>
       <ng-template #noLogueado>
@@ -48,3 +48,5 @@
     <p>&copy; 2026 CEF Actividades. Todos los derechos reservados.</p>
   </div>
 </footer>
+
+<app-toast></app-toast>

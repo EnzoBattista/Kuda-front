@@ -49,6 +49,16 @@ export class NotificacionesService {
     );
   }
 
+  actualizarPreferenciasCliente(
+    email: string,
+    body: ActualizarNotificacionesRequest,
+  ): Observable<PreferenciasNotificacion & { message: string }> {
+    return this.http.put<PreferenciasNotificacion & { message: string }>(
+      `${this.clientesUrl}/${email}/notificaciones`,
+      body,
+    );
+  }
+
   enviarManual(body: NotificacionManualRequest): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.notificacionesUrl}/manual`, body);
   }
