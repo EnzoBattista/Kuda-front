@@ -25,8 +25,10 @@ interface AbonadoGrupo {
   horaFin: string;
   periodoInicio?: string;
   periodoFin?: string;
+  estadoMensualidad?: string;
   reservas: ReservaHistorial[];
   cantidadActivas: number;
+  totalClases?: number;
 }
 
 interface CardItem {
@@ -152,8 +154,10 @@ export class MisReservasComponent implements OnInit, OnDestroy {
             horaFin: r.horaFin,
             periodoInicio: r.periodoInicio,
             periodoFin: r.periodoFin,
+            estadoMensualidad: r.estadoMensualidad,
             reservas: [],
             cantidadActivas: 0,
+            totalClases: r.totalReservas,
           };
           grupos.set(key, grupo);
           items.push({ kind: 'grupo', grupo });
@@ -208,6 +212,15 @@ export class MisReservasComponent implements OnInit, OnDestroy {
     this.isCancelando = false;
   }
 
+  abrirCancelacionMensual(grupo: AbonadoGrupo): void {
+    this.grupoSeleccionado = grupo;
+    this.reservaSeleccionada = null;
+    this.modalPaso = 'confirmar-cancelacion';
+    this.resultadoCancelacion = null;
+    this.errorCancelacion = '';
+    this.isCancelando = false;
+  }
+
   abrirCancelacionDesdeGrupo(reserva: ReservaHistorial): void {
     this.reservaSeleccionada = reserva;
     this.modalPaso = 'confirmar-cancelacion';
@@ -248,10 +261,31 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   }
 
   confirmarCancelacion(): void {
-    if (!this.reservaSeleccionada) return;
     this.isCancelando = true;
     this.errorCancelacion = '';
     this.bannerError = '';
+
+    if (this.grupoSeleccionado && !this.reservaSeleccionada) {
+      // Cancelar pase mensual completo
+      const mensualId = this.grupoSeleccionado.mensualId;
+      this.reservasService.cancelarMensualidad(mensualId).subscribe({
+        next: () => {
+          this.isCancelando = false;
+          this.bannerSuccess = 'Tu membresía mensual ha sido cancelada correctamente.';
+          this.cerrarModal();
+          this.cargarReservas();
+        },
+        error: (err: any) => {
+          this.isCancelando = false;
+          const msg = err?.error?.message ?? 'No se pudo cancelar la membresía mensual.';
+          this.errorCancelacion = msg;
+          this.bannerError = msg;
+        },
+      });
+      return;
+    }
+
+    if (!this.reservaSeleccionada) return;
 
     const seleccionada = this.reservaSeleccionada;
     const mensualIdGrupo = this.grupoSeleccionado?.mensualId;

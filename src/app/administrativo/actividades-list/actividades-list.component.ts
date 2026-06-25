@@ -87,6 +87,9 @@ export class ActividadesListComponent implements OnInit {
     this.formNombre = '';
     this.formDescripcion = '';
     this.formPrecio = null;
+    this.profesores = [];
+    this.profesoresLoading = false;
+    this.profesoresEmptyHu = false;
   }
 
   cerrarTodosModales(): void {
@@ -274,6 +277,31 @@ export class ActividadesListComponent implements OnInit {
   }
 
 
+  onVerProfesores(actividad: Actividad): void {
+    this.clearBanners();
+    this.clearModalState();
+    this.selectedActividad = actividad;
+    this.showModalProfesores = true;
+    this.profesoresLoading = true;
+    this.modalError = '';
+
+    this.actividadesService.getProfesores(actividad.id).subscribe({
+      next: (data) => {
+        this.profesores = data ?? [];
+        this.profesoresEmptyHu = this.profesores.length === 0;
+        this.profesoresLoading = false;
+      },
+      error: (err) => {
+        this.modalError = err?.message ?? 'Ocurrió un error inesperado';
+        this.profesoresLoading = false;
+      },
+    });
+  }
+
+  cerrarModalProfesores(): void {
+    this.showModalProfesores = false;
+    this.clearModalState();
+  }
 
   formatPrecio(precio: number): string {
     return new Intl.NumberFormat('es-AR', {
