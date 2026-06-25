@@ -2,6 +2,7 @@
   <div class="card-head">
     <h3>Reportes y métricas</h3>
     <p class="help">Panel exclusivo para el dueño del gimnasio.</p>
+    <p class="help" *ngIf="refrescando && !isLoading">Actualizando…</p>
   </div>
 
   <p class="help" *ngIf="isLoading">Cargando reportes…</p>
@@ -229,7 +230,7 @@
         <!-- Total de usuarios -->
         <div class="reporte-tabla" *ngIf="reporteActivo === 'usuarios'">
           <p class="reporte-total">
-            Total de clientes registrados:
+            Total de usuarios registrados:
             <strong>{{ totalUsuarios?.total ?? 0 }}</strong>
           </p>
           <div class="tabla-row head">

@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  NgZone,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -39,6 +40,7 @@ const COLORES = ['#003366', '#16a34a', '#2563eb', '#f59e0b', '#dc2626'];
 export class ReportesPanelComponent implements OnInit, OnDestroy {
   private readonly reportes = inject(ReportesService);
   private readonly actividadesService = inject(ActividadesService);
+  private readonly zone = inject(NgZone);
 
   @ViewChild('chartTotalUsuarios') chartTotalUsuariosRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartUsuariosNuevos') chartUsuariosNuevosRef!: ElementRef<HTMLCanvasElement>;
@@ -48,6 +50,7 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
   @ViewChild('chartDetalleMetodo') chartDetalleMetodoRef!: ElementRef<HTMLCanvasElement>;
 
   isLoading = true;
+  refrescando = false;
   errorMsg = '';
 
   totalUsuarios: TotalUsuariosReporte | null = null;
@@ -78,6 +81,46 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
     const anioActual = new Date().getFullYear();
     this.anios = Array.from({ length: 6 }, (_, i) => anioActual - i);
 
+    this.cargarReportes();
+
+    this.actividadesService.getActivas().subscribe({
+      next: (data) => (this.actividades = data ?? []),
+      error: () => (this.actividades = []),
+    });
+
+    // Las métricas se cargan una sola vez al montar el panel. Para que reflejen
+    // los cambios hechos en otras partes sin recargar la página, las refrescamos
+    // automáticamente cuando el usuario vuelve a la ventana o reabre la pestaña.
+    window.addEventListener('focus', this.onVolverAlFoco);
+    document.addEventListener('visibilitychange', this.onVisibilidad);
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('focus', this.onVolverAlFoco);
+    document.removeEventListener('visibilitychange', this.onVisibilidad);
+    this.destruirCharts();
+    this.destruirChartDetalle();
+  }
+
+  private readonly onVolverAlFoco = (): void => this.cargarReportes(true);
+
+  private readonly onVisibilidad = (): void => {
+    if (document.visibilityState === 'visible') this.cargarReportes(true);
+  };
+
+  /**
+   * Carga (o recarga) las 4 métricas del listado.
+   * @param silencioso si es true, no muestra el estado "Cargando reportes…"
+   *        ni pisa los datos en pantalla ante un error (refresco en segundo plano).
+   */
+  private cargarReportes(silencioso = false): void {
+    if (this.refrescando) return;
+    this.refrescando = true;
+    if (!silencioso) {
+      this.isLoading = true;
+      this.errorMsg = '';
+    }
+
     forkJoin({
       total: this.reportes.getTotalUsuarios(),
       nuevos: this.reportes.getUsuariosNuevos(),
@@ -89,24 +132,20 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
         this.usuariosNuevos = nuevos;
         this.ingresos = ingresos;
         this.horariosPopulares = horarios.top ?? [];
+        this.errorMsg = '';
         this.isLoading = false;
+        this.refrescando = false;
         setTimeout(() => this.renderCharts(), 0);
       },
       error: (err) => {
-        this.errorMsg = this.reportes.mensajeError(err);
+        // En un refresco silencioso conservamos los datos ya visibles.
+        if (!silencioso) {
+          this.errorMsg = this.reportes.mensajeError(err);
+        }
         this.isLoading = false;
+        this.refrescando = false;
       },
     });
-
-    this.actividadesService.getActivas().subscribe({
-      next: (data) => (this.actividades = data ?? []),
-      error: () => (this.actividades = []),
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.destruirCharts();
-    this.destruirChartDetalle();
   }
 
   formatearMes(mes: string): string {
@@ -336,17 +375,22 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
 
   private renderCharts(): void {
     this.destruirCharts();
-    try {
-      const created = [
-        this.crearChart(this.chartTotalUsuariosRef, this.configTotalUsuarios()),
-        this.crearChart(this.chartUsuariosNuevosRef, this.configUsuariosNuevos()),
-        this.crearChart(this.chartIngresosMesRef, this.configIngresosMes()),
-        this.crearChart(this.chartHorariosRef, this.configHorarios()),
-      ];
-      this.charts.push(...created.filter((c): c is Chart => c !== null));
-    } catch {
-      /* canvas aún no montado */
-    }
+    // Chart.js usa requestAnimationFrame y ResizeObserver. Si se crean dentro de
+    // la zona de Angular, cada frame dispara change detection y puede colgar el
+    // hilo principal. Los creamos fuera de la zona.
+    this.zone.runOutsideAngular(() => {
+      try {
+        const created = [
+          this.crearChart(this.chartTotalUsuariosRef, this.configTotalUsuarios()),
+          this.crearChart(this.chartUsuariosNuevosRef, this.configUsuariosNuevos()),
+          this.crearChart(this.chartIngresosMesRef, this.configIngresosMes()),
+          this.crearChart(this.chartHorariosRef, this.configHorarios()),
+        ];
+        this.charts.push(...created.filter((c): c is Chart => c !== null));
+      } catch {
+        /* canvas aún no montado */
+      }
+    });
   }
 
   private crearChart(
@@ -503,17 +547,19 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
   private renderChartDetalle(): void {
     this.destruirChartDetalle();
 
-    const config = this.configDetalle();
-    if (config) {
-      const ctx = this.chartDetalleRef?.nativeElement?.getContext('2d');
-      if (ctx) this.chartDetalle = new Chart(ctx, config);
-    }
+    this.zone.runOutsideAngular(() => {
+      const config = this.configDetalle();
+      if (config) {
+        const ctx = this.chartDetalleRef?.nativeElement?.getContext('2d');
+        if (ctx) this.chartDetalle = new Chart(ctx, config);
+      }
 
-    // En el reporte de ingresos sumamos la distribución histórica por método.
-    if (this.reporteActivo === 'ingresos' && (this.ingresos?.por_metodo?.length ?? 0) > 0) {
-      const ctxMetodo = this.chartDetalleMetodoRef?.nativeElement?.getContext('2d');
-      if (ctxMetodo) this.chartDetalleMetodo = new Chart(ctxMetodo, this.configIngresosMetodo());
-    }
+      // En el reporte de ingresos sumamos la distribución histórica por método.
+      if (this.reporteActivo === 'ingresos' && (this.ingresos?.por_metodo?.length ?? 0) > 0) {
+        const ctxMetodo = this.chartDetalleMetodoRef?.nativeElement?.getContext('2d');
+        if (ctxMetodo) this.chartDetalleMetodo = new Chart(ctxMetodo, this.configIngresosMetodo());
+      }
+    });
   }
 
   private configDetalle(): ChartConfiguration | null {
