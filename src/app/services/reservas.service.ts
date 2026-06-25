@@ -55,6 +55,7 @@ export interface ReservaHistorial {
   /** Período de la inscripción mensual (YYYY-MM-DD). */
   periodoInicio?: string;
   periodoFin?: string;
+  estadoMensualidad?: string;
   /** Solo presente si estado === 'CANCELADA'. */
   canceladaPor?: CanceladaPor;
   inscripcionIndividualId?: number;
@@ -1183,6 +1184,7 @@ export class ReservasService {
       inscripcionMensualId: mensual?.id,
       periodoInicio: mensual ? String(mensual.periodo_inicio).slice(0, 10) : undefined,
       periodoFin: mensual ? String(mensual.periodo_fin).slice(0, 10) : undefined,
+      estadoMensualidad: mensual?.estado,
       totalReservas: mensual?.reservas ? mensual.reservas.length : undefined,
       canceladaPor: dto.cancelada_por,
       inscripcionIndividualId: individual?.id,

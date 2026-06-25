@@ -164,10 +164,20 @@
                 {{ g.descripcionExpandida ? g.actividadDescripcion : acortarDescripcion(g.actividadDescripcion) }}
               </p>
             </div>
-            <span class="modalidad-badge">Abonado</span>
+            <span class="modalidad-badge" [style.opacity]="g.estadoMensualidad === 'CANCELADA' ? '0.6' : '1'" [style.background]="g.estadoMensualidad === 'CANCELADA' ? '#e2e8f0' : ''" [style.color]="g.estadoMensualidad === 'CANCELADA' ? '#64748b' : ''">
+              Abonado {{ g.estadoMensualidad === 'CANCELADA' ? '(Cancelado)' : '' }}
+            </span>
           </div>
 
           <dl class="reserva-info">
+            <div class="reserva-info-row" *ngIf="g.estadoMensualidad">
+              <dt>Estado de pase</dt>
+              <dd>
+                <span [style.color]="g.estadoMensualidad === 'CANCELADA' ? 'var(--brand-red, #dc2626)' : 'var(--success-color, #2ecc71)'" style="font-weight: bold;">
+                  {{ g.estadoMensualidad === 'VIGENTE' ? 'Vigente' : g.estadoMensualidad === 'CANCELADA' ? 'Cancelado' : g.estadoMensualidad }}
+                </span>
+              </dd>
+            </div>
             <div class="reserva-info-row">
               <dt>Sala</dt>
               <dd>{{ g.sede }}</dd>
@@ -180,17 +190,18 @@
               <dt>Horario</dt>
               <dd>{{ g.horaInicio }} – {{ g.horaFin }}</dd>
             </div>
-            <div class="reserva-info-row">
-              <dt>Modalidad</dt>
-              <dd><span class="modalidad-badge">Abonado</span></dd>
-            </div>
             <div class="reserva-info-row" *ngIf="g.periodoInicio && g.periodoFin">
               <dt>Período</dt>
               <dd>{{ g.periodoInicio | fechaAr }} – {{ g.periodoFin | fechaAr }}</dd>
             </div>
             <div class="reserva-info-row">
               <dt>Clases reservadas</dt>
-              <dd>{{ g.cantidadActivas }} activas / {{ g.totalClases || g.reservas.length }} totales</dd>
+              <dd>
+                {{ g.cantidadActivas }} activas / {{ g.totalClases || g.reservas.length }} totales
+                <div *ngIf="g.estadoMensualidad === 'CANCELADA'" style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem;">
+                  Quedan en curso las clases no canceladas.
+                </div>
+              </dd>
             </div>
           </dl>
 
@@ -198,7 +209,7 @@
             <button type="button" class="btn btn-secondary" (click)="abrirDetalleGrupo(g)" style="flex: 1;">
               Ver detalle
             </button>
-            <button type="button" class="btn btn-danger" (click)="abrirCancelacionMensual(g)" style="flex: 1;">
+            <button type="button" class="btn btn-danger" (click)="abrirCancelacionMensual(g)" style="flex: 1;" *ngIf="g.estadoMensualidad !== 'CANCELADA'">
               Cancelar Pase
             </button>
           </div>

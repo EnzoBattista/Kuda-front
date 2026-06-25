@@ -833,9 +833,12 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     });
   }
 
-  confirmarEspera(tipo: TipoListaEspera): void {
+  confirmarEspera(tipo: any): void {
     if (!this.claseSeleccionada) return;
-    if (this.yaEnListaEspera(this.claseSeleccionada.id)) return;
+    
+    const isMensual = tipo === 'MENSUAL' || tipo === 'ABONADO';
+    if (isMensual && this.estaEnListaMensual(this.claseSeleccionada.id)) return;
+    if (!isMensual && this.estaEnListaIndividual(this.claseSeleccionada.id)) return;
 
     this.isSubmitting = true;
     this.errorModalMsg = '';
@@ -844,6 +847,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.isSubmitting = false;
         this.marcarListaEspera(this.claseSeleccionada!.id);
+        this.sincronizarListaEspera();
         this.resultadoMsg = res.message;
         this.pasoModal = 'resultado-espera';
       },
@@ -996,9 +1000,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     return entry ? entry.id : 0;
   }
 
-  salirListaEspera(claseId: number): void {
-    // Determinar qué tipo de lista de espera tiene el usuario para esta clase
-    const tipo = this.estaEnListaMensual(claseId) ? 'MENSUAL' : 'INDIVIDUAL';
+  salirListaEspera(claseId: number, tipo: 'MENSUAL' | 'INDIVIDUAL'): void {
     const id = this.obtenerWaitlistIdParaClase(claseId, tipo);
     if (!id) return;
 
@@ -1008,7 +1010,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     this.listaEsperaService.cancelarMiListaEspera(id).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.desmarcarListaEsperaLocal(claseId);
+        // Rely purely on synchronizing with backend to get the exact state
         this.sincronizarListaEspera();
         this.errorModalMsg = '';
         this.resultadoMsg = 'Saliste de la lista de espera correctamente.';

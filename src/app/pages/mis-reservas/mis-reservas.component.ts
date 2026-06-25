@@ -25,6 +25,7 @@ interface AbonadoGrupo {
   horaFin: string;
   periodoInicio?: string;
   periodoFin?: string;
+  estadoMensualidad?: string;
   reservas: ReservaHistorial[];
   cantidadActivas: number;
   totalClases?: number;
@@ -153,6 +154,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
             horaFin: r.horaFin,
             periodoInicio: r.periodoInicio,
             periodoFin: r.periodoFin,
+            estadoMensualidad: r.estadoMensualidad,
             reservas: [],
             cantidadActivas: 0,
             totalClases: r.totalReservas,

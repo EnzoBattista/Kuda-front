@@ -188,25 +188,36 @@
         <p class="error-text" *ngIf="errorModalMsg" style="margin-bottom: 0;">{{ errorModalMsg }}</p>
         <!-- Caso 1: El usuario ya está anotado en la lista de espera (independientemente del cupo) -->
         <ng-container *ngIf="yaEnListaEspera(c.id)">
-          <p class="help lista-espera-inscripto" style="color: var(--brand-red, #dc2626); font-weight: bold; margin-bottom: 0;">
+          <div class="help lista-espera-inscripto" style="color: var(--brand-red, #dc2626); font-weight: bold; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
             <span *ngIf="estaEnListaIndividual(c.id)">Estás anotado en la lista de espera individual para esta clase.</span>
             <span *ngIf="estaEnListaMensual(c.id)">Estás anotado en la lista de espera de abonados para esta clase.</span>
             <span *ngIf="!estaEnListaIndividual(c.id) && !estaEnListaMensual(c.id)">Estás anotado en la lista de espera para esta clase.</span>
-          </p>
+          </div>
           <button
+            *ngIf="estaEnListaMensual(c.id)"
             class="btn btn-danger"
-            style="width: 100%; display: block;"
+            style="width: 100%; display: block; margin-bottom: 0.5rem;"
             type="button"
             [disabled]="isSubmitting"
-            (click)="salirListaEspera(c.id)"
+            (click)="salirListaEspera(c.id, 'MENSUAL')"
           >
-            Salir de la lista de espera
+            Salir de la lista de espera (Abonado)
+          </button>
+          <button
+            *ngIf="estaEnListaIndividual(c.id)"
+            class="btn btn-danger"
+            style="width: 100%; display: block; margin-bottom: 0.5rem;"
+            type="button"
+            [disabled]="isSubmitting"
+            (click)="salirListaEspera(c.id, 'INDIVIDUAL')"
+          >
+            Salir de la lista de espera (Individual)
           </button>
         </ng-container>
 
-        <!-- Botón Reservar: siempre visible si no está en lista de espera (o si está anotado en lista de espera de abonados) -->
+        <!-- Botón Reservar: visible siempre que el usuario no esté en la lista individual esperando -->
         <button
-          *ngIf="!yaEnListaEspera(c.id) || estaEnListaMensual(c.id)"
+          *ngIf="!estaEnListaIndividual(c.id)"
           class="btn btn-primary"
           type="button"
           [disabled]="isSubmitting"
@@ -432,18 +443,26 @@
 
       <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
 
-      <div class="opciones-pago" *ngIf="!yaEnListaEspera(c.id)">
-        <button class="opcion-btn btn btn-primary" type="button" [disabled]="isSubmitting" (click)="confirmarEspera('ABONADO')">
-          <strong>Como abonado</strong>
-          <span class="help">Para el mes completo</span>
-        </button>
-        <button class="opcion-btn btn btn-secondary" type="button" [disabled]="isSubmitting" (click)="confirmarEspera('INDIVIDUAL')">
-          <strong>Clase individual</strong>
-          <span class="help">Solo para esta fecha</span>
-        </button>
+      <div class="opciones-pago">
+        <ng-container *ngIf="!estaEnListaMensual(c.id)">
+          <button class="opcion-btn btn btn-primary" type="button" [disabled]="isSubmitting" (click)="confirmarEspera('ABONADO')">
+            <strong>Como abonado</strong>
+            <span class="help">Para el mes completo</span>
+          </button>
+        </ng-container>
+        <ng-container *ngIf="!estaEnListaIndividual(c.id)">
+          <button class="opcion-btn btn btn-secondary" type="button" [disabled]="isSubmitting" (click)="confirmarEspera('INDIVIDUAL')">
+            <strong>Clase individual</strong>
+            <span class="help">Solo para esta fecha</span>
+          </button>
+        </ng-container>
       </div>
-      <p class="help" *ngIf="yaEnListaEspera(c.id)">
-        Ya estás en la lista de espera para esta clase.
+
+      <p class="help" *ngIf="estaEnListaMensual(c.id)" style="color: var(--brand-red, #dc2626); margin-top: 1rem; margin-bottom: 0;">
+        Ya estás en la lista de espera como abonado para esta clase.
+      </p>
+      <p class="help" *ngIf="estaEnListaIndividual(c.id)" style="color: var(--brand-red, #dc2626); margin-top: 0.5rem; margin-bottom: 0;">
+        Ya estás en la lista de espera individual para esta clase.
       </p>
 
       <div class="form-actions">
