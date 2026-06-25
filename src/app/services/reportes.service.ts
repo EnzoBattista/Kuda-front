@@ -37,6 +37,43 @@ export interface HorariosPopularesReporte {
   top: HorarioPopular[];
 }
 
+export interface UsuariosNuevosAnualReporte {
+  anio: number;
+  hay_datos: boolean;
+  mensaje: string | null;
+  total_anual: number;
+  meses: { mes: string; nombre_mes: string; cantidad: number }[];
+}
+
+export interface IngresosMensualesReporte {
+  anio: number;
+  categoria: { id: number | null; nombre: string };
+  hay_datos: boolean;
+  mensaje: string | null;
+  total_anual: number;
+  meses: { mes: string; nombre_mes: string; total: number }[];
+}
+
+export interface HorarioSeleccionado {
+  clase_id: number;
+  actividad: string;
+  nombre: string;
+  dia_semana: string;
+  hora_inicio: string;
+  hora_fin: string;
+  horario: string;
+  cupo: number;
+  total_reservas: number;
+}
+
+export interface HorariosSeleccionadosReporte {
+  anio: number;
+  categoria: { id: number | null; nombre: string };
+  hay_datos: boolean;
+  mensaje: string | null;
+  horarios: HorarioSeleccionado[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReportesService {
   private readonly apiUrl = `${environment.apiUrl}/reportes`;
@@ -57,6 +94,37 @@ export class ReportesService {
 
   getHorariosPopulares(): Observable<HorariosPopularesReporte> {
     return this.http.get<HorariosPopularesReporte>(`${this.apiUrl}/horarios-populares`);
+  }
+
+  getUsuariosNuevosAnual(anio: number): Observable<UsuariosNuevosAnualReporte> {
+    return this.http.get<UsuariosNuevosAnualReporte>(
+      `${this.apiUrl}/usuarios-nuevos-anual`,
+      { params: { anio } },
+    );
+  }
+
+  getIngresosMensuales(
+    anio: number,
+    actividadId?: number | null,
+  ): Observable<IngresosMensualesReporte> {
+    const params: Record<string, string | number> = { anio };
+    if (actividadId != null) params['actividad_id'] = actividadId;
+    return this.http.get<IngresosMensualesReporte>(
+      `${this.apiUrl}/ingresos-mensuales`,
+      { params },
+    );
+  }
+
+  getHorariosSeleccionados(
+    anio: number,
+    actividadId?: number | null,
+  ): Observable<HorariosSeleccionadosReporte> {
+    const params: Record<string, string | number> = { anio };
+    if (actividadId != null) params['actividad_id'] = actividadId;
+    return this.http.get<HorariosSeleccionadosReporte>(
+      `${this.apiUrl}/horarios-seleccionados`,
+      { params },
+    );
   }
 
   mensajeError(err: unknown): string {

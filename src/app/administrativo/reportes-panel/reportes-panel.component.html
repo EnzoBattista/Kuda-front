@@ -2,78 +2,310 @@
   <div class="card-head">
     <h3>Reportes y métricas</h3>
     <p class="help">Panel exclusivo para el dueño del gimnasio.</p>
+    <p class="help" *ngIf="refrescando && !isLoading">Actualizando…</p>
   </div>
 
   <p class="help" *ngIf="isLoading">Cargando reportes…</p>
   <p class="error-text" *ngIf="!isLoading && errorMsg">{{ errorMsg }}</p>
 
-  <ng-container *ngIf="!isLoading && !errorMsg">
-    <div class="kpi-grid">
-      <article class="kpi-card">
-        <span class="kpi-label">Total de usuarios</span>
-        <strong class="kpi-value">{{ totalUsuarios?.total ?? 0 }}</strong>
-        <ul class="kpi-detalle" *ngIf="totalUsuarios?.por_rol?.length">
-          <li *ngFor="let r of totalUsuarios!.por_rol">
-            {{ r.rol }}: {{ r.cantidad }}
-          </li>
-        </ul>
-      </article>
-
-      <article class="kpi-card kpi-card-accent">
-        <span class="kpi-label">Dinero ingresado (mes actual)</span>
-        <strong class="kpi-value">{{ formatearMoneda(ingresos?.mes_actual?.total ?? 0) }}</strong>
-        <span class="kpi-sub" *ngIf="ingresos?.mes_actual?.mes">
-          {{ formatearMes(ingresos!.mes_actual.mes) }}
+  <div class="stats-grid" *ngIf="!isLoading && !errorMsg">
+    <!-- Total de usuarios -->
+    <article class="stat-card stat-card--users">
+      <header class="stat-card-head">
+        <span class="stat-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
         </span>
-      </article>
+        <h4>Total de usuarios</h4>
+      </header>
+      <p class="stat-desc">Personas registradas en el sistema, segmentadas por tipo de cuenta.</p>
+      <div class="stat-summary">
+        <strong class="stat-value">{{ totalUsuarios?.total ?? 0 }}</strong>
+        <span class="stat-sub">cuentas en total</span>
+      </div>
+      <div class="stat-chips">
+        <span class="stat-chip" *ngFor="let c of chipsUsuarios">
+          <span class="stat-chip-label">{{ c.label }}</span>
+          <span class="stat-chip-value">{{ c.value }}</span>
+        </span>
+      </div>
+      <div class="stat-chart" *ngIf="tieneUsuarios; else vacioUsuarios">
+        <canvas #chartTotalUsuarios aria-label="Gráfico de usuarios por rol"></canvas>
+      </div>
+      <ng-template #vacioUsuarios>
+        <div class="stat-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+          </svg>
+          <p>Todavía no hay usuarios registrados.</p>
+        </div>
+      </ng-template>
+      <button type="button" class="btn btn-primary stat-btn" (click)="abrirReporte('usuarios')">
+        Visualizar reporte
+      </button>
+    </article>
+
+    <!-- Usuarios nuevos -->
+    <article class="stat-card stat-card--new">
+      <header class="stat-card-head">
+        <span class="stat-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <line x1="19" y1="8" x2="19" y2="14"></line>
+            <line x1="22" y1="11" x2="16" y2="11"></line>
+          </svg>
+        </span>
+        <h4>Usuarios nuevos</h4>
+      </header>
+      <p class="stat-desc">Altas de nuevos usuarios registradas en los últimos 6 meses.</p>
+      <div class="stat-summary">
+        <strong class="stat-value">{{ usuariosNuevos?.total_periodo ?? 0 }}</strong>
+        <span class="stat-sub">en el período</span>
+      </div>
+      <div class="stat-chips">
+        <span class="stat-chip" *ngFor="let c of chipsUsuariosNuevos">
+          <span class="stat-chip-label">{{ c.label }}</span>
+          <span class="stat-chip-value">{{ c.value }}</span>
+        </span>
+      </div>
+      <div class="stat-chart" *ngIf="tieneUsuariosNuevos; else vacioUsuariosNuevos">
+        <canvas #chartUsuariosNuevos aria-label="Gráfico de usuarios nuevos"></canvas>
+      </div>
+      <ng-template #vacioUsuariosNuevos>
+        <div class="stat-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <line x1="19" y1="8" x2="19" y2="14"></line>
+            <line x1="22" y1="11" x2="16" y2="11"></line>
+          </svg>
+          <p>No hubo altas de usuarios en los últimos 6 meses.</p>
+        </div>
+      </ng-template>
+      <button type="button" class="btn btn-primary stat-btn" (click)="abrirReporte('usuarios-nuevos')">
+        Visualizar reporte
+      </button>
+    </article>
+
+    <!-- Dinero ingresado -->
+    <article class="stat-card stat-card--money">
+      <header class="stat-card-head">
+        <span class="stat-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </span>
+        <h4>Dinero ingresado</h4>
+      </header>
+      <p class="stat-desc">Pagos confirmados. El valor destacado corresponde al mes en curso.</p>
+      <div class="stat-summary">
+        <strong class="stat-value">{{ formatearMoneda(ingresos?.mes_actual?.total ?? 0) }}</strong>
+        <span class="stat-sub">
+          {{ ingresos?.mes_actual?.mes ? formatearMes(ingresos!.mes_actual.mes) : 'mes actual' }}
+        </span>
+      </div>
+      <div class="stat-chips">
+        <span class="stat-chip" *ngFor="let c of chipsIngresos">
+          <span class="stat-chip-label">{{ c.label }}</span>
+          <span class="stat-chip-value">{{ c.value }}</span>
+        </span>
+      </div>
+      <div class="stat-chart" *ngIf="tieneIngresos; else vacioIngresos">
+        <canvas #chartIngresosMes aria-label="Gráfico de ingresos mensuales"></canvas>
+      </div>
+      <ng-template #vacioIngresos>
+        <div class="stat-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          <p>No hay pagos registrados en los últimos 6 meses.</p>
+        </div>
+      </ng-template>
+      <button type="button" class="btn btn-primary stat-btn" (click)="abrirReporte('ingresos')">
+        Visualizar reporte
+      </button>
+    </article>
+
+    <!-- Horarios más seleccionados -->
+    <article class="stat-card stat-card--schedule">
+      <header class="stat-card-head">
+        <span class="stat-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        <h4>Horarios más seleccionados</h4>
+      </header>
+      <p class="stat-desc">Clases con más reservas activas según su día y horario.</p>
+      <div class="stat-summary">
+        <ng-container *ngIf="topHorario; else sinHorarios">
+          <strong class="stat-value stat-value-sm">{{ topHorario!.nombre }}</strong>
+          <span class="stat-sub">
+            {{ topHorario!.dia_semana }} · {{ topHorario!.hora_inicio }}
+          </span>
+        </ng-container>
+        <ng-template #sinHorarios>
+          <strong class="stat-value stat-value-sm">—</strong>
+          <span class="stat-sub">sin reservas activas</span>
+        </ng-template>
+      </div>
+      <div class="stat-chips">
+        <span class="stat-chip" *ngFor="let c of chipsHorarios">
+          <span class="stat-chip-label">{{ c.label }}</span>
+          <span class="stat-chip-value">{{ c.value }}</span>
+        </span>
+      </div>
+      <div class="stat-chart" *ngIf="tieneHorarios; else vacioHorarios">
+        <canvas #chartHorarios aria-label="Gráfico de horarios populares"></canvas>
+      </div>
+      <ng-template #vacioHorarios>
+        <div class="stat-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <p>No hay reservas activas para analizar.</p>
+        </div>
+      </ng-template>
+      <button type="button" class="btn btn-primary stat-btn" (click)="abrirReporte('horarios')">
+        Visualizar reporte
+      </button>
+    </article>
+  </div>
+</section>
+
+<!-- ─── Modal "Visualizar reporte" ───────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="reporteActivo" (click)="cerrarReporte()">
+  <div class="card card-pad modal-panel reporte-panel" role="dialog" (click)="$event.stopPropagation()">
+    <div class="reporte-head">
+      <h4 class="modal-title">{{ tituloReporte() }}</h4>
+      <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="cerrarReporte()">×</button>
     </div>
 
-    <div class="charts-grid">
-      <article class="chart-card">
-        <h4>Usuarios nuevos (últimos 6 meses)</h4>
-        <div class="chart-wrap">
-          <canvas #chartUsuariosNuevos aria-label="Gráfico de usuarios nuevos"></canvas>
-        </div>
-      </article>
+    <!-- Filtros (no aplican a Total de usuarios) -->
+    <div class="reporte-filtros" *ngIf="usaAnio">
+      <label class="campo">
+        <span class="label">Año</span>
+        <select class="control" [(ngModel)]="filtroAnio">
+          <option *ngFor="let a of anios" [ngValue]="a">{{ a }}</option>
+        </select>
+      </label>
 
-      <article class="chart-card">
-        <h4>Dinero ingresado por mes</h4>
-        <div class="chart-wrap">
-          <canvas #chartIngresosMes aria-label="Gráfico de ingresos mensuales"></canvas>
-        </div>
-      </article>
+      <label class="campo" *ngIf="usaCategoria">
+        <span class="label">Categoría</span>
+        <select class="control" [(ngModel)]="filtroActividadId">
+          <option [ngValue]="''">Todas las clases</option>
+          <option *ngFor="let act of actividades" [ngValue]="act.id">{{ act.nombre }}</option>
+        </select>
+      </label>
 
-      <article class="chart-card">
-        <h4>Ingresos por método de pago</h4>
-        <div class="chart-wrap chart-wrap-pie">
-          <canvas #chartIngresosMetodo aria-label="Gráfico de ingresos por método"></canvas>
-        </div>
-      </article>
+      <button type="button" class="btn btn-primary" (click)="generarReporte()" [disabled]="detalleLoading">
+        {{ detalleLoading ? 'Generando…' : 'Generar reporte' }}
+      </button>
+    </div>
 
-      <article class="chart-card chart-card-wide">
-        <h4>Horarios más seleccionados</h4>
-        <div class="chart-wrap chart-wrap-horizontal">
-          <canvas #chartHorarios aria-label="Gráfico de horarios populares"></canvas>
+    <p class="error-text" *ngIf="detalleError">{{ detalleError }}</p>
+    <p class="help" *ngIf="!detalleGenerado && !detalleError && usaAnio">
+      Seleccioná los filtros y presioná «Generar reporte».
+    </p>
+
+    <ng-container *ngIf="detalleGenerado && !detalleError">
+      <p class="help reporte-vacio" *ngIf="!hayDatosDetalle">{{ mensajeVacio }}</p>
+
+      <ng-container *ngIf="hayDatosDetalle">
+        <!-- Gráfico del detalle -->
+        <div class="reporte-chart-wrap" *ngIf="reporteActivo !== 'usuarios'">
+          <canvas #chartDetalle aria-label="Gráfico del reporte"></canvas>
         </div>
 
-        <div class="ranking-table" *ngIf="horariosPopulares.length > 0">
-          <div class="ranking-row head">
+        <!-- Total de usuarios -->
+        <div class="reporte-tabla" *ngIf="reporteActivo === 'usuarios'">
+          <p class="reporte-total">
+            Total de usuarios registrados:
+            <strong>{{ totalUsuarios?.total ?? 0 }}</strong>
+          </p>
+          <div class="tabla-row head">
+            <span>Rol</span>
+            <span>Cantidad</span>
+          </div>
+          <div class="tabla-row" *ngFor="let r of totalUsuarios?.por_rol">
+            <span>{{ r.rol }}</span>
+            <span>{{ r.cantidad }}</span>
+          </div>
+        </div>
+
+        <!-- Usuarios nuevos -->
+        <div class="reporte-tabla" *ngIf="reporteActivo === 'usuarios-nuevos'">
+          <div class="tabla-row head">
+            <span>Mes</span>
+            <span>Usuarios nuevos</span>
+          </div>
+          <div class="tabla-row" *ngFor="let m of detalleUsuariosNuevos?.meses">
+            <span>{{ m.nombre_mes }}</span>
+            <span>{{ m.cantidad }}</span>
+          </div>
+          <div class="tabla-row total">
+            <span>Total {{ detalleUsuariosNuevos?.anio }}</span>
+            <span>{{ detalleUsuariosNuevos?.total_anual }}</span>
+          </div>
+        </div>
+
+        <!-- Ingresos mensuales -->
+        <ng-container *ngIf="reporteActivo === 'ingresos'">
+          <div class="reporte-tabla">
+            <p class="reporte-subtitulo">{{ detalleIngresos?.categoria?.nombre }}</p>
+            <div class="tabla-row head">
+              <span>Mes</span>
+              <span>Ingresos</span>
+            </div>
+            <div class="tabla-row" *ngFor="let m of detalleIngresos?.meses">
+              <span>{{ m.nombre_mes }}</span>
+              <span>{{ formatearMoneda(m.total) }}</span>
+            </div>
+            <div class="tabla-row total">
+              <span>Total {{ detalleIngresos?.anio }}</span>
+              <span>{{ formatearMoneda(detalleIngresos?.total_anual ?? 0) }}</span>
+            </div>
+          </div>
+
+          <div class="reporte-metodo" *ngIf="ingresos?.por_metodo?.length">
+            <p class="reporte-subtitulo">Distribución histórica por método de pago</p>
+            <div class="reporte-chart-wrap reporte-chart-pie">
+              <canvas #chartDetalleMetodo aria-label="Gráfico de ingresos por método"></canvas>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Horarios más seleccionados -->
+        <div class="reporte-tabla" *ngIf="reporteActivo === 'horarios'">
+          <p class="reporte-subtitulo">{{ detalleHorarios?.categoria?.nombre }}</p>
+          <div class="tabla-row head horarios">
             <span>#</span>
             <span>Clase / horario</span>
             <span>Reservas</span>
             <span>Cupo</span>
-            <span>Ocupación</span>
           </div>
-          <div class="ranking-row" *ngFor="let h of horariosPopulares; let i = index">
+          <div class="tabla-row horarios" *ngFor="let h of detalleHorarios?.horarios; let i = index">
             <span>{{ i + 1 }}</span>
-            <span>{{ labelHorario(h) }}</span>
+            <span>{{ h.actividad }} · {{ h.horario }}</span>
             <span>{{ h.total_reservas }}</span>
             <span>{{ h.cupo }}</span>
-            <span>{{ h.ocupacion_pct != null ? h.ocupacion_pct + '%' : '—' }}</span>
           </div>
         </div>
-        <p class="help" *ngIf="horariosPopulares.length === 0">No hay reservas activas para analizar.</p>
-      </article>
+      </ng-container>
+    </ng-container>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="cerrarReporte()">Cerrar</button>
     </div>
-  </ng-container>
-</section>
+  </div>
+</div>
