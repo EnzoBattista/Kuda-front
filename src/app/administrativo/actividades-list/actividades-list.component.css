@@ -103,6 +103,15 @@
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  cursor: pointer;
+}
+
+/* Al tocar la descripción se expande y muestra todo (la card crece). */
+.actividad-descripcion.expandida {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
 }
 
 .actividad-precio {

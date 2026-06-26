@@ -303,6 +303,11 @@ export class ActividadesListComponent implements OnInit {
     this.clearModalState();
   }
 
+  /** Click en la descripción truncada (…) → muestra el texto completo (y la card crece). */
+  toggleDescripcion(ev: Event): void {
+    (ev.currentTarget as HTMLElement | null)?.classList.toggle('expandida');
+  }
+
   formatPrecio(precio: number): string {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
