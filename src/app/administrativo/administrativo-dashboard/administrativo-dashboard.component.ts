@@ -16,6 +16,7 @@ import { ReportesPanelComponent } from '../reportes-panel/reportes-panel.compone
 import { ActividadesService } from '../../services/actividades.service';
 import { GestionUsuariosService, UsuarioListado } from '../../services/gestion-usuarios.service';
 import { Actividad } from '../../models/actividad.model';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -100,6 +101,7 @@ export class AdministrativoDashboardComponent {
     private readonly gestionUsuariosService: GestionUsuariosService,
     private readonly authService: AuthService,
     private readonly router: Router,
+    private readonly toast: ToastService,
   ) {
     this.currentUser = this.authService.getCurrentUser();
   }
@@ -244,11 +246,11 @@ export class AdministrativoDashboardComponent {
     this.formProfesorSuccess = '';
     const p = this.formProfesor;
     if (!p.nombre || !p.apellido || !p.dni) {
-      this.formProfesorError = 'Completá nombre, apellido y DNI.';
+      this.toast.showError('Completá nombre, apellido y DNI.');
       return;
     }
     if (p.actividadesSeleccionadas.length === 0) {
-      this.formProfesorError = 'El profesor debe dictar al menos una actividad';
+      this.toast.showError('El profesor debe dictar al menos una actividad');
       return;
     }
 
@@ -267,15 +269,16 @@ export class AdministrativoDashboardComponent {
 
     operacion.subscribe({
         next: () => {
-          this.formProfesor = { nombre: '', apellido: '', dni: '', telefono: '', email: '', actividadesSeleccionadas: [] };
-          this.formProfesorSuccess = this.profesorAEditarId
+          const msg = this.profesorAEditarId
             ? 'Profesor modificado con éxito'
             : 'Profesor registrado con éxito';
+          this.formProfesor = { nombre: '', apellido: '', dni: '', telefono: '', email: '', actividadesSeleccionadas: [] };
+          this.toast.showSuccess(msg);
           this.showModalFormProfesor = false;
           this.refreshProfesores();
         },
         error: (err) => {
-          this.formProfesorError = this.mapProfesorError(err?.error?.message ?? '');
+          this.toast.showError(this.mapProfesorError(err?.error?.message ?? ''));
         },
       });
   }
@@ -367,11 +370,11 @@ export class AdministrativoDashboardComponent {
     const password = f.password || '';
 
     if (!nombre || !apellido || !dni || !email || !telefono) {
-      this.createEmpleadoError = 'Completá todos los campos obligatorios.';
+      this.toast.showError('Completá todos los campos obligatorios.');
       return;
     }
     if (!this.empleadoAEditarEmail && (!password || password.length < 8)) {
-      this.createEmpleadoError = 'La contraseña debe tener al menos 8 caracteres.';
+      this.toast.showError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
     
@@ -383,15 +386,16 @@ export class AdministrativoDashboardComponent {
 
     operacion.subscribe({
       next: () => {
-        this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
-        this.createEmpleadoSuccess = this.empleadoAEditarEmail 
-            ? 'Recepcionista modificado con exito' 
+        const msg = this.empleadoAEditarEmail
+            ? 'Recepcionista modificado con éxito'
             : 'Recepcionista registrado con éxito';
+        this.createEmpleadoForm = { nombre: '', apellido: '', dni: '', email: '', telefono: '', password: '' };
+        this.toast.showSuccess(msg);
         this.showModalCrearEmpleado = false;
         this.refreshEmpleados();
       },
       error: (err) => {
-        this.createEmpleadoError = this.mapEmpleadoError(err?.error?.message ?? '');
+        this.toast.showError(this.mapEmpleadoError(err?.error?.message ?? ''));
       },
     });
   }
