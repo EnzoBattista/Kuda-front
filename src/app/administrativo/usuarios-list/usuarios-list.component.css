@@ -68,12 +68,33 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1.4fr 2fr 1fr 1fr minmax(300px, 1.7fr);
+  grid-template-columns: 1.4fr 2fr 1fr minmax(170px, 1fr) minmax(300px, 1.7fr);
   gap: 0.75rem;
   padding: 0.7rem 1rem;
   border-bottom: 1px solid var(--border);
   align-items: center;
   min-width: 660px;
+}
+
+/* Que el contenido (p. ej. el badge "Pendiente confirmación") no infle su
+   columna y desalinee la fila respecto de las demás. */
+.row > * {
+  min-width: 0;
+}
+
+/* Nombre y email largos: truncan con "…" para no desfasar. Al tocar/click se
+   expanden (el texto baja de línea dentro de la misma celda, sin correr columnas). */
+.cell-trunc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.cell-trunc.expandido {
+  overflow: visible;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .row:not(.head):hover {
@@ -100,6 +121,11 @@
   font-size: 0.78rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.badge.badge-pendiente {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
 }
 
 .badge.badge-inactivo {
