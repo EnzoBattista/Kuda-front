@@ -33,15 +33,6 @@ export interface PagoListado {
   } | null;
 }
 
-export interface RegistrarPagoPayload {
-  cliente_email: string;
-  monto: number;
-  concepto: string;
-  metodo: 'EFECTIVO' | 'TRANSFERENCIA';
-  origen?: string;
-  reserva_id?: number;
-  inscripcion_mensual_id?: number;
-}
 
 export interface GenerarPagoQrPayload {
   monto: number;
@@ -153,13 +144,6 @@ export class PagoService {
           return res.data ?? [];
         }),
       );
-  }
-
-  registrar(payload: RegistrarPagoPayload): Observable<{ message: string; data: PagoListado }> {
-    return this.http.post<{ message: string; data: PagoListado }>(
-      `${this.apiUrl}/registrar`,
-      payload,
-    );
   }
 
   generarPagoQr(payload: GenerarPagoQrPayload): Observable<GenerarPagoQrResponse> {
