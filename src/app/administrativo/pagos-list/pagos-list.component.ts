@@ -1,17 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import {
   ComprobantePago,
   PagoListado,
   PagoService,
 } from '../../services/pago.service';
 import { AuthService } from '../../services/auth.service';
-import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-pagos-list',
@@ -24,7 +19,6 @@ export class PagosListComponent implements OnInit {
   private readonly pagoService = inject(PagoService);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
-  private readonly toastService = inject(ToastService);
 
   pagos: PagoListado[] = [];
   isLoading = false;
@@ -37,20 +31,11 @@ export class PagosListComponent implements OnInit {
     hasta: [''],
   });
 
-  showModalRegistrar = false;
   showModalComprobante = false;
   modalError = '';
-  modalSubmitting = false;
 
   comprobante: ComprobantePago | null = null;
   comprobanteLoading = false;
-
-  formRegistrar = this.fb.nonNullable.group({
-    cliente_email: ['', [Validators.required, Validators.email]],
-    monto: [0, [Validators.required, Validators.min(0.01)]],
-    concepto: ['', Validators.required],
-    metodo: ['EFECTIVO' as 'EFECTIVO' | 'TRANSFERENCIA', Validators.required],
-  });
 
   ngOnInit(): void {
     this.cargarPagos();
@@ -90,54 +75,6 @@ export class PagosListComponent implements OnInit {
 
   onFiltrar(): void {
     this.cargarPagos();
-  }
-
-  abrirRegistrar(): void {
-    this.modalError = '';
-    this.formRegistrar.reset({
-      cliente_email: '',
-      monto: 0,
-      concepto: '',
-      metodo: 'EFECTIVO',
-    });
-    this.showModalRegistrar = true;
-  }
-
-  cerrarRegistrar(): void {
-    this.showModalRegistrar = false;
-    this.modalError = '';
-  }
-
-  onRegistrar(): void {
-    if (this.formRegistrar.invalid) {
-      this.formRegistrar.markAllAsTouched();
-      return;
-    }
-
-    this.modalSubmitting = true;
-    this.modalError = '';
-    const v = this.formRegistrar.getRawValue();
-
-    this.pagoService
-      .registrar({
-        cliente_email: v.cliente_email.trim(),
-        monto: Number(v.monto),
-        concepto: v.concepto.trim(),
-        metodo: v.metodo,
-        origen: 'MANUAL',
-      })
-      .subscribe({
-        next: (res) => {
-          this.toastService.showSuccess(res.message);
-          this.cerrarRegistrar();
-          this.cargarPagos();
-          this.modalSubmitting = false;
-        },
-        error: (err) => {
-          this.modalError = this.pagoService.mensajeError(err);
-          this.modalSubmitting = false;
-        },
-      });
   }
 
   abrirComprobante(pago: PagoListado): void {

@@ -13,7 +13,6 @@
     <p class="help url-https">{{ urlEscaneoHttps }}</p>
     <div class="form-actions">
       <a [href]="urlEscaneoHttps" class="btn btn-primary">Abrir escáner con HTTPS</a>
-      <a class="btn btn-secondary" routerLink="/administrativo/asistencia-manual">Asistencia manual</a>
     </div>
   </div>
 
@@ -38,7 +37,6 @@
       >
         Detener cámara
       </button>
-      <a class="btn btn-secondary" routerLink="/administrativo/asistencia-manual">Asistencia manual</a>
     </div>
 
     <p class="help ios-hint" *ngIf="esDispositivoMovil && !escaneando">
