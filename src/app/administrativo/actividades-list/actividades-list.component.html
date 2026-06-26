@@ -10,14 +10,6 @@
       >
         Agregar actividad
       </button>
-      <button
-        type="button"
-        class="btn btn-secondary"
-        (click)="onRefrescar()"
-        [disabled]="isLoading"
-      >
-        Refrescar
-      </button>
     </div>
   </div>
 
@@ -38,40 +30,30 @@
         <span class="actividad-badge" *ngIf="!actividad.activa">Inactiva</span>
       </div>
 
-      <p class="help actividad-descripcion" *ngIf="actividad.descripcion">
+      <p
+        class="actividad-descripcion"
+        *ngIf="actividad.descripcion"
+        [title]="actividad.descripcion"
+        (click)="toggleDescripcion($event)"
+      >
         {{ actividad.descripcion }}
       </p>
 
       <p class="actividad-precio">{{ formatPrecio(actividad.precio) }}</p>
 
-      <div class="form-actions" *ngIf="isAdministrativo">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          (click)="onModificar(actividad)"
-        >
+      <div class="act-acciones" *ngIf="isAdministrativo">
+        <button type="button" class="btn-act accion-modificar" (click)="onModificar(actividad)">
           Modificar actividad
         </button>
         <button
           type="button"
-          class="btn btn-secondary"
-          (click)="onModificar(actividad)"
-        >
-          Modificar actividad
-        </button>
-        <button
-          type="button"
-          class="btn btn-secondary"
+          class="btn-act accion-precio"
           (click)="onModificarPrecio(actividad)"
           *ngIf="isDueno"
         >
           Modificar precio
         </button>
-        <button
-          type="button"
-          class="btn btn-danger"
-          (click)="onEliminar(actividad)"
-        >
+        <button type="button" class="btn-act accion-eliminar" (click)="onEliminar(actividad)">
           Eliminar actividad
         </button>
       </div>

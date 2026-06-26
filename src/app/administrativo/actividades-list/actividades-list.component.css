@@ -56,9 +56,16 @@
 }
 
 .actividad-card {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.actividad-card:hover {
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.09);
+  transform: translateY(-2px);
 }
 
 .actividad-card-head {
@@ -84,24 +91,108 @@
   color: var(--muted, #64748b);
 }
 
+/* Descripción acotada: si es muy larga se corta con "…" (no estira la card).
+   El texto completo queda en el tooltip (title). */
 .actividad-descripcion {
   margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* Al tocar la descripción se expande y muestra todo (la card crece). */
+.actividad-descripcion.expandida {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
 }
 
 .actividad-precio {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--brand-blue-700, #1d4ed8);
+  /* Empujado al fondo: queda siempre justo arriba de los botones, en la misma
+     posición en todas las cards (no pegado a la descripción). */
+  margin: auto 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--brand-blue);
 }
 
-.actividad-card .form-actions {
-  margin-top: 0.25rem;
+/* ─── Acciones de la actividad ─────────────────────────────────────────────
+   Misma lógica de color que Clases: Modificar = azul sólido (principal) ·
+   Modificar precio = azul suave con borde azul (secundario) · Eliminar =
+   rojo marca entero (peligro). Ancladas al fondo para que todas las cards
+   alineen sus botones. */
+.act-acciones {
+  padding-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.actividad-card .form-actions .btn {
-  flex: 1 1 auto;
-  min-width: min(100%, 10rem);
+.btn-act {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease,
+    border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.btn-act:hover {
+  transform: translateY(-1px);
+}
+
+.btn-act:active {
+  transform: translateY(0);
+}
+
+/* Modificar actividad → azul marca sólido (acción principal) */
+.accion-modificar {
+  background: var(--brand-blue-600);
+  color: #fff;
+}
+
+.accion-modificar:hover {
+  background: var(--brand-blue-700);
+  box-shadow: 0 4px 12px rgba(22, 63, 122, 0.28);
+}
+
+/* Modificar precio → azul marca suave + borde azul (secundario) */
+.accion-precio {
+  background: var(--brand-blue-50, #e8eef6);
+  color: var(--brand-blue-700);
+  border-color: var(--brand-blue-600);
+}
+
+.accion-precio:hover {
+  background: #dde7f3;
+  box-shadow: 0 3px 9px rgba(22, 63, 122, 0.16);
+}
+
+/* Eliminar actividad → rojo marca entero (peligro) */
+.accion-eliminar {
+  background: var(--brand-red);
+  color: #fff;
+}
+
+.accion-eliminar:hover {
+  background: var(--brand-red-700);
+  box-shadow: 0 4px 12px rgba(208, 31, 37, 0.3);
 }
 
 .success-banner {

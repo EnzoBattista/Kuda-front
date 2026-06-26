@@ -33,6 +33,13 @@ export class UsuariosListComponent implements OnInit {
   isLoading = false;
   errorMsg = '';
 
+  // Orden de la lista: primero Activos, luego Pendientes, al final Eliminados.
+  private readonly ordenEstado: Record<string, number> = {
+    ACTIVO: 0,
+    PENDIENTE: 1,
+    ELIMINADO: 2,
+  };
+
   showModalNotificar = false;
   selectedUsuario: UsuarioListado | null = null;
   notificarSubmitting = false;
@@ -69,13 +76,25 @@ export class UsuariosListComponent implements OnInit {
         }),
       )
       .subscribe((data) => {
-        this.usuarios = data ?? [];
+        this.usuarios = this.ordenarPorEstado(data ?? []);
         this.isLoading = false;
       });
   }
 
   limpiarFiltros(): void {
     this.filtros.reset({ q: '', estado: '', tipoInscripcion: '' });
+  }
+
+  // Ordena por estado (Activo → Pendiente → Eliminado) preservando el orden
+  // interno que devuelve el backend (Array.sort es estable).
+  private ordenarPorEstado(data: UsuarioListado[]): UsuarioListado[] {
+    const peso = (u: UsuarioListado): number => this.ordenEstado[u.estado ?? ''] ?? 99;
+    return [...data].sort((a, b) => peso(a) - peso(b));
+  }
+
+  // Click/tap en una celda truncada (nombre/email) → muestra el texto completo.
+  toggleExpand(ev: Event): void {
+    (ev.currentTarget as HTMLElement | null)?.classList.toggle('expandido');
   }
 
   hayFiltrosAplicados(): boolean {
@@ -213,7 +232,7 @@ export class UsuariosListComponent implements OnInit {
         const valores: UsuariosFiltro = this.filtros.getRawValue();
         valores.rol = 'CLIENTE';
         this.gestion.getAll(valores).subscribe((data) => {
-          this.usuarios = data ?? [];
+          this.usuarios = this.ordenarPorEstado(data ?? []);
           this.isLoading = false;
         });
       },
