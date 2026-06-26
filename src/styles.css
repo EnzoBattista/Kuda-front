@@ -4,11 +4,13 @@
 
 :root {
   /* Brand */
-  --brand-blue: #1e40af; /* azul confianza */
-  --brand-blue-600: #1d4ed8;
-  --brand-blue-700: #1e3a8a;
-  --brand-red: #dc2626; /* rojo acento/alerta */
-  --brand-red-700: #b91c1c;
+  --brand-blue: #163F7A; /* azul marca CEF */
+  --brand-blue-600: #163F7A; /* primario */
+  --brand-blue-700: #102C57; /* hover/oscuro */
+  --brand-blue-50: #e8eef6; /* tinte suave */
+  --brand-red: #D01F25; /* rojo marca CEF */
+  --brand-red-700: #A81A1F; /* hover/oscuro */
+  --brand-red-50: #fbe8e9; /* tinte suave (pastel) */
 
   /* Neutrals */
   --bg: #f6f7fb;

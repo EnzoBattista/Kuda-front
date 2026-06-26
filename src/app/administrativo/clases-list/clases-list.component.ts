@@ -74,12 +74,14 @@ export class ClasesListComponent implements OnInit {
 
   filtros = this.fb.group({
     actividad: [''],
-    sala: [''],
+    dia: [''],
+    horaInicio: [''],
   });
 
   clases: ClaseListItem[] = [];
   actividadesFiltro: string[] = [];
-  salasFiltro: string[] = [];
+  diasFiltro: string[] = [];
+  horasFiltro: string[] = [];
   isLoading = false;
   errorMsg = '';
 
@@ -175,7 +177,8 @@ export class ClasesListComponent implements OnInit {
     if (new URLSearchParams(window.location.search).get('vacio') === '1') {
       this.clases = [];
       this.actividadesFiltro = [];
-      this.salasFiltro = [];
+      this.diasFiltro = [];
+      this.horasFiltro = [];
       this.isLoading = false;
       return;
     }
@@ -238,7 +241,10 @@ export class ClasesListComponent implements OnInit {
 
   private actualizarOpcionesFiltro(): void {
     this.actividadesFiltro = [...new Set(this.clases.map((c) => c.actividad?.nombre ?? c.nombre))].sort();
-    this.salasFiltro = [...new Set(this.clases.map((c) => c.sala?.identificador ?? '').filter(Boolean))].sort();
+    this.diasFiltro = [...new Set(this.clases.map((c) => c.dia_semana).filter(Boolean))].sort(
+      (a, b) => (this.ORDEN_DIA[a] ?? 9) - (this.ORDEN_DIA[b] ?? 9),
+    );
+    this.horasFiltro = [...new Set(this.clases.map((c) => c.hora_inicio).filter(Boolean))].sort();
   }
 
   private toListItem(clase: Clase): ClaseListItem {
@@ -477,21 +483,27 @@ export class ClasesListComponent implements OnInit {
   };
 
   get clasesFiltradas(): ClaseListItem[] {
-    const { actividad, sala } = this.filtros.getRawValue();
+    const { actividad, dia, horaInicio } = this.filtros.getRawValue();
     return this.clases.filter(
       (c) =>
         (!actividad || (c.actividad?.nombre ?? c.nombre) === actividad) &&
-        (!sala || (c.sala?.identificador ?? '') === sala),
+        (!dia || c.dia_semana === dia) &&
+        (!horaInicio || c.hora_inicio === horaInicio),
     );
   }
 
   limpiarFiltros(): void {
-    this.filtros.reset({ actividad: '', sala: '' });
+    this.filtros.reset({ actividad: '', dia: '', horaInicio: '' });
   }
 
   hayFiltros(): boolean {
-    const { actividad, sala } = this.filtros.getRawValue();
-    return Boolean(actividad || sala);
+    const { actividad, dia, horaInicio } = this.filtros.getRawValue();
+    return Boolean(actividad || dia || horaInicio);
+  }
+
+  /** "09:00:00" → "09:00" para mostrar en el filtro de hora. */
+  formatHoraFiltro(hora: string): string {
+    return (hora ?? '').slice(0, 5);
   }
 
   get clasesPorActividad(): { actividad: string; clases: ClaseListItem[] }[] {
@@ -707,6 +719,20 @@ export class ClasesListComponent implements OnInit {
         ? '—'
         : clase.cupoOcupado;
     return `${ocupado} / ${max}`;
+  }
+
+  /** % de ocupación (0–100) para la barra de cupo. */
+  cupoPorcentaje(clase: ClaseListItem): number {
+    const max = clase.cupoMaximo ?? Number(clase.cupo ?? 0);
+    if (!max || max <= 0) return 0;
+    const ocupado = clase.cupoOcupado ?? 0;
+    return Math.max(0, Math.min(100, Math.round((ocupado / max) * 100)));
+  }
+
+  /** ¿La clase está completa (sin cupo disponible)? */
+  cupoLleno(clase: ClaseListItem): boolean {
+    const max = clase.cupoMaximo ?? Number(clase.cupo ?? 0);
+    return max > 0 && (clase.cupoOcupado ?? 0) >= max;
   }
 
   onVerListaEspera(clase: ClaseListItem): void {

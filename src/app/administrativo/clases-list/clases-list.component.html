@@ -23,10 +23,17 @@
         </select>
       </div>
       <div class="field">
-        <div class="label">Sala</div>
-        <select class="control" formControlName="sala">
+        <div class="label">Día</div>
+        <select class="control" formControlName="dia">
+          <option value="">Todos</option>
+          <option *ngFor="let d of diasFiltro" [value]="d">{{ d }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">Hora de inicio</div>
+        <select class="control" formControlName="horaInicio">
           <option value="">Todas</option>
-          <option *ngFor="let s of salasFiltro" [value]="s">{{ s }}</option>
+          <option *ngFor="let h of horasFiltro" [value]="h">{{ formatHoraFiltro(h) }}</option>
         </select>
       </div>
       <button *ngIf="hayFiltros()" type="button" class="btn btn-secondary btn-limpiar" (click)="limpiarFiltros()">
@@ -53,7 +60,10 @@
       <ul class="clases-grid">
         <li class="card card-pad clase-card" *ngFor="let clase of grupo.clases">
           <div class="clase-card-head">
-            <p class="clase-fecha-hora">{{ formatFechaHora(clase) }}</p>
+            <div class="clase-card-head-main">
+              <h5 class="clase-actividad-nombre">{{ grupo.actividad }}</h5>
+              <p class="clase-fecha-hora">{{ formatFechaHora(clase) }}</p>
+            </div>
             <span
               class="clase-estado-badge"
               [class.clase-estado-cancelada]="estadoEsCancelada(clase)"
@@ -71,34 +81,33 @@
               <dt>Sala</dt>
               <dd>{{ nombreSala(clase) }}</dd>
             </div>
-            <div class="clase-info-row">
-              <dt>Cupo</dt>
-              <dd>{{ cupoLabel(clase) }}</dd>
-            </div>
           </dl>
 
-          <div class="form-actions" *ngIf="isAdministrativo">
-            <button class="btn btn-primary" (click)="onModificar(clase)">Modificar</button>
-            <button
-              type="button"
-              class="btn btn-secondary"
-              (click)="onCancelar(clase)"
-            >
+          <div class="clase-cupo" [class.is-lleno]="cupoLleno(clase)">
+            <div class="clase-cupo-top">
+              <span class="clase-cupo-label">Cupo</span>
+              <span class="clase-cupo-valor">
+                <strong>{{ clase.cupoOcupado ?? '—' }}</strong> / {{ clase.cupoMaximo }}
+                <span class="clase-cupo-tag" *ngIf="cupoLleno(clase)">Completo</span>
+              </span>
+            </div>
+            <div class="clase-cupo-barra">
+              <span class="clase-cupo-fill" [style.width.%]="cupoPorcentaje(clase)"></span>
+            </div>
+          </div>
+
+          <div class="clase-acciones" *ngIf="isAdministrativo">
+            <button type="button" class="btn-clase accion-modificar" (click)="onModificar(clase)">
+              Modificar
+            </button>
+            <button type="button" class="btn-clase accion-lista" (click)="onVerListaEspera(clase)">
+              Ver lista de espera
+            </button>
+            <button type="button" class="btn-clase accion-cancelar" (click)="onCancelar(clase)">
               Cancelar clase
             </button>
-            <button
-              type="button"
-              class="btn btn-danger"
-              (click)="onEliminar(clase)"
-            >
+            <button type="button" class="btn-clase accion-eliminar" (click)="onEliminar(clase)">
               Eliminar clase
-            </button>
-            <button
-              type="button"
-              class="btn btn-secondary"
-              (click)="onVerListaEspera(clase)"
-            >
-              Ver Lista de Espera
             </button>
           </div>
         </li>
