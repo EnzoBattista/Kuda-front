@@ -68,12 +68,16 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1.5fr 2fr 1fr 1fr 1.5fr;
+  grid-template-columns: 1.4fr 2fr 1fr 1fr minmax(300px, 1.7fr);
   gap: 0.75rem;
-  padding: 0.6rem 1rem;
+  padding: 0.7rem 1rem;
   border-bottom: 1px solid var(--border);
   align-items: center;
-  min-width: 600px;
+  min-width: 660px;
+}
+
+.row:not(.head):hover {
+  background: rgba(0, 51, 102, 0.025);
 }
 
 .row.head {
@@ -103,43 +107,106 @@
   color: var(--brand-red);
 }
 
-/* Botón editar */
-.btn-tabla {
-  background: var(--brand-blue-600);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.35rem 0.65rem;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.btn-tabla:hover {
-  background: var(--brand-blue-700);
-  text-decoration: none;
-}
-
-.btn-danger {
-  background: var(--brand-red, #dc2626);
-}
-
-.btn-danger:hover {
-  background: #b91c1c;
-}
-
+/* ─── Barra de acciones de fila ────────────────────────────────────────────
+   Jerarquía: campana = icono utilitario neutro · Notificar = azul suave
+   (secundario) · Editar = azul sólido (acción primaria, único "lleno") ·
+   Eliminar = fantasma rojo que se llena al hover (destructivo, discreto). */
 .row-actions {
   display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
   justify-content: flex-end;
 }
 
-.row-actions .btn-tabla {
+/* Base común: misma altura y ritmo visual para todos los controles */
+.row-actions .btn-tabla,
+.row-actions .btn-icon {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 9px;
   font-family: inherit;
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.16s ease, color 0.16s ease,
+    border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.row-actions .btn-tabla {
+  padding: 0 0.85rem;
+  border: 1px solid transparent;
+}
+
+.row-actions .btn-tabla:hover,
+.row-actions .btn-icon:hover {
+  transform: translateY(-1px);
+}
+
+.row-actions .btn-tabla:active,
+.row-actions .btn-icon:active {
+  transform: translateY(0);
+}
+
+/* Campana → icono cuadrado, neutro */
+.btn-icon {
+  width: 34px;
+  padding: 0;
+  background: #fff;
+  color: var(--brand-blue-600);
+  border: 1px solid var(--border);
+}
+
+.btn-icon svg {
+  display: block;
+}
+
+.btn-icon:hover {
+  background: var(--brand-blue-50, #eef4fb);
+  border-color: var(--brand-blue-600);
+  box-shadow: 0 3px 8px rgba(0, 51, 102, 0.14);
+}
+
+/* Notificar → azul suave (secundario) */
+.row-actions .btn-soft {
+  background: var(--brand-blue-50, #eef4fb);
+  color: var(--brand-blue-700, #003366);
+}
+
+.row-actions .btn-soft:hover {
+  background: #e1ecf8;
+  box-shadow: 0 3px 8px rgba(0, 51, 102, 0.14);
+}
+
+/* Editar → azul sólido (acción primaria, el ancla visual de la fila) */
+.row-actions .btn-solid {
+  background: var(--brand-blue-600);
+  color: #fff;
+}
+
+.row-actions .btn-solid:hover {
+  background: var(--brand-blue-700);
+  box-shadow: 0 4px 10px rgba(0, 51, 102, 0.22);
+}
+
+/* Eliminar → fantasma rojo que se llena al hover */
+.row-actions .btn-danger {
+  background: #fff;
+  color: var(--brand-red, #dc2626);
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.row-actions .btn-danger:hover {
+  background: var(--brand-red, #dc2626);
+  color: #fff;
+  border-color: var(--brand-red, #dc2626);
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
 }
 
 .modal-overlay {
