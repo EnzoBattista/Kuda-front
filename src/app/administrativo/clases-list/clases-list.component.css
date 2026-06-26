@@ -94,6 +94,9 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+  /* Cada card toma el alto de su contenido (no se estira a la más alta), así el
+     espacio entre la info y los botones es siempre el mismo. */
+  align-items: start;
 }
 
 @media (min-width: 780px) {
@@ -105,8 +108,7 @@
 .clase-card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  border-left: 3px solid var(--brand-blue);
+  gap: 0.85rem;
   transition: box-shadow 0.18s ease, transform 0.18s ease;
 }
 
@@ -268,8 +270,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
-  margin-top: auto;
-  padding-top: 0.25rem;
+  padding-top: 0.35rem;
 }
 
 .btn-clase {
