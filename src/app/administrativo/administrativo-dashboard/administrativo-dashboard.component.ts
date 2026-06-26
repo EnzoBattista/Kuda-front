@@ -37,7 +37,10 @@ import { ToastService } from '../../services/toast.service';
   styleUrl: './administrativo-dashboard.component.css',
 })
 export class AdministrativoDashboardComponent {
-  tab: 'actividades' | 'usuarios' | 'clases' | 'salas' | 'pagos' | 'profesores' | 'empleados' | 'escanear' | 'asistencia-manual' | 'reportes' = 'usuarios';
+  tab: 'actividades' | 'usuarios' | 'clases' | 'salas' | 'pagos' | 'profesores' | 'empleados' | 'asistencia' | 'reportes' = 'usuarios';
+
+  // Modo dentro de la pestaña Asistencia: escanear QR o registro manual.
+  asistenciaModo: 'qr' | 'manual' = 'qr';
 
   // ─── Profesores ───────────────────────────────────────────────────────────
   profesores: Profesor[] = [];

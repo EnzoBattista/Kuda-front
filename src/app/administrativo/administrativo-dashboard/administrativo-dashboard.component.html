@@ -16,8 +16,7 @@
       <button (click)="setTab('usuarios')" [class.active]="tab === 'usuarios'">Clientes</button>
       <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
       <button (click)="setTab('salas')" [class.active]="tab === 'salas'">Salas</button>
-      <button (click)="setTab('escanear')" [class.active]="tab === 'escanear'">Escanear QR</button>
-      <button (click)="setTab('asistencia-manual')" [class.active]="tab === 'asistencia-manual'">Asistencia manual</button>
+      <button (click)="setTab('asistencia')" [class.active]="tab === 'asistencia'">Asistencia</button>
       <button (click)="setTab('pagos')" [class.active]="tab === 'pagos'">Pagos</button>
       <button *ngIf="isDueno" (click)="setTab('reportes')" [class.active]="tab === 'reportes'">Reportes</button>
       <button (click)="setTab('profesores')" [class.active]="tab === 'profesores'">Profesores</button>
@@ -33,9 +32,45 @@
 
   <app-salas-list *ngIf="tab === 'salas'"></app-salas-list>
 
-  <app-escanear-qr *ngIf="tab === 'escanear'"></app-escanear-qr>
+  <ng-container *ngIf="tab === 'asistencia'">
+    <div class="asistencia-modos" role="tablist" aria-label="Modo de asistencia">
+      <button
+        type="button"
+        class="asistencia-modo"
+        role="tab"
+        [class.active]="asistenciaModo === 'qr'"
+        [attr.aria-selected]="asistenciaModo === 'qr'"
+        (click)="asistenciaModo = 'qr'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          <line x1="14" y1="14" x2="14" y2="21"></line>
+          <line x1="18" y1="14" x2="21" y2="14"></line>
+          <line x1="21" y1="18" x2="21" y2="21"></line>
+        </svg>
+        Escanear QR
+      </button>
+      <button
+        type="button"
+        class="asistencia-modo"
+        role="tab"
+        [class.active]="asistenciaModo === 'manual'"
+        [attr.aria-selected]="asistenciaModo === 'manual'"
+        (click)="asistenciaModo = 'manual'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 11l3 3L22 4"></path>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        Registro manual
+      </button>
+    </div>
 
-  <app-asistencia-manual *ngIf="tab === 'asistencia-manual'"></app-asistencia-manual>
+    <app-escanear-qr *ngIf="asistenciaModo === 'qr'"></app-escanear-qr>
+    <app-asistencia-manual *ngIf="asistenciaModo === 'manual'"></app-asistencia-manual>
+  </ng-container>
 
   <app-pagos-list *ngIf="tab === 'pagos'"></app-pagos-list>
 
