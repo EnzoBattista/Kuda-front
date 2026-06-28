@@ -6,7 +6,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
   AsistenciasService,
@@ -16,7 +15,7 @@ import {
 @Component({
   selector: 'app-escanear-qr',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './escanear-qr.component.html',
   styleUrl: './escanear-qr.component.css',
 })

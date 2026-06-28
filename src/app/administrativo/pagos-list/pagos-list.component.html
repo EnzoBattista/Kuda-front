@@ -1,13 +1,7 @@
 <section class="card card-pad pagos-section">
   <div class="card-head">
     <h3>Pagos</h3>
-    <div class="card-head-actions">
-      <button type="button" class="btn btn-primary" (click)="abrirRegistrar()">
-        Registrar pago
-      </button>
-    </div>
   </div>
-
 
   <form class="filtros-form" [formGroup]="filtros" (ngSubmit)="onFiltrar()">
     <div class="filtros-row">
@@ -52,44 +46,6 @@
     </li>
   </ul>
 </section>
-
-<!-- Modal registrar -->
-<div class="modal-overlay" *ngIf="showModalRegistrar" (click)="cerrarRegistrar()">
-  <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
-    <h4 class="modal-title">Registrar pago</h4>
-    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
-
-    <form [formGroup]="formRegistrar" (ngSubmit)="onRegistrar()" class="form">
-      <div class="field">
-        <label class="label" for="reg-email">Email del cliente</label>
-        <input id="reg-email" class="control" type="email" formControlName="cliente_email" />
-      </div>
-      <div class="field">
-        <label class="label" for="reg-monto">Monto</label>
-        <input id="reg-monto" class="control" type="number" min="0.01" step="0.01" formControlName="monto" />
-      </div>
-      <div class="field">
-        <label class="label" for="reg-concepto">Concepto</label>
-        <input id="reg-concepto" class="control" formControlName="concepto" placeholder="Clase / Mensualidad" />
-      </div>
-      <div class="field">
-        <label class="label" for="reg-metodo">Método</label>
-        <select id="reg-metodo" class="control" formControlName="metodo">
-          <option value="EFECTIVO">Efectivo</option>
-          <option value="TRANSFERENCIA">Transferencia</option>
-        </select>
-      </div>
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || formRegistrar.invalid">
-          {{ modalSubmitting ? 'Guardando…' : 'Registrar pago' }}
-        </button>
-        <button type="button" class="btn btn-secondary" (click)="cerrarRegistrar()" [disabled]="modalSubmitting">
-          Cancelar
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <!-- Modal comprobante -->
 <div class="modal-overlay comprobante-overlay" *ngIf="showModalComprobante" (click)="cerrarComprobante()">

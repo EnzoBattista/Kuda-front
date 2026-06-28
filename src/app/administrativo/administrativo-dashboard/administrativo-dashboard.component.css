@@ -115,6 +115,54 @@
   margin-top: 0;
 }
 
+/* ─── Selector de modo de la pestaña Asistencia ─────────────────────────────
+   Barra que se une con la pestaña activa; adentro, dos segmentos (QR / manual)
+   con el activo en azul de marca. */
+.asistencia-modos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  margin: 0 0 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.asistencia-modo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.asistencia-modo svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.asistencia-modo:hover:not(.active) {
+  color: var(--brand-blue);
+  background: rgba(22, 63, 122, 0.06);
+}
+
+.asistencia-modo.active {
+  background: var(--brand-blue-600);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
 
 
 .usuarios-section {
