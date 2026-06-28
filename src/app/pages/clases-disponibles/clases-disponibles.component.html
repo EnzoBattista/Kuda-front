@@ -215,9 +215,9 @@
           </button>
         </ng-container>
 
-        <!-- Botón Reservar: visible siempre que el usuario no esté en la lista individual esperando -->
+        <!-- Botón Reservar: visible siempre que el usuario no tenga la membresía mensual y no esté en ambas listas -->
         <button
-          *ngIf="!estaEnListaIndividual(c.id)"
+          *ngIf="!c.abonoClaseVigente && !(estaEnListaIndividual(c.id) && estaEnListaMensual(c.id))"
           class="btn btn-primary"
           type="button"
           [disabled]="isSubmitting"
@@ -256,7 +256,7 @@
           class="opcion-btn btn btn-secondary"
           type="button"
           (click)="seleccionarModalidad('INDIVIDUAL')"
-          [disabled]="c.abonoClaseVigente"
+          [disabled]="c.abonoClaseVigente || estaEnListaIndividual(c.id)"
         >
           <strong>Clase individual</strong>
           <span class="help">Una clase puntual (pago completo o seña)</span>
