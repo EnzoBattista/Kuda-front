@@ -111,4 +111,29 @@
       </div>
     </form>
   </div>
+
+  <div class="card card-pad" *ngIf="!isLoading && !loadError && usuario" style="margin-top: 2rem;">
+    <h2>Vales disponibles</h2>
+    <p class="help">Vales activos de <strong>{{ usuario.nombre }}</strong>.</p>
+    
+    <p class="muted" *ngIf="valesActivos.length === 0">El usuario no posee vales activos actualmente.</p>
+
+    <div class="vales-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;" *ngIf="valesActivos.length > 0">
+      <div class="card" *ngFor="let vale of valesActivos" style="padding: 1rem; border-left: 4px solid var(--primary-color);">
+        <h4 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">Vale de Descuento</h4>
+        <div style="font-size: 0.9em; margin-bottom: 0.25rem;">
+          <strong style="display: inline-block; width: 90px;">Monto:</strong> ${{ vale.monto }}
+        </div>
+        <div style="font-size: 0.9em; margin-bottom: 0.25rem;">
+          <strong style="display: inline-block; width: 90px;">Válido hasta:</strong> {{ vale.validoHasta }}
+        </div>
+        <div style="font-size: 0.9em; margin-bottom: 0.25rem;" *ngIf="vale.actividad">
+          <strong style="display: inline-block; width: 90px;">Actividad:</strong> {{ vale.actividad }}
+        </div>
+        <div style="font-size: 0.9em;" *ngIf="vale.diaSemana">
+          <strong style="display: inline-block; width: 90px;">Clase:</strong> {{ vale.diaSemana }} {{ vale.horaInicio }}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

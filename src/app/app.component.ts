@@ -44,6 +44,7 @@ export class AppComponent {
       url === '/clases' ||
       url === '/mis-reservas' ||
       url === '/mi-informacion' ||
+      url === '/mi-panel' ||
       url === '/catalogo' ||
       url === '/administrativo' ||
       url.startsWith('/confirmar')
@@ -59,7 +60,7 @@ export class AppComponent {
 
   private getHomePath(): string {
     if (!this.auth.isLoggedIn()) return '/';
-    return this.auth.isAdministrativo() ? '/administrativo' : '/clases';
+    return this.auth.isAdministrativo() ? '/administrativo' : '/mi-panel';
   }
 
   logout(): void {

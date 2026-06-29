@@ -40,8 +40,8 @@ const DIAS_CLASE = [
   { value: 'Sabado', label: 'Sábado' },
 ] as const;
 
-const HORAS_PERMITIDAS = Array.from({ length: 24 }, (_, i) => {
-  const h = i.toString().padStart(2, '0');
+const HORAS_PERMITIDAS = Array.from({ length: 15 }, (_, i) => {
+  const h = (i + 7).toString().padStart(2, '0');
   return `${h}:00`;
 });
 

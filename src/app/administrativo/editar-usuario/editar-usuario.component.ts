@@ -16,6 +16,7 @@ import {
   GestionUsuariosService,
   UsuarioListado,
 } from '../../services/gestion-usuarios.service';
+import { ValesService, Vale } from '../../services/vales.service';
 
 /**
  * MOCK (Regla de Oro 1): el back no valida unicidad de DNI en `PUT /api/usuarios/:email`.
@@ -59,6 +60,7 @@ export class EditarUsuarioComponent implements OnInit {
   emailEditado = '';
   usuario: UsuarioListado | null = null;
   listaCompleta: UsuarioListado[] = [];
+  valesActivos: Vale[] = [];
 
   isLoading = true;
   loadError = '';
@@ -71,6 +73,7 @@ export class EditarUsuarioComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly gestion: GestionUsuariosService,
+    private readonly valesService: ValesService,
   ) {}
 
   ngOnInit(): void {
@@ -84,10 +87,12 @@ export class EditarUsuarioComponent implements OnInit {
       todos: this.gestion.getAll(),
       usuario: this.gestion.getByEmail(this.emailEditado),
       extra: this.gestion.getClienteExtraInfo(this.emailEditado),
+      vales: this.valesService.getMisVales(this.emailEditado),
     }).subscribe({
-      next: ({ todos, usuario, extra }) => {
+      next: ({ todos, usuario, extra, vales }) => {
         this.listaCompleta = todos ?? [];
         this.usuario = usuario;
+        this.valesActivos = vales ?? [];
 
         const genero = (extra?.genero ?? 'otro') as 'femenino' | 'masculino' | 'otro';
         this.form.setValue({

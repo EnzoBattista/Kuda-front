@@ -44,9 +44,13 @@ export class ValesService {
   private readonly http = inject(HttpClient);
 
   /** Vales vigentes y no usados del cliente. */
-  getMisVales(): Observable<Vale[]> {
+  getMisVales(email?: string): Observable<Vale[]> {
+    let params = new HttpParams();
+    if (email) {
+      params = params.set('cliente_email', email);
+    }
     return this.http
-      .get<ValeApi[]>(this.url, { headers: this.noCacheHeaders })
+      .get<ValeApi[]>(this.url, { headers: this.noCacheHeaders, params })
       .pipe(
         map((list) => (list ?? []).map(toVale)),
         catchError(() => of([])),
