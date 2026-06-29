@@ -13,6 +13,7 @@ import { EscanearQrComponent } from '../escanear-qr/escanear-qr.component';
 import { AsistenciaManualComponent } from '../asistencia-manual/asistencia-manual.component';
 import { PagosListComponent } from '../pagos-list/pagos-list.component';
 import { ReportesPanelComponent } from '../reportes-panel/reportes-panel.component';
+import { HistorialAsistenciaComponent } from '../../pages/historial-asistencia/historial-asistencia.component';
 import { ActividadesService } from '../../services/actividades.service';
 import { GestionUsuariosService, UsuarioListado } from '../../services/gestion-usuarios.service';
 import { Actividad } from '../../models/actividad.model';
@@ -30,6 +31,7 @@ import { ToastService } from '../../services/toast.service';
     SalasListComponent,
     EscanearQrComponent,
     AsistenciaManualComponent,
+    HistorialAsistenciaComponent,
     PagosListComponent,
     ReportesPanelComponent,
   ],
@@ -40,7 +42,7 @@ export class AdministrativoDashboardComponent {
   tab: 'actividades' | 'usuarios' | 'clases' | 'salas' | 'pagos' | 'profesores' | 'empleados' | 'asistencia' | 'reportes' = 'usuarios';
 
   // Modo dentro de la pestaña Asistencia: escanear QR o registro manual.
-  asistenciaModo: 'qr' | 'manual' = 'qr';
+  asistenciaModo: 'qr' | 'manual' | 'historial' = 'qr';
 
   // ─── Profesores ───────────────────────────────────────────────────────────
   profesores: Profesor[] = [];
@@ -294,13 +296,13 @@ export class AdministrativoDashboardComponent {
       next: () => {
         this.profesorAEliminar = null;
         this.eliminandoProfesor = false;
-        this.formProfesorSuccess = 'Profesor eliminado con éxito';
+        this.toast.showSuccess('Profesor eliminado con éxito');
         this.refreshProfesores();
       },
       error: (err) => {
         this.eliminandoProfesor = false;
-        this.eliminarProfesorError =
-          err?.error?.message || 'No se pudo eliminar al profesor. Aun tiene clases pendientes';
+        this.profesorAEliminar = null;
+        this.toast.showError(err?.error?.message || 'No se pudo eliminar al profesor. Aun tiene clases pendientes');
       },
     });
   }
@@ -434,13 +436,13 @@ export class AdministrativoDashboardComponent {
       next: () => {
         this.empleadoAEliminar = null;
         this.eliminandoEmpleado = false;
-        this.createEmpleadoSuccess = 'Recepcionista eliminado con éxito';
+        this.toast.showSuccess('Recepcionista eliminado con éxito');
         this.refreshEmpleados();
       },
       error: (err) => {
         this.eliminandoEmpleado = false;
-        this.eliminarEmpleadoError =
-          err?.error?.message || 'No se pudo eliminar al recepcionista';
+        this.empleadoAEliminar = null;
+        this.toast.showError(err?.error?.message || 'No se pudo eliminar al recepcionista');
       },
     });
   }

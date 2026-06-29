@@ -14,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
 @Component({
   selector: 'app-cambiar-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './cambiar-password.component.html',
   styleUrl: './cambiar-password.component.css',
 })

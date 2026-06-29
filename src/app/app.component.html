@@ -19,7 +19,6 @@
         </ng-container>
         <ng-container *ngIf="auth.isAdministrativo()">
           <a class="nav-link" routerLink="/administrativo" routerLinkActive="nav-link-active" [routerLinkActiveOptions]="{exact: true}">Panel administrativo</a>
-          <a class="nav-link" routerLink="/historial-asistencia" routerLinkActive="nav-link-active">Historial asistencia</a>
         </ng-container>
         <a class="nav-link" routerLink="/mi-informacion" routerLinkActive="nav-link-active">Mi información</a>
         <app-notificaciones-bell *ngIf="!auth.isAdministrativo()"></app-notificaciones-bell>

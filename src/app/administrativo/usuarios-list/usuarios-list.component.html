@@ -50,7 +50,7 @@
     </div>
     <div class="row" *ngFor="let u of usuarios">
       <div class="cell-trunc" [title]="u.nombre + ' ' + u.apellido" (click)="toggleExpand($event)">{{ u.nombre }} {{ u.apellido }}</div>
-      <div class="cell-trunc" [title]="u.email" (click)="toggleExpand($event)">{{ u.email }}</div>
+      <div class="cell-trunc" [title]="u.displayEmail || u.email" (click)="toggleExpand($event)">{{ u.displayEmail || u.email }}</div>
       <div>{{ u.dni }}</div>
       <div>
         <span

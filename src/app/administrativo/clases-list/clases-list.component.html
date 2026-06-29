@@ -174,11 +174,13 @@
       <div class="form-row form-row-2">
         <div class="field">
           <label class="label" for="clase-inicio">Horario inicio</label>
-          <input id="clase-inicio" class="control" type="time" formControlName="horario_inicio" />
+          <select id="clase-inicio" class="control" formControlName="horario_inicio">
+            <option *ngFor="let h of horasPermitidas" [value]="h">{{ h }}</option>
+          </select>
         </div>
         <div class="field">
           <label class="label" for="clase-fin">Horario fin</label>
-          <input id="clase-fin" class="control" type="time" formControlName="horario_fin" />
+          <input id="clase-fin" class="control is-readonly" type="time" formControlName="horario_fin" readonly tabindex="-1" />
         </div>
       </div>
 

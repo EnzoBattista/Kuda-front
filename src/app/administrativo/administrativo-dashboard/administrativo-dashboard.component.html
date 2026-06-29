@@ -66,10 +66,25 @@
         </svg>
         Registro manual
       </button>
+      <button
+        type="button"
+        class="asistencia-modo"
+        role="tab"
+        [class.active]="asistenciaModo === 'historial'"
+        [attr.aria-selected]="asistenciaModo === 'historial'"
+        (click)="asistenciaModo = 'historial'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Historial
+      </button>
     </div>
 
     <app-escanear-qr *ngIf="asistenciaModo === 'qr'"></app-escanear-qr>
     <app-asistencia-manual *ngIf="asistenciaModo === 'manual'"></app-asistencia-manual>
+    <app-historial-asistencia *ngIf="asistenciaModo === 'historial'"></app-historial-asistencia>
   </ng-container>
 
   <app-pagos-list *ngIf="tab === 'pagos'"></app-pagos-list>

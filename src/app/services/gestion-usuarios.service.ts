@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 
 export interface UsuarioListado {
   email: string;
+  displayEmail?: string;
   dni: string;
   nombre: string;
   apellido: string;

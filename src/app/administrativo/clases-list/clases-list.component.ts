@@ -40,6 +40,11 @@ const DIAS_CLASE = [
   { value: 'Sabado', label: 'Sábado' },
 ] as const;
 
+const HORAS_PERMITIDAS = Array.from({ length: 24 }, (_, i) => {
+  const h = i.toString().padStart(2, '0');
+  return `${h}:00`;
+});
+
 @Component({
   selector: 'app-clases-list',
   standalone: true,
@@ -58,6 +63,7 @@ export class ClasesListComponent implements OnInit {
   private readonly toastService = inject(ToastService);
 
   readonly diasClase = DIAS_CLASE;
+  readonly horasPermitidas = HORAS_PERMITIDAS;
 
   get cupoRangoMsg(): string {
     const errorObj = this.claseForm.get('cupo_maximo')?.errors?.['cupoRango'];
@@ -131,6 +137,14 @@ export class ClasesListComponent implements OnInit {
     });
     this.claseForm.get('actividadId')?.valueChanges.subscribe(() => {
       this.claseForm.get('profesorId')?.setValue(null);
+    });
+    this.claseForm.get('horario_inicio')?.valueChanges.subscribe((inicio) => {
+      if (inicio) {
+        const hour = parseInt(inicio.split(':')[0], 10);
+        const finHour = (hour + 1) % 24;
+        const finStr = `${finHour.toString().padStart(2, '0')}:00`;
+        this.claseForm.get('horario_fin')?.setValue(finStr, { emitEvent: false });
+      }
     });
   }
 
