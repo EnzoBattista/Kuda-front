@@ -226,22 +226,16 @@
         <div>Nombre</div>
         <div>Email</div>
         <div>DNI</div>
-        <div>Estado</div>
         <div></div>
       </div>
       <div class="row row-emp" *ngFor="let u of empleados">
         <div>{{ u.nombre }} {{ u.apellido }}</div>
         <div>{{ u.email }}</div>
         <div>{{ u.dni }}</div>
-        <div>
-          <span class="badge" [class.badge-inactivo]="!u.activo">
-            {{ u.activo ? 'Activo' : 'Eliminado' }}
-          </span>
-        </div>
         <div class="right">
           <button class="btn-tabla" (click)="empleadoDetalle = u">Ver detalle</button>
           <button *ngIf="isDueno" class="btn-tabla btn-tabla-primary" (click)="abrirModalCrearEmpleado(u)">Modificar</button>
-          <button *ngIf="isDueno && u.activo" class="btn-tabla btn-tabla-danger" (click)="abrirModalEliminarEmpleado(u)">Eliminar</button>
+          <button *ngIf="isDueno" class="btn-tabla btn-tabla-danger" (click)="abrirModalEliminarEmpleado(u)">Eliminar</button>
         </div>
       </div>
     </div>
