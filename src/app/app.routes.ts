@@ -19,6 +19,7 @@ import { EscanearQrComponent } from './administrativo/escanear-qr/escanear-qr.co
 import { AsistenciaManualComponent } from './administrativo/asistencia-manual/asistencia-manual.component';
 import { RecuperarPasswordComponent } from './auth/recuperar-password/recuperar-password.component';
 import { NuevaPasswordComponent } from './auth/nueva-password/nueva-password.component';
+import { ClienteDashboardComponent } from './pages/cliente-dashboard/cliente-dashboard.component';
 
 export const routes: Routes = [
   { path: '', component: WelcomeComponent },
@@ -30,6 +31,7 @@ export const routes: Routes = [
   { path: 'recuperar-password/:token', component: NuevaPasswordComponent },
   { path: 'nueva-password/:token', component: NuevaPasswordComponent },
 
+  { path: 'mi-panel', component: ClienteDashboardComponent, canActivate: [authGuard] },
   { path: 'mi-informacion', component: MiInformacionComponent, canActivate: [authGuard] },
   { path: 'editar-perfil', component: EditarPerfilComponent, canActivate: [authGuard] },
   { path: 'cambiar-password', component: CambiarPasswordComponent, canActivate: [authGuard] },

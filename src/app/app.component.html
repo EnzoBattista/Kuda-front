@@ -11,11 +11,7 @@
     <nav class="main-nav" aria-label="Navegación principal">
       <ng-container *ngIf="auth.isLoggedIn(); else noLogueado">
         <ng-container *ngIf="!auth.isAdministrativo()">
-
-          <a class="nav-link" routerLink="/clases" routerLinkActive="nav-link-active">Clases</a>
-          <a class="nav-link" routerLink="/mis-reservas" routerLinkActive="nav-link-active">Ver mis reservas actuales</a>
-          <a class="nav-link" routerLink="/mi-qr" routerLinkActive="nav-link-active">Generar QR</a>
-          <a class="nav-link" routerLink="/historial-asistencia" routerLinkActive="nav-link-active">Historial asistencia</a>
+          <a class="nav-link" routerLink="/mi-panel" routerLinkActive="nav-link-active" [routerLinkActiveOptions]="{exact: true}">Panel de usuario</a>
         </ng-container>
         <ng-container *ngIf="auth.isAdministrativo()">
           <a class="nav-link" routerLink="/administrativo" routerLinkActive="nav-link-active" [routerLinkActiveOptions]="{exact: true}">Panel administrativo</a>

@@ -134,11 +134,11 @@
     <p class="help" *ngIf="catalogosLoading">Cargando opciones…</p>
     <p class="error-text" *ngIf="catalogosError">{{ catalogosError }}</p>
 
-    <form class="form" [formGroup]="claseForm" (ngSubmit)="submitFormulario()">
+    <form class="form" [formGroup]="claseForm" (ngSubmit)="submitFormulario()" ngNativeValidate>
       <div class="field">
         <label class="label" for="clase-actividad">Actividad</label>
-        <select id="clase-actividad" class="control" formControlName="actividadId">
-          <option [ngValue]="null" disabled>Seleccionar actividad</option>
+        <select id="clase-actividad" class="control" formControlName="actividadId" required>
+          <option value="" disabled>Seleccionar actividad</option>
           <option *ngFor="let a of actividades" [ngValue]="a.id">{{ a.nombre }}</option>
         </select>
       </div>
@@ -146,8 +146,8 @@
       <div class="field">
         <label class="label" for="clase-profesor">Profesor</label>
         <select id="clase-profesor" class="control" formControlName="profesorId"
-          [attr.disabled]="!claseForm.get('actividadId')?.value ? true : null">
-          <option [ngValue]="null" disabled>
+          [attr.disabled]="!claseForm.get('actividadId')?.value ? true : null" required>
+          <option value="" disabled>
             {{ claseForm.get('actividadId')?.value ? 'Seleccionar profesor' : 'Primero seleccioná una actividad' }}
           </option>
           <option *ngFor="let p of profesoresPorActividad" [ngValue]="p.id">
@@ -158,8 +158,8 @@
 
       <div class="field">
         <label class="label" for="clase-sala">Sala</label>
-        <select id="clase-sala" class="control" formControlName="salaId">
-          <option [ngValue]="null" disabled>Seleccionar sala</option>
+        <select id="clase-sala" class="control" formControlName="salaId" required>
+          <option value="" disabled>Seleccionar sala</option>
           <option *ngFor="let s of salas" [ngValue]="s.id">{{ labelSala(s) }}</option>
         </select>
       </div>

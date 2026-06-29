@@ -1,0 +1,95 @@
+<div class="administrativo-page">
+  <div class="administrativo-header">
+    <div class="administrativo-header-top">
+      <h2>Panel de usuario</h2>
+      <div class="administrativo-header-right">
+        <span class="current-user" *ngIf="currentUser">
+          <strong>{{ currentUser.nombre }} {{ currentUser.apellido }}</strong>
+          <span class="role-badge" *ngIf="currentUser.rol">{{ currentUser.rol.nombre }}</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button (click)="setTab('clases')" [class.active]="tab === 'clases'">Clases</button>
+      <button (click)="setTab('reservas')" [class.active]="tab === 'reservas'">Mis Reservas</button>
+      <button (click)="setTab('asistencia')" [class.active]="tab === 'asistencia'">Asistencia</button>
+      <button (click)="setTab('vales')" [class.active]="tab === 'vales'">Vales</button>
+    </div>
+  </div>
+
+  <app-clases-disponibles *ngIf="tab === 'clases'"></app-clases-disponibles>
+
+  <app-mis-reservas *ngIf="tab === 'reservas'"></app-mis-reservas>
+
+  <ng-container *ngIf="tab === 'asistencia'">
+    <div class="asistencia-modos" role="tablist" aria-label="Modo de asistencia">
+      <button
+        type="button"
+        class="asistencia-modo"
+        role="tab"
+        [class.active]="asistenciaModo === 'qr'"
+        [attr.aria-selected]="asistenciaModo === 'qr'"
+        (click)="asistenciaModo = 'qr'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          <line x1="14" y1="14" x2="14" y2="21"></line>
+          <line x1="18" y1="14" x2="21" y2="14"></line>
+          <line x1="21" y1="18" x2="21" y2="21"></line>
+        </svg>
+        Generar QR
+      </button>
+      <button
+        type="button"
+        class="asistencia-modo"
+        role="tab"
+        [class.active]="asistenciaModo === 'historial'"
+        [attr.aria-selected]="asistenciaModo === 'historial'"
+        (click)="asistenciaModo = 'historial'"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Historial
+      </button>
+    </div>
+
+    <app-mi-qr *ngIf="asistenciaModo === 'qr'"></app-mi-qr>
+    <app-historial-asistencia *ngIf="asistenciaModo === 'historial'"></app-historial-asistencia>
+  </ng-container>
+
+  <section *ngIf="tab === 'vales'" class="card usuarios-section">
+    <div class="card-head">
+      <h3>Mis Vales Disponibles</h3>
+    </div>
+    
+    <p class="muted" *ngIf="valesLoading">Cargando vales…</p>
+    <p class="error" *ngIf="valesError">{{ valesError }}</p>
+    
+    <p class="muted" *ngIf="!valesLoading && !valesError && valesActivos.length === 0">
+      No tenés vales activos actualmente.
+    </p>
+
+    <div class="vales-grid" *ngIf="!valesLoading && valesActivos.length > 0">
+      <div class="card" *ngFor="let vale of valesActivos" style="padding: 1.5rem; border-left: 5px solid var(--primary-color);">
+        <h4 style="margin: 0 0 1rem 0; color: var(--primary-color);">Vale de Descuento</h4>
+        <div style="font-size: 1em; margin-bottom: 0.5rem;">
+          <strong style="display: inline-block; width: 100px;">Monto:</strong> ${{ vale.monto }}
+        </div>
+        <div style="font-size: 1em; margin-bottom: 0.5rem;">
+          <strong style="display: inline-block; width: 100px;">Válido hasta:</strong> {{ vale.validoHasta }}
+        </div>
+        <div style="font-size: 1em; margin-bottom: 0.5rem;" *ngIf="vale.actividad">
+          <strong style="display: inline-block; width: 100px;">Actividad:</strong> {{ vale.actividad }}
+        </div>
+        <div style="font-size: 1em;" *ngIf="vale.diaSemana">
+          <strong style="display: inline-block; width: 100px;">Clase:</strong> {{ vale.diaSemana }} {{ vale.horaInicio }}
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
