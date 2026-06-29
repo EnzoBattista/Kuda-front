@@ -4,10 +4,11 @@
   "scripts": {
     "ng": "ng",
     "start:http": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
-    "start:https": "ng serve --host 0.0.0.0 --port 4201 --ssl --proxy-config proxy.conf.json --disable-host-check",
+    "start:https": "local-ssl-proxy --source 4201 --target 4200 --hostname localhost",
+    "prestart:all": "node scripts/free-dev-ports.cjs",
     "start:all": "concurrently -k -n PC,CEL -c blue,magenta \"npm run start:http\" \"npm run start:https\"",
     "start": "npm run start:http",
-    "start:mobile": "npm run start:https",
+    "start:mobile": "concurrently -k -n PC,CEL -c blue,magenta \"npm run start:http\" \"npm run start:https\"",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -34,6 +35,7 @@
     "@angular/compiler-cli": "^19.2.0",
     "@types/jasmine": "~5.1.0",
     "concurrently": "^9.2.1",
+    "local-ssl-proxy": "^2.0.5",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
