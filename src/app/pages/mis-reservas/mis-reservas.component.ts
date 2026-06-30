@@ -90,6 +90,8 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   private readonly pollingIntervalMs = 3000;
   private readonly pollingTimeoutMs = 300000;
 
+  private scrollPosition = 0;
+
   constructor(
     private readonly reservasService: ReservasService,
     private readonly authService: AuthService,
@@ -194,7 +196,22 @@ export class MisReservasComponent implements OnInit, OnDestroy {
     return Boolean(actividad || sede);
   }
 
+  private bloquearScroll(): void {
+    this.scrollPosition = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.scrollPosition}px`;
+    document.body.style.width = '100%';
+  }
+
+  private restaurarScroll(): void {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo(0, this.scrollPosition);
+  }
+
   abrirDetalle(reserva: ReservaHistorial): void {
+    this.bloquearScroll();
     this.reservaSeleccionada = reserva;
     this.grupoSeleccionado = null;
     this.modalPaso = 'detalle';
@@ -204,6 +221,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   }
 
   abrirDetalleGrupo(grupo: AbonadoGrupo): void {
+    this.bloquearScroll();
     this.grupoSeleccionado = grupo;
     this.reservaSeleccionada = null;
     this.modalPaso = 'detalle-grupo';
@@ -213,6 +231,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   }
 
   abrirCancelacionMensual(grupo: AbonadoGrupo): void {
+    this.bloquearScroll();
     this.grupoSeleccionado = grupo;
     this.reservaSeleccionada = null;
     this.modalPaso = 'confirmar-cancelacion';
@@ -222,6 +241,9 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   }
 
   abrirCancelacionDesdeGrupo(reserva: ReservaHistorial): void {
+    // Ya está bloqueado el scroll porque estamos en el modal de detalle grupo,
+    // pero si lo llamamos directo, lo bloqueamos por las dudas si no lo estaba.
+    if (!this.grupoSeleccionado) this.bloquearScroll();
     this.reservaSeleccionada = reserva;
     this.modalPaso = 'confirmar-cancelacion';
     this.resultadoCancelacion = null;
@@ -230,6 +252,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   }
 
   abrirCancelacion(reserva: ReservaHistorial): void {
+    this.bloquearScroll();
     this.reservaSeleccionada = reserva;
     this.grupoSeleccionado = null;
     this.modalPaso = 'confirmar-cancelacion';
@@ -242,6 +265,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
     this.reservaSeleccionada = null;
     this.grupoSeleccionado = null;
     this.modalPaso = 'detalle';
+    this.restaurarScroll();
   }
 
   volverDesdeCancelacion(): void {
@@ -349,12 +373,14 @@ export class MisReservasComponent implements OnInit, OnDestroy {
 
   completarSenaReserva(r: ReservaHistorial): void {
     if (!r.inscripcionIndividualId) return;
+    this.scrollPosition = window.scrollY;
     this.reservaSeleccionada = r;
     this.modalPaso = 'seleccion-medio-cobro';
     this.errorCompletarSena = '';
     this.isCompletandoSena = false;
     this.qrDataPago = '';
     this.detenerSeguimientoPago();
+    setTimeout(() => window.scrollTo(0, this.scrollPosition), 0);
   }
 
   seleccionarMedioCobroSena(medio: MedioCobro): void {

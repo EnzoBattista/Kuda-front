@@ -50,7 +50,7 @@ export class LoginComponent {
     this.auth.login({ email, password }).subscribe({
       next: () => {
         this.isSubmitting = false;
-        const destino = this.auth.isAdministrativo() ? '/administrativo' : '/clases';
+        const destino = this.auth.isAdministrativo() ? '/administrativo' : '/mi-panel';
         void this.router.navigateByUrl(destino);
       },
       error: (err) => {

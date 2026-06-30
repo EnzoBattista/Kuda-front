@@ -99,6 +99,8 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
   cupoParaConfirmar: CupoPendienteLista | null = null;
   isConfirmandoCupo = false;
 
+  private scrollPosition = 0;
+
   constructor(
     private readonly reservasService: ReservasService,
     private readonly authService: AuthService,
@@ -196,7 +198,22 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     return this.reservasService.puedePagarSeña(clase.proximaFecha, clase.horaInicio);
   }
 
+  private bloquearScroll(): void {
+    this.scrollPosition = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${this.scrollPosition}px`;
+    document.body.style.width = '100%';
+  }
+
+  private restaurarScroll(): void {
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo(0, this.scrollPosition);
+  }
+
   abrirDetalle(clase: ClaseDisponible): void {
+    this.bloquearScroll();
     this.detenerSeguimientoPago();
     this.bannerPagoEnCurso = '';
     this.bannerSuccess = '';
@@ -212,6 +229,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
 
   abrirReserva(clase?: ClaseDisponible): void {
     if (clase) {
+      this.bloquearScroll();
       this.detenerSeguimientoPago();
       this.bannerPagoEnCurso = '';
       this.claseSeleccionada = clase;
@@ -275,8 +293,20 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     return this.tipoPagoElegido === 'SEÑA' ? precioIndividual / 2 : precioIndividual;
   }
 
+  montoDescuentoUpgrade(): number {
+    const c = this.claseSeleccionada;
+    if (!c) return 0;
+    if (this.modalidadElegida === 'ABONADO' && c.descuentoUpgrade) {
+      return c.descuentoUpgrade;
+    }
+    return 0;
+  }
+
   montoFinalReserva(): number {
-    const base = this.montoBaseReserva();
+    let base = this.montoBaseReserva();
+    base -= this.montoDescuentoUpgrade();
+    if (base < 0) base = 0;
+
     if (!this.aplicarValesToggle) return base;
     const vale = this.mejorValeDisponible();
     if (!vale) return base;
@@ -736,6 +766,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     this.claseSeleccionada = null;
     this.cupoParaConfirmar = null;
     this.isConfirmandoCupo = false;
+    this.restaurarScroll();
   }
 
   yaEnListaEspera(claseId: number): boolean {
@@ -754,6 +785,12 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     );
   }
 
+  obtenerPosicionListaEspera(claseId: number, tipo: 'MENSUAL' | 'INDIVIDUAL'): number | null {
+    const entry = this.misWaitlists.find(
+      (e) => Number(e.clase_id || e.clase?.id) === claseId && e.tipo === tipo
+    );
+    return entry ? entry.posicion : null;
+  }
 
   abrirEspera(clase?: ClaseDisponible): void {
     if (clase) {
@@ -773,6 +810,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
   }
 
   confirmarCupoLista(cupo: CupoPendienteLista): void {
+    this.bloquearScroll();
     this.bannerError = '';
     this.cupoParaConfirmar = cupo;
     this.isConfirmandoCupo = true;

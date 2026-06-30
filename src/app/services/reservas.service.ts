@@ -84,6 +84,7 @@ export interface ClaseDisponible {
   abonoClaseVigente?: boolean;
   yaReservada?: boolean;
   profesor?: string;
+  descuentoUpgrade?: number;
 }
 
 export interface ResultadoCancelacion {
@@ -492,23 +493,33 @@ export class ReservasService {
           )
       : of([]);
 
+    const individualesObs = email
+      ? this.http
+          .get<InscripcionIndividualApi[]>(this.inscripcionesIndUrl, {
+            headers: this.noCacheHeaders,
+            params: new HttpParams().set('cliente_email', email),
+          })
+          .pipe(catchError(() => of([])))
+      : of([]);
+
     return forkJoin({
       clases: this.http.get<Clase[]>(this.clasesUrl, {
         headers: this.noCacheHeaders,
       }),
       mensuales: this.getMensualesActivas(),
       reservas: reservasObs,
+      individuales: individualesObs,
     }).pipe(
-      map(({ clases, mensuales, reservas }) =>
-        (clases ?? []).filter(isClaseActiva).map((c) => ({ c, mensuales, reservas })),
+      map(({ clases, mensuales, reservas, individuales }) =>
+        (clases ?? []).filter(isClaseActiva).map((c) => ({ c, mensuales, reservas, individuales })),
       ),
       switchMap((items) => {
         if (items.length === 0) {
           return of([]);
         }
         return forkJoin(
-          items.map(({ c, mensuales, reservas }) =>
-            this.enrichClaseDisponible(c, mensuales, reservas),
+          items.map(({ c, mensuales, reservas, individuales }) =>
+            this.enrichClaseDisponible(c, mensuales, reservas, individuales),
           ),
         );
       }),
@@ -1012,6 +1023,7 @@ export class ReservasService {
     clase: Clase,
     mensuales: InscripcionMensualApi[] = [],
     reservas: ReservaApiDto[] = [],
+    individuales: InscripcionIndividualApi[] = [],
   ): Observable<ClaseDisponible> {
     const params = new HttpParams().set('clase_id', String(clase.id));
 
@@ -1047,6 +1059,22 @@ export class ReservasService {
             r.estado === 'ACTIVA',
         );
 
+        const hoy = new Date().toISOString().slice(0, 10);
+        let descuentoUpgrade = 0;
+        const reservasInd = (reservas ?? []).filter(
+          (r) =>
+            r.clase?.id === clase.id &&
+            r.estado === 'ACTIVA' &&
+            r.inscripcion_individual_id != null &&
+            String(r.fecha_exacta).slice(0, 10) >= hoy
+        );
+        for (const r of reservasInd) {
+          const ind = (individuales ?? []).find(i => i.id === r.inscripcion_individual_id);
+          if (ind) {
+            descuentoUpgrade += Number(ind.monto_pagado ?? 0);
+          }
+        }
+
         return {
           id: clase.id,
           actividadId: clase.actividad_id,
@@ -1068,6 +1096,7 @@ export class ReservasService {
           ),
           yaReservada,
           profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
+          descuentoUpgrade,
         };
       }),
       catchError(() => {
@@ -1078,6 +1107,23 @@ export class ReservasService {
             String(r.fecha_exacta).slice(0, 10) === prox &&
             r.estado === 'ACTIVA',
         );
+
+        const hoy = new Date().toISOString().slice(0, 10);
+        let descuentoUpgrade = 0;
+        const reservasInd = (reservas ?? []).filter(
+          (r) =>
+            r.clase?.id === clase.id &&
+            r.estado === 'ACTIVA' &&
+            r.inscripcion_individual_id != null &&
+            String(r.fecha_exacta).slice(0, 10) >= hoy
+        );
+        for (const r of reservasInd) {
+          const ind = (individuales ?? []).find(i => i.id === r.inscripcion_individual_id);
+          if (ind) {
+            descuentoUpgrade += Number(ind.monto_pagado ?? 0);
+          }
+        }
+
         return of({
           id: clase.id,
           actividadId: clase.actividad_id,
@@ -1099,6 +1145,7 @@ export class ReservasService {
             (clase.actividad as { precio?: number })?.precio ?? 0,
           ),
           profesor: clase.profesor ? `${clase.profesor.nombre} ${clase.profesor.apellido}` : undefined,
+          descuentoUpgrade,
         });
       }),
     );

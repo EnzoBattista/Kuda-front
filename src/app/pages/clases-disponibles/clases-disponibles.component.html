@@ -186,33 +186,41 @@
 
       <div class="form-actions">
         <p class="error-text" *ngIf="errorModalMsg" style="margin-bottom: 0;">{{ errorModalMsg }}</p>
-        <!-- Caso 1: El usuario ya está anotado en la lista de espera (independientemente del cupo) -->
+        <!-- Si ya está en alguna lista de espera, mostrar opción para salir -->
         <ng-container *ngIf="yaEnListaEspera(c.id)">
-          <div class="help lista-espera-inscripto" style="color: var(--brand-red, #dc2626); font-weight: bold; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <span *ngIf="estaEnListaIndividual(c.id)">Estás anotado en la lista de espera individual para esta clase.</span>
-            <span *ngIf="estaEnListaMensual(c.id)">Estás anotado en la lista de espera de abonados para esta clase.</span>
-            <span *ngIf="!estaEnListaIndividual(c.id) && !estaEnListaMensual(c.id)">Estás anotado en la lista de espera para esta clase.</span>
+          <div style="background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.35rem;">
+            <p style="margin: 0; font-size: 0.95rem; color: #664d03;">
+              <strong>Ya estás en la lista de espera de esta clase.</strong>
+            </p>
+            <p style="margin: 0; font-size: 0.9rem; color: #664d03;" *ngIf="obtenerPosicionListaEspera(c.id, 'MENSUAL') !== null">
+              • Lista Mensual (Abonado): Posición <strong>#{{ obtenerPosicionListaEspera(c.id, 'MENSUAL') }}</strong>
+            </p>
+            <p style="margin: 0; font-size: 0.9rem; color: #664d03;" *ngIf="obtenerPosicionListaEspera(c.id, 'INDIVIDUAL') !== null">
+              • Lista Individual: Posición <strong>#{{ obtenerPosicionListaEspera(c.id, 'INDIVIDUAL') }}</strong>
+            </p>
           </div>
-          <button
-            *ngIf="estaEnListaMensual(c.id)"
-            class="btn btn-danger"
-            style="width: 100%; display: block; margin-bottom: 0.5rem;"
-            type="button"
-            [disabled]="isSubmitting"
-            (click)="salirListaEspera(c.id, 'MENSUAL')"
-          >
-            Salir de la lista de espera (Abonado)
-          </button>
-          <button
-            *ngIf="estaEnListaIndividual(c.id)"
-            class="btn btn-danger"
-            style="width: 100%; display: block; margin-bottom: 0.5rem;"
-            type="button"
-            [disabled]="isSubmitting"
-            (click)="salirListaEspera(c.id, 'INDIVIDUAL')"
-          >
-            Salir de la lista de espera (Individual)
-          </button>
+          <div style="display: flex; flex-direction: column; gap: 0.35rem; width: 100%; margin-bottom: 0.5rem;">
+            <button
+              *ngIf="estaEnListaMensual(c.id)"
+              class="btn btn-danger"
+              style="width: 100%; display: block;"
+              type="button"
+              [disabled]="isSubmitting"
+              (click)="salirListaEspera(c.id, 'MENSUAL')"
+            >
+              Salir de la lista de espera (Abonado)
+            </button>
+            <button
+              *ngIf="estaEnListaIndividual(c.id)"
+              class="btn btn-danger"
+              style="width: 100%; display: block;"
+              type="button"
+              [disabled]="isSubmitting"
+              (click)="salirListaEspera(c.id, 'INDIVIDUAL')"
+            >
+              Salir de la lista de espera (Individual)
+            </button>
+          </div>
         </ng-container>
 
         <!-- Botón Reservar: visible siempre que el usuario no tenga la membresía mensual y no esté en ambas listas -->
@@ -225,7 +233,7 @@
         >
           Reservar
         </button>
-        <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cerrar</button>
       </div>
     </ng-container>
 
@@ -341,12 +349,21 @@
         </div>
         <div
           class="clase-info-row"
-          *ngIf="tieneValesDisponibles()"
+          *ngIf="montoDescuentoUpgrade() > 0"
+        >
+          <dt>Descuento por reserva individual</dt>
+          <dd>
+            -${{ montoDescuentoUpgrade() | number }}
+          </dd>
+        </div>
+        <div
+          class="clase-info-row"
+          *ngIf="tieneValesDisponibles() || montoDescuentoUpgrade() > 0"
         >
           <dt>Total</dt>
           <dd>
-            <span *ngIf="!aplicarValesToggle">${{ montoBaseReserva() | number }}</span>
-            <span *ngIf="aplicarValesToggle">
+            <span *ngIf="!aplicarValesToggle && montoDescuentoUpgrade() === 0">${{ montoBaseReserva() | number }}</span>
+            <span *ngIf="aplicarValesToggle || montoDescuentoUpgrade() > 0">
               <s style="opacity: 0.6;">${{ montoBaseReserva() | number }}</s>
               <strong style="margin-left: 0.5rem;">${{ montoFinalReserva() | number }}</strong>
             </span>
@@ -458,14 +475,14 @@
         </ng-container>
       </div>
 
-      <p class="help" *ngIf="estaEnListaMensual(c.id)" style="color: var(--brand-red, #dc2626); margin-top: 1rem; margin-bottom: 0;">
+      <p class="help" *ngIf="estaEnListaMensual(c.id)" style="color: var(--brand-red, #dc2626); margin-top: 0.25rem; margin-bottom: 0;">
         Ya estás en la lista de espera como abonado para esta clase.
       </p>
-      <p class="help" *ngIf="estaEnListaIndividual(c.id)" style="color: var(--brand-red, #dc2626); margin-top: 0.5rem; margin-bottom: 0;">
+      <p class="help" *ngIf="estaEnListaIndividual(c.id)" style="color: var(--brand-red, #dc2626); margin-top: 0.25rem; margin-bottom: 0;">
         Ya estás en la lista de espera individual para esta clase.
       </p>
 
-      <div class="form-actions">
+      <div class="form-actions" style="margin-top: 0.25rem;">
         <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cancelar</button>
       </div>
     </ng-container>
