@@ -81,7 +81,14 @@ export class RegisterComponent {
       this.toast.showError('Las contraseñas no coinciden.');
       return;
     }
-    if (this.form.invalid) return;
+    if (this.form.controls.password.hasError('minlength') || this.form.controls.confirmPassword.hasError('minlength')) {
+      this.toast.showError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (this.form.invalid) {
+      this.toast.showError('Por favor, revisá que todos los campos sean correctos.');
+      return;
+    }
 
     this.isSubmitting = true;
 
