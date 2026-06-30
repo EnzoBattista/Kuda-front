@@ -223,9 +223,20 @@
           </div>
         </ng-container>
 
-        <!-- Botón Reservar: visible siempre que el usuario no tenga la membresía mensual y no esté en ambas listas -->
+        <!-- Sin cupo: anotarse directamente a la lista de espera -->
         <button
-          *ngIf="!c.abonoClaseVigente && !(estaEnListaIndividual(c.id) && estaEnListaMensual(c.id))"
+          *ngIf="c.cupoDisponible === 0 && !c.abonoClaseVigente && !(estaEnListaIndividual(c.id) && estaEnListaMensual(c.id))"
+          class="btn btn-outline-blue"
+          type="button"
+          [disabled]="isSubmitting"
+          (click)="abrirEspera()"
+        >
+          Anotarse a lista de espera
+        </button>
+
+        <!-- Botón Reservar: con cupo disponible, sin membresía mensual y sin estar en ambas listas -->
+        <button
+          *ngIf="c.cupoDisponible > 0 && !c.abonoClaseVigente && !(estaEnListaIndividual(c.id) && estaEnListaMensual(c.id))"
           class="btn btn-primary"
           type="button"
           [disabled]="isSubmitting"
@@ -439,13 +450,6 @@
           </button>
         </ng-container>
       </div>
-
-      <p class="help" *ngIf="estaEnListaMensual(c.id)" style="color: var(--brand-red, #dc2626); margin-top: 0.25rem; margin-bottom: 0;">
-        Ya estás en la lista de espera como abonado para esta clase.
-      </p>
-      <p class="help" *ngIf="estaEnListaIndividual(c.id)" style="color: var(--brand-red, #dc2626); margin-top: 0.25rem; margin-bottom: 0;">
-        Ya estás en la lista de espera individual para esta clase.
-      </p>
 
       <div class="form-actions" style="margin-top: 0.25rem;">
         <button class="btn btn-secondary" type="button" (click)="cerrarModal()">Cancelar</button>
