@@ -7,10 +7,12 @@ import { Subscription, interval } from 'rxjs';
 import {
   ClaseDisponible,
   HORAS_MINIMAS_SEÑA,
+  MSG_PAGO_PENDIENTE_MP,
   MSG_RESERVA_CONFIRMADA,
   MSG_RESERVA_CONFIRMADA_SEÑA,
   MSG_RESERVA_INCOMPLETA,
   MSG_RESERVA_PAGO_INCOMPLETO,
+  MSG_RESERVA_PAGO_RECHAZADO,
   ModalidadInscripcion,
   ReservasService,
   TipoListaEspera,
@@ -18,8 +20,7 @@ import {
 } from '../../services/reservas.service';
 import { AuthService } from '../../services/auth.service';
 import { Vale, ValesService } from '../../services/vales.service';
-import { MedioCobro, PagoService } from '../../services/pago.service';
-import { QRCodeComponent } from 'angularx-qrcode';
+import { PagoService } from '../../services/pago.service';
 import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
 import {
   CupoPendienteLista,
@@ -32,8 +33,6 @@ type PasoModal =
   | 'seleccion-modalidad'
   | 'seleccion-pago'
   | 'confirmacion'
-  | 'seleccion-medio-cobro'
-  | 'qr-pago'
   | 'resultado'
   | 'espera'
   | 'resultado-espera';
@@ -41,15 +40,18 @@ type PasoModal =
 @Component({
   selector: 'app-clases-disponibles',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, FechaArPipe, QRCodeComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, FechaArPipe],
   templateUrl: './clases-disponibles.component.html',
   styleUrl: './clases-disponibles.component.css',
 })
 export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
   private readonly pollingIntervalMs = 3_000;
   private readonly pollingTimeoutMs = 5 * 60_000;
-  private readonly pollingTrasCierreMs = 3_000;
+  private readonly pollingTrasCierreMs = 1_200;
   private readonly reintentosTrasCierre = 2;
+  /** Breve espera tras cerrar MP por si el redirect de aprobación está en curso. */
+  private readonly cierrePagoGraciaMs = 1_000;
+  private pagoSeguimientoGen = 0;
   private pollingSub: Subscription | null = null;
   private pollingTimeout: ReturnType<typeof setTimeout> | null = null;
   private monitorVentanaInterval: ReturnType<typeof setInterval> | null = null;
@@ -85,8 +87,8 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
   resultadoMsg = '';
   errorModalMsg = '';
   isReservaIncompleta = false;
-  medioCobroElegido: MedioCobro = 'MERCADO_PAGO';
-  qrDataPago = '';
+  private pagoIdEnCurso: number | null = null;
+  private reservaIdPendiente: number | null = null;
 
   private valesAplicables: Vale[] = [];
   aplicarValesToggle = false;
@@ -140,32 +142,45 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     this.detenerSeguimientoPago();
     this.ventanaPago = null;
     this.ventanaPagoMonitoreada = null;
+    document.removeEventListener('visibilitychange', this.onVisibilidadPago);
   }
+
+  private readonly onVisibilidadPago = (): void => {
+    if (document.visibilityState !== 'visible' || this.pagoCompletado || !this.pagoIdEnCurso) {
+      return;
+    }
+    const gen = this.pagoSeguimientoGen;
+    const pagoId = this.pagoIdEnCurso;
+    this.pagoService.consultarEstado(pagoId).subscribe({
+      next: (estado) => {
+        if (gen !== this.pagoSeguimientoGen || this.pagoCompletado) return;
+        if (estado.estado === 'COMPLETADO' || estado.estado === 'RECHAZADO') {
+          this.procesarEstadoPago(estado);
+        }
+      },
+    });
+  };
 
   private procesarRetornoMercadoPago(): void {
     const pagoIdRaw = this.route.snapshot.queryParamMap.get('pago_id');
     const pagoId = pagoIdRaw ? Number(pagoIdRaw) : 0;
+    const pagoQuery = this.route.snapshot.queryParamMap.get('pago');
 
     if (pagoId > 0) {
+      this.pagoIdEnCurso = pagoId;
       this.bannerPagoEnCurso = 'Consultando el estado de tu pago con Mercado Pago…';
       this.iniciarPollingPago(pagoId);
       return;
     }
 
-    const statusQuery = this.route.snapshot.queryParamMap.get('status');
-    const pagoQuery = this.route.snapshot.queryParamMap.get('pago');
-
-    if (statusQuery === 'approved' || pagoQuery === 'ok') {
-      this.bannerSuccess = MSG_RESERVA_CONFIRMADA;
-    } else if (
-      statusQuery === 'failure' ||
-      statusQuery === 'rejected' ||
-      statusQuery === 'null' ||
-      pagoQuery === 'fail'
-    ) {
-      this.bannerError = 'Tu pago ha sido rechazado o cancelado.';
-    } else if (pagoQuery === 'pending') {
+    if (pagoQuery === 'pending') {
       this.bannerPagoEnCurso = 'Tu pago está pendiente de acreditación.';
+    } else if (
+      pagoQuery === 'fail' ||
+      this.route.snapshot.queryParamMap.get('status') === 'failure' ||
+      this.route.snapshot.queryParamMap.get('status') === 'rejected'
+    ) {
+      this.bannerError = MSG_RESERVA_PAGO_RECHAZADO;
     }
   }
 
@@ -347,19 +362,8 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
 
   irAMedioCobro(): void {
     if (this.montoFinalReserva() > 0) {
-      this.pasoModal = 'seleccion-medio-cobro';
-      return;
-    }
-    this.confirmarReserva();
-  }
-
-  seleccionarMedioCobro(medio: MedioCobro): void {
-    this.medioCobroElegido = medio;
-
-    if (medio === 'MERCADO_PAGO') {
       this.abrirVentanaPagoPrecargada();
     }
-
     this.confirmarReserva();
   }
 
@@ -373,7 +377,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     if (this.cupoParaConfirmar) {
       const cupo = this.cupoParaConfirmar;
       this.reservasService
-        .confirmarCupoListaEspera(cupo, this.tipoPagoElegido, this.medioCobroElegido, valeId)
+        .confirmarCupoListaEspera(cupo, this.tipoPagoElegido, valeId)
         .subscribe({
           next: (res) => {
             this.cupoAccionId = null;
@@ -399,8 +403,8 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     const clase = this.claseSeleccionada;
     const obs =
       this.modalidadElegida === 'ABONADO'
-        ? this.reservasService.inscribirMensual(clase, valeId, this.medioCobroElegido)
-        : this.reservasService.reservarClase(clase, this.tipoPagoElegido, valeId, this.medioCobroElegido);
+        ? this.reservasService.inscribirMensual(clase, valeId)
+        : this.reservasService.reservarClase(clase, this.tipoPagoElegido, valeId);
 
     obs.subscribe({
       next: (res) => this.onReservaExitosa(res),
@@ -424,11 +428,17 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     message: string;
     reservaId?: number;
     redirectUrl?: string;
-    qrData?: string;
     pagoId?: number;
-    medioCobro?: MedioCobro;
+    pendientePago?: boolean;
   }): void {
     this.isSubmitting = false;
+
+    if (res.pendientePago && res.redirectUrl) {
+      this.reservaIdPendiente = res.reservaId ?? null;
+      this.pagoIdEnCurso = res.pagoId ?? null;
+      this.iniciarFlujoPagoExterno(res.redirectUrl, res.pagoId);
+      return;
+    }
 
     const mensajeExito =
       res.message === MSG_RESERVA_CONFIRMADA_SEÑA
@@ -436,8 +446,9 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
         : MSG_RESERVA_CONFIRMADA;
 
     const esExito =
-      res.message === MSG_RESERVA_CONFIRMADA ||
-      res.message === MSG_RESERVA_CONFIRMADA_SEÑA;
+      !res.pendientePago &&
+      (res.message === MSG_RESERVA_CONFIRMADA ||
+        res.message === MSG_RESERVA_CONFIRMADA_SEÑA);
 
     if (!esExito) {
       if (this.ventanaPago && !this.ventanaPago.closed) {
@@ -448,31 +459,8 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
       this.isReservaIncompleta = true;
       this.pasoModal = 'resultado';
       this.bannerError = res.message;
-      return;
-    }
-
-    if (res.redirectUrl) {
-      this.registrarReservaSiCorresponde(res.reservaId);
-      this.iniciarFlujoPagoExterno(res.redirectUrl, res.pagoId);
-      return;
-    }
-
-    if (res.qrData && res.medioCobro === 'QR') {
-      this.registrarReservaSiCorresponde(res.reservaId);
-      this.recargarClases();
-
-      if (this.esUrlPago(res.qrData)) {
-        this.iniciarFlujoPagoExterno(res.qrData, res.pagoId);
-        return;
-      }
-
-      this.qrDataPago = res.qrData;
-      this.resultadoMsg = res.message;
-      this.pasoModal = 'qr-pago';
       if (res.pagoId) {
-        this.bannerPagoEnCurso =
-          'Escaneá el QR para pagar. Acá veremos la confirmación cuando Mercado Pago la apruebe.';
-        this.iniciarPollingPago(res.pagoId, () => this.cerrarModal());
+        this.liberarReservaPorPagoFallido(res.pagoId);
       }
       return;
     }
@@ -495,16 +483,12 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     }
   }
 
-  private esUrlPago(data: string): boolean {
-    return /^https?:\/\//i.test(data.trim());
-  }
-
   private iniciarFlujoPagoExterno(url: string, pagoId?: number): void {
-    this.recargarClases();
     this.cerrarModal();
     this.bannerSuccess = '';
     this.bannerError = '';
     this.pagoCompletado = false;
+    this.pagoIdEnCurso = pagoId ?? null;
 
     const ventana = this.navegarVentanaPago(url);
 
@@ -517,6 +501,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     }
 
     if (pagoId) {
+      document.addEventListener('visibilitychange', this.onVisibilidadPago);
       this.iniciarPollingPago(pagoId);
       if (ventana) {
         this.iniciarMonitoreoVentanaPago(ventana, pagoId);
@@ -604,65 +589,190 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
 
       if (cerrada) {
         this.detenerMonitoreoVentana();
-        this.detenerSeguimientoPago();
-        this.verificarPagoIncompleto(pagoId);
+        const gen = this.pagoSeguimientoGen;
+        this.detenerPollingPago();
+        document.removeEventListener('visibilitychange', this.onVisibilidadPago);
+        this.manejarCierreVentanaPago(pagoId, gen);
       }
     }, 800);
   }
 
-  private verificarPagoIncompleto(pagoId: number, intento = 0): void {
+  /**
+   * Tras cerrar MP o volver a la pestaña: confirma con el backend una vez
+   * y, si sigue pendiente, abandona el pago y libera la reserva.
+   */
+  private pagoMpEnProceso(mpStatus?: string | null): boolean {
+    return mpStatus === 'pending' || mpStatus === 'in_process';
+  }
+
+  private manejarCierreVentanaPago(pagoId: number, gen = this.pagoSeguimientoGen): void {
     if (this.pagoCompletado) return;
 
-    if (intento === 0) {
-      this.bannerPagoEnCurso = 'Verificando si el pago se completó…';
+    this.bannerPagoEnCurso = 'Verificando si el pago se completó…';
+
+    setTimeout(() => {
+      if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
+
+      this.pagoService.consultarEstado(pagoId).subscribe({
+        next: (estado) => {
+          if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
+          if (estado.estado === 'COMPLETADO') {
+            this.procesarEstadoPago(estado);
+            return;
+          }
+          if (estado.estado === 'RECHAZADO') {
+            this.procesarEstadoPago(estado);
+            return;
+          }
+          if (estado.estado === 'PENDIENTE' && !this.pagoMpEnProceso(estado.mp_status)) {
+            this.abortarPagoPendiente(pagoId, gen);
+            return;
+          }
+          this.abortarPagoIncompletoConReintentos(pagoId, gen);
+        },
+        error: () => {
+          if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
+          this.abortarPagoIncompletoConReintentos(pagoId, gen);
+        },
+      });
+    }, this.cierrePagoGraciaMs);
+  }
+
+  private abortarPagoIncompletoConReintentos(pagoId: number, gen: number, intento = 0): void {
+    if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
+
+    if (intento >= this.reintentosTrasCierre) {
+      this.abortarPagoPendiente(pagoId, gen);
+      return;
     }
 
-    this.pagoService.consultarEstado(pagoId).subscribe({
-      next: (estado) => {
-        if (estado.estado === 'COMPLETADO' || estado.estado === 'RECHAZADO') {
-          this.procesarEstadoPago(estado);
+    setTimeout(() => {
+      if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
+      this.pagoService.consultarEstado(pagoId).subscribe({
+        next: (estado) => {
+          if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
+          if (estado.estado === 'COMPLETADO') {
+            this.procesarEstadoPago(estado);
+            return;
+          }
+          if (estado.estado === 'RECHAZADO') {
+            this.procesarEstadoPago(estado);
+            return;
+          }
+          if (estado.estado === 'PENDIENTE' && !this.pagoMpEnProceso(estado.mp_status)) {
+            this.abortarPagoPendiente(pagoId, gen);
+            return;
+          }
+          this.abortarPagoIncompletoConReintentos(pagoId, gen, intento + 1);
+        },
+        error: () => this.abortarPagoIncompletoConReintentos(pagoId, gen, intento + 1),
+      });
+    }, this.pollingTrasCierreMs);
+  }
+
+  private abortarPagoPendiente(pagoId: number, gen: number): void {
+    if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
+
+    this.detenerPollingPago();
+    this.detenerMonitoreoVentana();
+    document.removeEventListener('visibilitychange', this.onVisibilidadPago);
+    this.bannerPagoEnCurso = '';
+    this.bannerSuccess = '';
+
+    this.pagoService.abandonarPago(pagoId).subscribe({
+      next: (res) => {
+        if (gen !== this.pagoSeguimientoGen) return;
+        if (res.estado === 'COMPLETADO') {
+          this.procesarEstadoPago({
+            estado: 'COMPLETADO',
+            message: res.message || MSG_RESERVA_CONFIRMADA,
+          });
           return;
         }
-        if (intento < this.reintentosTrasCierre) {
-          setTimeout(
-            () => this.verificarPagoIncompleto(pagoId, intento + 1),
-            this.pollingTrasCierreMs,
-          );
-          return;
-        }
-        this.finalizarPagoNoCompletado();
+        this.pagoSeguimientoGen += 1;
+        this.pagoCompletado = true;
+        this.pagoIdEnCurso = null;
+        this.reservaIdPendiente = null;
+        this.bannerError = res.message || MSG_RESERVA_PAGO_INCOMPLETO;
+        this.recargarClases();
       },
-      error: () => {
-        if (intento < this.reintentosTrasCierre) {
-          setTimeout(
-            () => this.verificarPagoIncompleto(pagoId, intento + 1),
-            this.pollingTrasCierreMs,
-          );
+      error: (err) => {
+        if (gen !== this.pagoSeguimientoGen) return;
+        if (err?.status === 409) {
+          this.pagoService.consultarEstado(pagoId).subscribe({
+            next: (estado) => this.procesarEstadoPago(estado),
+          });
           return;
         }
-        this.finalizarPagoNoCompletado();
+        // El backend puede haber confirmado el pago aunque la petición falle en red
+        this.pagoService.consultarEstado(pagoId).subscribe({
+          next: (estado) => {
+            if (gen !== this.pagoSeguimientoGen) return;
+            if (estado.estado === 'COMPLETADO') {
+              this.procesarEstadoPago(estado);
+              return;
+            }
+            this.pagoSeguimientoGen += 1;
+            this.pagoCompletado = true;
+            this.pagoIdEnCurso = null;
+            this.reservaIdPendiente = null;
+            this.bannerError = MSG_RESERVA_PAGO_INCOMPLETO;
+            this.recargarClases();
+          },
+          error: () => {
+            this.pagoSeguimientoGen += 1;
+            this.pagoCompletado = true;
+            this.pagoIdEnCurso = null;
+            this.reservaIdPendiente = null;
+            this.bannerError = MSG_RESERVA_PAGO_INCOMPLETO;
+            this.recargarClases();
+          },
+        });
       },
     });
   }
 
-  private finalizarPagoNoCompletado(mensaje = MSG_RESERVA_PAGO_INCOMPLETO): void {
-    if (this.pagoCompletado) return;
+  private verificarPagoIncompleto(pagoId: number): void {
+    this.manejarCierreVentanaPago(pagoId);
+  }
 
-    this.detenerSeguimientoPago();
-    this.bannerPagoEnCurso = '';
-    this.bannerSuccess = '';
-    this.bannerError = mensaje;
-    this.recargarClases();
+  private finalizarPagoNoCompletado(mensaje = MSG_RESERVA_PAGO_INCOMPLETO): void {
+    if (this.pagoCompletado || !this.pagoIdEnCurso) return;
+    this.abortarPagoPendiente(this.pagoIdEnCurso, this.pagoSeguimientoGen);
+    if (mensaje !== MSG_RESERVA_PAGO_INCOMPLETO) {
+      this.bannerError = mensaje;
+    }
+  }
+
+  private liberarReservaPorPagoFallido(pagoId?: number): void {
+    const id = pagoId ?? this.pagoIdEnCurso;
+    this.pagoIdEnCurso = null;
+    this.reservaIdPendiente = null;
+
+    if (!id) {
+      this.recargarClases();
+      return;
+    }
+
+    this.pagoService.abandonarPago(id).subscribe({
+      next: () => this.recargarClases(),
+      error: () => this.recargarClases(),
+    });
   }
 
   private iniciarPollingPago(pagoId: number, onExito?: () => void): void {
     this.detenerSeguimientoPago();
+    const gen = ++this.pagoSeguimientoGen;
     this.pagoCompletado = false;
+    this.pagoIdEnCurso = pagoId;
 
     const consultar = () => {
-      if (this.pagoCompletado) return;
+      if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
       this.pagoService.consultarEstado(pagoId).subscribe({
-        next: (estado) => this.procesarEstadoPago(estado, onExito),
+        next: (estado) => {
+          if (gen !== this.pagoSeguimientoGen) return;
+          this.procesarEstadoPago(estado, onExito);
+        },
         error: () => {
           /* reintenta en el próximo tick */
         },
@@ -673,23 +783,30 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     this.pollingSub = interval(this.pollingIntervalMs).subscribe(() => consultar());
 
     this.pollingTimeout = setTimeout(() => {
-      if (!this.pagoCompletado) {
-        this.detenerSeguimientoPago();
-        this.verificarPagoIncompleto(pagoId);
+      if (!this.pagoCompletado && gen === this.pagoSeguimientoGen) {
+        this.detenerPollingPago();
+        document.removeEventListener('visibilitychange', this.onVisibilidadPago);
+        this.manejarCierreVentanaPago(pagoId, gen);
       }
     }, this.pollingTimeoutMs);
   }
 
   private procesarEstadoPago(
-    estado: { estado: string; message: string },
+    estado: { estado: string; message: string; mp_status?: string | null },
     onExito?: () => void,
   ): void {
     if (estado.estado === 'COMPLETADO') {
+      if (estado.mp_status !== 'approved') {
+        return;
+      }
       this.pagoCompletado = true;
       this.detenerSeguimientoPago();
       this.bannerPagoEnCurso = '';
       this.bannerError = '';
       this.bannerSuccess = estado.message || MSG_RESERVA_CONFIRMADA;
+      this.registrarReservaSiCorresponde(this.reservaIdPendiente ?? undefined);
+      this.pagoIdEnCurso = null;
+      this.reservaIdPendiente = null;
       this.recargarClases();
       onExito?.();
       return;
@@ -699,7 +816,11 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
       this.pagoCompletado = true;
       this.detenerSeguimientoPago();
       this.bannerPagoEnCurso = '';
-      this.bannerError = estado.message || MSG_RESERVA_INCOMPLETA;
+      this.bannerSuccess = '';
+      this.bannerError = estado.message || MSG_RESERVA_PAGO_RECHAZADO;
+      this.pagoIdEnCurso = null;
+      this.reservaIdPendiente = null;
+      this.recargarClases();
       return;
     }
 
@@ -709,6 +830,8 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
   }
 
   private detenerSeguimientoPago(): void {
+    this.pagoSeguimientoGen += 1;
+    document.removeEventListener('visibilitychange', this.onVisibilidadPago);
     this.detenerPollingPago();
     this.detenerMonitoreoVentana();
   }
@@ -780,7 +903,6 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     this.errorModalMsg = '';
     this.isSubmitting = false;
     this.isReservaIncompleta = false;
-    this.medioCobroElegido = 'MERCADO_PAGO';
 
     const clase = this.clases.find((c) => c.id === cupo.claseId);
     if (clase) {

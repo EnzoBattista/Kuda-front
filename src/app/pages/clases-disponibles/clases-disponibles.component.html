@@ -378,41 +378,6 @@
       </div>
     </ng-container>
 
-    <!-- Paso: medio de cobro -->
-    <ng-container *ngIf="pasoModal === 'seleccion-medio-cobro'">
-      <h3 class="modal-titulo">¿Cómo querés pagar?</h3>
-      <p class="help">Total: ${{ montoFinalReserva() | number }}</p>
-      <p class="error-text" *ngIf="errorModalMsg">{{ errorModalMsg }}</p>
-
-      <div class="opciones-pago">
-        <button class="opcion-btn btn btn-primary" type="button" (click)="seleccionarMedioCobro('MERCADO_PAGO')" [disabled]="isSubmitting">
-          <strong>Pagar con Mercado Pago</strong>
-          <span class="help">Redirección al checkout de MP</span>
-        </button>
-        <button class="opcion-btn btn btn-secondary" type="button" (click)="seleccionarMedioCobro('QR')" [disabled]="isSubmitting">
-          <strong>Pagar con QR</strong>
-          <span class="help">Escaneá el código en recepción o con tu billetera</span>
-        </button>
-      </div>
-
-      <div class="form-actions">
-        <button class="btn btn-secondary" type="button" (click)="pasoModal = 'confirmacion'" [disabled]="isSubmitting">Volver</button>
-      </div>
-    </ng-container>
-
-    <!-- Paso: QR de pago -->
-    <ng-container *ngIf="pasoModal === 'qr-pago'">
-      <h3 class="modal-titulo">Pagá con QR</h3>
-      <p class="help">{{ resultadoMsg }}</p>
-      <div class="qr-pago-panel" *ngIf="qrDataPago">
-        <qrcode [qrdata]="qrDataPago" [width]="220" errorCorrectionLevel="M" elementType="canvas"></qrcode>
-        <p class="help">Mostrá este código en recepción o escanealo con tu app de pagos.</p>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-primary" type="button" (click)="cerrarModal()">Listo</button>
-      </div>
-    </ng-container>
-
     <!-- Paso: resultado exitoso o incompleto -->
     <ng-container *ngIf="pasoModal === 'resultado'">
       <div [class]="isReservaIncompleta ? 'resultado-warning' : 'resultado-ok'">
