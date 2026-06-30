@@ -12,45 +12,40 @@
       Completá tus datos. Debés ser mayor de 14 años para registrarte.
     </p>
 
-    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()" ngNativeValidate>
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Nombre</div>
-          <input class="control" formControlName="nombre" [attr.aria-invalid]="submitted && form.controls.nombre.invalid ? 'true' : 'false'" />
-          <div class="error-text" *ngIf="submitted && form.controls.nombre.hasError('required')">El nombre es obligatorio.</div>
+          <input class="control" formControlName="nombre" required />
         </div>
 
         <div class="field">
           <div class="label">Apellido</div>
-          <input class="control" formControlName="apellido" [attr.aria-invalid]="submitted && form.controls.apellido.invalid ? 'true' : 'false'" />
-          <div class="error-text" *ngIf="submitted && form.controls.apellido.hasError('required')">El apellido es obligatorio.</div>
+          <input class="control" formControlName="apellido" required />
         </div>
       </div>
 
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">DNI</div>
-          <input class="control" formControlName="dni" inputmode="numeric" [attr.aria-invalid]="submitted && form.controls.dni.invalid ? 'true' : 'false'" />
-          <div class="error-text" *ngIf="submitted && form.controls.dni.hasError('required')">El DNI es obligatorio.</div>
+          <input class="control" formControlName="dni" inputmode="numeric" required />
         </div>
 
         <div class="field">
           <div class="label">Teléfono</div>
-          <input class="control" formControlName="telefono" inputmode="tel" [attr.aria-invalid]="submitted && form.controls.telefono.invalid ? 'true' : 'false'" />
-          <div class="error-text" *ngIf="submitted && form.controls.telefono.hasError('required')">El teléfono es obligatorio.</div>
+          <input class="control" formControlName="telefono" inputmode="tel" required />
         </div>
       </div>
 
       <div class="field">
         <div class="label">Email</div>
-        <input class="control" type="text" formControlName="email" autocomplete="email" [attr.aria-invalid]="submitted && form.controls.email.invalid ? 'true' : 'false'" />
-        <div class="error-text" *ngIf="submitted && form.controls.email.hasError('required')">El email es obligatorio.</div>
+        <input class="control" type="email" formControlName="email" autocomplete="email" required />
       </div>
 
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Género</div>
-          <select class="control" formControlName="genero">
+          <select class="control" formControlName="genero" required>
             <option value="femenino">Femenino</option>
             <option value="masculino">Masculino</option>
             <option value="otro">Otro</option>
@@ -64,11 +59,8 @@
             type="date"
             formControlName="fechaNacimiento"
             [max]="maxFechaNacimiento"
-            [attr.aria-invalid]="submitted && form.controls.fechaNacimiento.invalid ? 'true' : 'false'"
+            required
           />
-          <div class="error-text" *ngIf="submitted && form.controls.fechaNacimiento.hasError('required')">
-            La fecha de nacimiento es obligatoria.
-          </div>
         </div>
       </div>
 
@@ -78,26 +70,20 @@
           class="control"
           type="file"
           (change)="onFichaMedicaSelected($event)"
-          [attr.aria-invalid]="submitted && form.controls.fichaMedicaFile.invalid ? 'true' : 'false'"
+          required
         />
         <div class="help" *ngIf="fichaMedicaFileName">Archivo: {{ fichaMedicaFileName }}</div>
-        <div class="error-text" *ngIf="submitted && form.controls.fichaMedicaFile.hasError('required')">
-          La ficha médica es obligatoria.
-        </div>
       </div>
 
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Contraseña</div>
-          <input class="control" type="password" formControlName="password" autocomplete="new-password" [attr.aria-invalid]="(submitted && form.controls.password.invalid) || (form.controls.password.touched && form.controls.password.hasError('minlength')) ? 'true' : 'false'" />
-          <div class="error-text" *ngIf="submitted && form.controls.password.hasError('required')">La contraseña es obligatoria.</div>
-          <div class="error-text" *ngIf="form.controls.password.touched && form.controls.password.hasError('minlength')">La contraseña debe tener al menos 8 caracteres.</div>
+          <input class="control" type="password" formControlName="password" autocomplete="new-password" required />
         </div>
 
         <div class="field">
           <div class="label">Confirmar contraseña</div>
-          <input class="control" type="password" formControlName="confirmPassword" autocomplete="new-password" [attr.aria-invalid]="submitted && form.controls.confirmPassword.invalid ? 'true' : 'false'" />
-          <div class="error-text" *ngIf="submitted && form.controls.confirmPassword.hasError('required')">Confirmá tu contraseña.</div>
+          <input class="control" type="password" formControlName="confirmPassword" autocomplete="new-password" required />
         </div>
       </div>
 
@@ -106,7 +92,7 @@
         <button
           class="btn btn-primary"
           type="submit"
-          [disabled]="isSubmitting || form.invalid"
+          [disabled]="isSubmitting"
         >
           {{ isSubmitting ? 'Registrando…' : 'Registrarse' }}
         </button>

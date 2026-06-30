@@ -425,40 +425,5 @@
       </div>
     </ng-container>
 
-    <!-- Paso: medio de cobro para completar seña -->
-    <ng-container *ngIf="modalPaso === 'seleccion-medio-cobro' && reservaSeleccionada as r">
-      <h3 class="modal-titulo">Completar pago de seña</h3>
-      <p class="help">Restante a abonar: ${{ (r.montoTotal ?? 0) - (r.montoAbonado ?? 0) | number }}</p>
-      <p class="error-text" *ngIf="errorCompletarSena">{{ errorCompletarSena }}</p>
-
-      <div class="opciones-pago" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem;">
-        <button class="opcion-btn btn btn-primary" type="button" (click)="seleccionarMedioCobroSena('MERCADO_PAGO')" [disabled]="isCompletandoSena" style="display: flex; flex-direction: column; align-items: center; padding: 1rem;">
-          <strong>Pagar con Mercado Pago</strong>
-          <span class="help" style="font-size: 0.8rem; opacity: 0.8;">Redirección al checkout de MP</span>
-        </button>
-        <button class="opcion-btn btn btn-secondary" type="button" (click)="seleccionarMedioCobroSena('QR')" [disabled]="isCompletandoSena" style="display: flex; flex-direction: column; align-items: center; padding: 1rem;">
-          <strong>Pagar con QR</strong>
-          <span class="help" style="font-size: 0.8rem; opacity: 0.8;">Escaneá el código en recepción o con tu billetera</span>
-        </button>
-      </div>
-
-      <div class="form-actions" style="margin-top: 1.5rem;">
-        <button class="btn btn-secondary" type="button" (click)="modalPaso = 'detalle'" [disabled]="isCompletandoSena" style="width: 100%;">Volver</button>
-      </div>
-    </ng-container>
-
-    <!-- Paso: QR de pago -->
-    <ng-container *ngIf="modalPaso === 'qr-pago' && reservaSeleccionada as r">
-      <h3 class="modal-titulo">Pagá con QR</h3>
-      <p class="help" style="text-align: center; margin-bottom: 1rem;">Monto a pagar: ${{ (r.montoTotal ?? 0) - (r.montoAbonado ?? 0) | number }}</p>
-      <div class="qr-pago-panel" *ngIf="qrDataPago" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 1rem; background: #fff; border-radius: 8px;">
-        <qrcode [qrdata]="qrDataPago" [width]="220" errorCorrectionLevel="M" elementType="canvas"></qrcode>
-        <p class="help" style="text-align: center; margin-top: 0.5rem;">Mostrá este código en recepción o escanealo con tu app de pagos.</p>
-      </div>
-      <div class="form-actions" style="margin-top: 1.5rem;">
-        <button class="btn btn-primary" type="button" (click)="cerrarModal()" style="width: 100%;">Listo</button>
-      </div>
-    </ng-container>
-
   </div>
 </div>

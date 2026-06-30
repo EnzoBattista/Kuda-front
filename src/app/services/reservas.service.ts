@@ -9,7 +9,7 @@ import { Observable, forkJoin, of, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { isClaseActiva } from './clases.service';
-import { PagoService, MedioCobro } from './pago.service';
+import { PagoService } from './pago.service';
 import { Clase } from '../models/clase.model';
 import { environment } from '../../environments/environment';
 import { CupoPendienteLista } from './lista-espera.service';
@@ -21,10 +21,14 @@ export type TipoPago = 'PAGO_COMPLETO' | 'SEÑA';
 export type TipoListaEspera = 'ABONADO' | 'INDIVIDUAL';
 
 export const MSG_RESERVA_CONFIRMADA = 'Tu pago fue registrado exitosamente.';
+export const MSG_PAGO_PENDIENTE_MP =
+  'Completá el pago en Mercado Pago para confirmar tu reserva.';
 export const MSG_RESERVA_CONFIRMADA_SEÑA = 'Tu seña fue registrada exitosamente';
 export const MSG_RESERVA_INCOMPLETA = 'Hubo un problema con el pago.';
 export const MSG_RESERVA_PAGO_INCOMPLETO =
   'El pago no se completó. Tu reserva no fue confirmada. Elegí la clase nuevamente para intentarlo otra vez.';
+export const MSG_RESERVA_PAGO_RECHAZADO =
+  'Tu pago fue rechazado. La reserva no fue confirmada. Podés intentarlo de nuevo con otro medio de pago.';
 export const MSG_RESERVA_CANCELADA = 'La cancelación se realizó con éxito.';
 export const HORAS_MINIMAS_SEÑA = 10;
 
@@ -104,9 +108,8 @@ export interface ResultadoReserva {
   message: string;
   reservaId: number;
   redirectUrl?: string;
-  qrData?: string;
   pagoId?: number;
-  medioCobro?: MedioCobro;
+  pendientePago?: boolean;
 }
 
 interface ReservaApiDto {
@@ -544,7 +547,6 @@ export class ReservasService {
   inscribirMensual(
     clase: ClaseDisponible,
     valeId?: number,
-    medioCobro: MedioCobro = 'MERCADO_PAGO',
   ): Observable<ResultadoReserva> {
     const email = this.auth.getCurrentUser()?.email;
     if (!email) {
@@ -581,7 +583,6 @@ export class ReservasService {
             monto,
             reservaId,
             'PAGO_COMPLETO',
-            medioCobro,
             inscripcion.id,
           );
         }),
@@ -596,7 +597,6 @@ export class ReservasService {
     clase: ClaseDisponible,
     tipoPago: TipoPago,
     valeId?: number,
-    medioCobro: MedioCobro = 'MERCADO_PAGO',
   ): Observable<ResultadoReserva> {
     const email = this.auth.getCurrentUser()?.email;
     if (!email) {
@@ -625,7 +625,7 @@ export class ReservasService {
           return this.confirmarReservaConAbono(clase, activas, abono);
         }
 
-        return this.crearInscripcionIndividual(clase, tipoPago, email, valeId, medioCobro);
+        return this.crearInscripcionIndividual(clase, tipoPago, email, valeId);
       }),
       catchError((err) => throwError(() => this.toHttpError(err))),
     );
@@ -715,7 +715,6 @@ export class ReservasService {
   confirmarCupoListaEspera(
     cupo: CupoPendienteLista,
     tipoPago: TipoPago,
-    medioCobro: MedioCobro = 'MERCADO_PAGO',
     valeId?: number,
   ): Observable<ResultadoReserva> {
     const email = this.auth.getCurrentUser()?.email;
@@ -769,7 +768,6 @@ export class ReservasService {
             monto,
             reservaId,
             tipoPago,
-            medioCobro,
             res.inscripcion_mensual_id,
             res.inscripcion_individual_id,
           );
@@ -864,7 +862,6 @@ export class ReservasService {
     tipoPago: TipoPago,
     email: string,
     valeId?: number,
-    medioCobro: MedioCobro = 'MERCADO_PAGO',
   ): Observable<ResultadoReserva> {
     if (
       tipoPago === 'SEÑA' &&
@@ -898,15 +895,12 @@ export class ReservasService {
       .pipe(
         switchMap((inscripcion) => {
           const reservaId = inscripcion.reservas?.[0]?.id ?? 0;
-          if (reservaId) {
-            this.recordarReservaCreada(clase.id, clase.proximaFecha, reservaId);
-          }
+          const monto = this.montoACobrarIndividual(inscripcion, tipoPago);
           return this.finalizarConPagoOpcional(
             clase,
-            Number(inscripcion.monto_pagado ?? 0),
+            monto,
             reservaId || inscripcion.id,
             tipoPago,
-            medioCobro,
             undefined,
             inscripcion.id,
           );
@@ -920,7 +914,6 @@ export class ReservasService {
     monto: number,
     reservaId: number,
     tipoPago: TipoPago = 'PAGO_COMPLETO',
-    medioCobro: MedioCobro = 'MERCADO_PAGO',
     inscripcionMensualId?: number,
     inscripcionIndividualId?: number,
   ): Observable<ResultadoReserva> {
@@ -937,39 +930,6 @@ export class ReservasService {
     const titulo = `${clase.actividad} — ${clase.proximaFecha}`;
     const email = this.auth.getCurrentUser()?.email;
     const idReserva = reservaId > 0 ? reservaId : 0;
-
-    if (medioCobro === 'QR') {
-      return this.pagoService
-        .generarPagoQr({
-          monto,
-          concepto: titulo,
-          cliente_email: email,
-          reserva_id: idReserva > 0 ? idReserva : undefined,
-          inscripcion_mensual_id: inscripcionMensualId,
-          origen: inscripcionMensualId ? 'MENSUALIDAD' : 'CLASE_SUELTA',
-          origen_id: inscripcionMensualId ?? inscripcionIndividualId,
-        })
-        .pipe(
-          map((qr) => {
-            if (!qr.qr_data?.trim()) {
-              throw new Error('No se pudo generar el código QR de pago');
-            }
-            return {
-              message: okMessage,
-              reservaId: idReserva,
-              qrData: qr.qr_data,
-              pagoId: qr.pago_id,
-              medioCobro: 'QR' as MedioCobro,
-            } satisfies ResultadoReserva;
-          }),
-          catchError((err) =>
-            of({
-              message: this.mensajeErrorPago(err),
-              reservaId: idReserva,
-            } satisfies ResultadoReserva),
-          ),
-        );
-    }
 
     return this.pagoService
       .createPreference({
@@ -988,27 +948,52 @@ export class ReservasService {
             throw new Error('Mercado Pago no devolvió URL de checkout');
           }
           return {
-            message: okMessage,
+            message: MSG_PAGO_PENDIENTE_MP,
             reservaId: idReserva,
             redirectUrl,
             pagoId: pref.pago_id,
-            medioCobro: 'MERCADO_PAGO' as MedioCobro,
+            pendientePago: true,
           } satisfies ResultadoReserva;
         }),
         catchError((err) =>
-          of({
-            message: this.mensajeErrorPago(err),
-            reservaId: idReserva,
-          } satisfies ResultadoReserva),
+          this.pagoService
+            .liberarReservaPendiente({
+              reserva_id: idReserva > 0 ? idReserva : undefined,
+              inscripcion_mensual_id: inscripcionMensualId,
+              inscripcion_individual_id: inscripcionIndividualId,
+            })
+            .pipe(
+              catchError(() => of(null)),
+              map(
+                () =>
+                  ({
+                    message: this.mensajeErrorPago(err),
+                    reservaId: 0,
+                  }) satisfies ResultadoReserva,
+              ),
+            ),
         ),
       );
   }
 
   /** Id de reserva real; nunca usar el id de inscripción como reserva_id en pagos. */
+  /** Id de reserva real; nunca usar el id de inscripción como reserva_id en pagos. */
   private reservaIdDesdeInscripcion(inscripcion: {
     reservas?: { id: number }[];
   }): number {
     return inscripcion.reservas?.[0]?.id ?? 0;
+  }
+
+  private montoACobrarIndividual(
+    inscripcion: InscripcionIndividualApi,
+    tipoPago: TipoPago,
+  ): number {
+    const total = Number(inscripcion.monto_total ?? 0);
+    const pagado = Number(inscripcion.monto_pagado ?? 0);
+    if (tipoPago === 'SEÑA') {
+      return pagado > 0 ? pagado : total / 2;
+    }
+    return pagado > 0 ? pagado : total;
   }
 
   private mensajeErrorPago(err: unknown): string {

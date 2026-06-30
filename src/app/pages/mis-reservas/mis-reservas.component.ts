@@ -5,14 +5,14 @@ import { Subscription, interval } from 'rxjs';
 
 import {
   MSG_RESERVA_CANCELADA,
+  MSG_RESERVA_PAGO_RECHAZADO,
   ReservaHistorial,
   ReservasService,
   ResultadoCancelacion,
 } from '../../services/reservas.service';
 import { FechaArPipe } from '../../shared/pipes/fecha-ar.pipe';
 import { AuthService } from '../../services/auth.service';
-import { MedioCobro, PagoService } from '../../services/pago.service';
-import { QRCodeComponent } from 'angularx-qrcode';
+import { PagoService } from '../../services/pago.service';
 
 interface AbonadoGrupo {
   mensualId: number;
@@ -40,7 +40,7 @@ interface CardItem {
 @Component({
   selector: 'app-mis-reservas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FechaArPipe, QRCodeComponent],
+  imports: [CommonModule, ReactiveFormsModule, FechaArPipe],
   templateUrl: './mis-reservas.component.html',
   styleUrl: './mis-reservas.component.css',
 })
@@ -67,17 +67,13 @@ export class MisReservasComponent implements OnInit, OnDestroy {
     | 'detalle'
     | 'detalle-grupo'
     | 'confirmar-cancelacion'
-    | 'resultado-cancelacion'
-    | 'seleccion-medio-cobro'
-    | 'qr-pago' = 'detalle';
+    | 'resultado-cancelacion' = 'detalle';
   resultadoCancelacion: ResultadoCancelacion | null = null;
   isCancelando = false;
   errorCancelacion = '';
   isCompletandoSena = false;
   errorCompletarSena = '';
 
-  medioCobroElegido: MedioCobro = 'MERCADO_PAGO';
-  qrDataPago = '';
   bannerPagoEnCurso = '';
   pagoCompletado = false;
   private pollingSub: Subscription | null = null;
@@ -375,20 +371,12 @@ export class MisReservasComponent implements OnInit, OnDestroy {
     if (!r.inscripcionIndividualId) return;
     this.scrollPosition = window.scrollY;
     this.reservaSeleccionada = r;
-    this.modalPaso = 'seleccion-medio-cobro';
     this.errorCompletarSena = '';
     this.isCompletandoSena = false;
-    this.qrDataPago = '';
     this.detenerSeguimientoPago();
-    setTimeout(() => window.scrollTo(0, this.scrollPosition), 0);
-  }
-
-  seleccionarMedioCobroSena(medio: MedioCobro): void {
-    this.medioCobroElegido = medio;
-    if (medio === 'MERCADO_PAGO') {
-      this.abrirVentanaPagoPrecargada();
-    }
+    this.abrirVentanaPagoPrecargada();
     this.iniciarPagoSena();
+    setTimeout(() => window.scrollTo(0, this.scrollPosition), 0);
   }
 
   iniciarPagoSena(): void {
@@ -403,76 +391,34 @@ export class MisReservasComponent implements OnInit, OnDestroy {
     const titulo = `Saldo Seña: ${r.actividad} — ${r.proximaFecha ?? r.fechaReserva}`;
     const email = this.authService.getCurrentUser()?.email;
 
-    if (this.medioCobroElegido === 'QR') {
-      this.pagoService
-        .generarPagoQr({
-          monto,
-          concepto: titulo,
-          cliente_email: email,
-          reserva_id: r.id,
-          origen: 'SALDO_SEÑA',
-          origen_id: r.inscripcionIndividualId,
-        })
-        .subscribe({
-          next: (res) => {
-            this.isCompletandoSena = false;
-            this.cargarReservas();
-            if (this.esUrlPago(res.qr_data)) {
-              this.iniciarFlujoPagoExterno(res.qr_data, res.pago_id);
-              return;
-            }
-            this.qrDataPago = res.qr_data;
-            this.modalPaso = 'qr-pago';
-            if (res.pago_id) {
-              this.bannerPagoEnCurso =
-                'Escaneá el QR para pagar. Acá veremos la confirmación cuando Mercado Pago la apruebe.';
-              this.iniciarPollingPago(res.pago_id, () => {
-                this.bannerSuccess = 'Seña completada correctamente. Tu reserva está confirmada con pago completo.';
-                this.cerrarModal();
-                this.cargarReservas();
-              });
-            }
-          },
-          error: (err) => {
-            this.isCompletandoSena = false;
-            this.errorCompletarSena = this.pagoService.mensajeError(err);
-            this.modalPaso = 'seleccion-medio-cobro';
-          },
-        });
-    } else {
-      this.pagoService
-        .createPreference({
-          tituloPlan: titulo,
-          precio: monto,
-          cliente_email: email,
-          reserva_id: r.id,
-          origen: 'SALDO_SEÑA',
-          origen_id: r.inscripcionIndividualId,
-        })
-        .subscribe({
-          next: (res) => {
-            this.isCompletandoSena = false;
-            const redirectUrl = res.init_point || res.sandbox_init_point;
-            if (!redirectUrl) {
-              this.errorCompletarSena = 'Mercado Pago no devolvió URL de checkout';
-              this.modalPaso = 'seleccion-medio-cobro';
-              if (this.ventanaPago) this.ventanaPago.close();
-              return;
-            }
-            this.iniciarFlujoPagoExterno(redirectUrl, res.pago_id);
-          },
-          error: (err) => {
-            this.isCompletandoSena = false;
-            this.errorCompletarSena = this.pagoService.mensajeError(err);
-            this.modalPaso = 'seleccion-medio-cobro';
+    this.pagoService
+      .createPreference({
+        tituloPlan: titulo,
+        precio: monto,
+        cliente_email: email,
+        reserva_id: r.id,
+        origen: 'SALDO_SEÑA',
+        origen_id: r.inscripcionIndividualId,
+      })
+      .subscribe({
+        next: (res) => {
+          this.isCompletandoSena = false;
+          const redirectUrl = res.init_point || res.sandbox_init_point;
+          if (!redirectUrl) {
+            this.errorCompletarSena = 'Mercado Pago no devolvió URL de checkout';
+            this.modalPaso = 'detalle';
             if (this.ventanaPago) this.ventanaPago.close();
-          },
-        });
-    }
-  }
-
-  private esUrlPago(data: string): boolean {
-    return /^https?:\/\//i.test(data.trim());
+            return;
+          }
+          this.iniciarFlujoPagoExterno(redirectUrl, res.pago_id);
+        },
+        error: (err) => {
+          this.isCompletandoSena = false;
+          this.errorCompletarSena = this.pagoService.mensajeError(err);
+          this.modalPaso = 'detalle';
+          if (this.ventanaPago) this.ventanaPago.close();
+        },
+      });
   }
 
   private abrirVentanaPagoPrecargada(): boolean {
@@ -658,10 +604,13 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   }
 
   private procesarEstadoPago(
-    estado: { estado: string; message: string },
+    estado: { estado: string; message: string; mp_status?: string | null },
     onExito?: () => void,
   ): void {
     if (estado.estado === 'COMPLETADO') {
+      if (estado.mp_status !== 'approved') {
+        return;
+      }
       this.pagoCompletado = true;
       this.detenerSeguimientoPago();
       this.bannerPagoEnCurso = '';
@@ -676,7 +625,8 @@ export class MisReservasComponent implements OnInit, OnDestroy {
       this.pagoCompletado = true;
       this.detenerSeguimientoPago();
       this.bannerPagoEnCurso = '';
-      this.bannerError = estado.message || 'Hubo un problema con el pago.';
+      this.bannerSuccess = '';
+      this.bannerError = estado.message || MSG_RESERVA_PAGO_RECHAZADO;
       return;
     }
 

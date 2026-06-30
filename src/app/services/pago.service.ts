@@ -162,6 +162,21 @@ export class PagoService {
     return this.http.get<EstadoPagoResponse>(`${this.apiUrl}/${pagoId}/estado`);
   }
 
+  abandonarPago(pagoId: number): Observable<{ id: number; estado: EstadoPago; message: string }> {
+    return this.http.post<{ id: number; estado: EstadoPago; message: string }>(
+      `${this.apiUrl}/${pagoId}/abandonar`,
+      {},
+    );
+  }
+
+  liberarReservaPendiente(payload: {
+    reserva_id?: number;
+    inscripcion_mensual_id?: number;
+    inscripcion_individual_id?: number;
+  }): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/liberar-pendiente`, payload);
+  }
+
   mensajeError(err: unknown): string {
     if (err instanceof HttpErrorResponse) {
       const body = err.error;
