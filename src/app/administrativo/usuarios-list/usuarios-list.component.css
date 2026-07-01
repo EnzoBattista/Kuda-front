@@ -68,12 +68,12 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1.4fr 2fr 1fr minmax(170px, 1fr) minmax(300px, 1.7fr);
+  grid-template-columns: 1.4fr 2fr 1fr minmax(170px, 1fr) minmax(380px, 1.7fr);
   gap: 0.75rem;
   padding: 0.7rem 1rem;
   border-bottom: 1px solid var(--border);
   align-items: center;
-  min-width: 860px;
+  min-width: 980px;
 }
 
 /* Que el contenido (p. ej. el badge "Pendiente confirmación") no infle su

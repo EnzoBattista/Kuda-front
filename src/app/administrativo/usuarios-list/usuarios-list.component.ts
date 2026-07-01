@@ -37,7 +37,8 @@ export class UsuariosListComponent implements OnInit {
   private readonly ordenEstado: Record<string, number> = {
     ACTIVO: 0,
     PENDIENTE: 1,
-    ELIMINADO: 2,
+    DESACTIVADO: 2,
+    ELIMINADO: 3,
   };
 
   showModalNotificar = false;
@@ -109,6 +110,7 @@ export class UsuariosListComponent implements OnInit {
   estadoLabel(usuario: UsuarioListado): string {
     if (usuario.estado === 'ACTIVO') return 'Activo';
     if (usuario.estado === 'PENDIENTE') return 'Pendiente confirmación';
+    if (usuario.estado === 'DESACTIVADO') return 'Desactivado';
     if (usuario.estado === 'ELIMINADO') return 'Eliminado';
     return usuario.activo ? 'Activo' : 'Inactivo';
   }
@@ -241,6 +243,28 @@ export class UsuariosListComponent implements OnInit {
         this.isLoading = false;
         this.eliminarSubmitting = false;
         this.cerrarModalEliminar();
+      }
+    });
+  }
+
+  toggleEstado(usuario: UsuarioListado): void {
+    if (!usuario || usuario.estado === 'ELIMINADO') return;
+    
+    this.isLoading = true;
+    this.gestion.toggleEstado(usuario.email).subscribe({
+      next: (res) => {
+        this.toast.showSuccess(res.message);
+        // Reload list
+        const valores: UsuariosFiltro = this.filtros.getRawValue();
+        valores.rol = 'CLIENTE';
+        this.gestion.getAll(valores).subscribe((data) => {
+          this.usuarios = this.ordenarPorEstado(data ?? []);
+          this.isLoading = false;
+        });
+      },
+      error: () => {
+        this.toast.showError('Error al cambiar el estado del cliente');
+        this.isLoading = false;
       }
     });
   }

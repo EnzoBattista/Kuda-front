@@ -6,8 +6,8 @@
   <form class="filtros-form" [formGroup]="filtros" (ngSubmit)="onFiltrar()">
     <div class="filtros-row">
       <div class="field">
-        <label class="label" for="filtro-email">Cliente (email)</label>
-        <input id="filtro-email" class="control" formControlName="cliente_email" />
+        <label class="label" for="filtro-email">Buscar</label>
+        <input id="filtro-email" class="control" formControlName="cliente_email" placeholder="Email del cliente..." />
       </div>
       <div class="field">
         <label class="label" for="filtro-desde">Desde</label>
@@ -17,8 +17,9 @@
         <label class="label" for="filtro-hasta">Hasta</label>
         <input id="filtro-hasta" class="control" type="date" formControlName="hasta" />
       </div>
-      <div class="field field-action">
-        <button type="submit" class="btn btn-secondary">Ver pagos</button>
+      <div class="field field-action" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button type="submit" class="btn btn-secondary" style="flex: 1;">Ver pagos</button>
+        <button type="button" class="btn btn-secondary" style="flex: 1; background: #fff; border: 1px solid var(--border); color: var(--muted);" (click)="limpiarFiltros()">Limpiar filtros</button>
       </div>
     </div>
   </form>
@@ -37,6 +38,7 @@
       </div>
       <p class="help">{{ p.concepto || '—' }}</p>
       <p><strong>{{ clienteNombre(p) }}</strong></p>
+      <p class="help">{{ p.cliente_email }}</p>
       <p class="help">{{ formatFecha(p.fecha) }} · {{ metodoLabel(p.metodo) }}</p>
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" (click)="abrirComprobante(p)">

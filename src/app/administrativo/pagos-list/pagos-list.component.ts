@@ -65,8 +65,9 @@ export class PagosListComponent implements OnInit {
           }
           this.isLoading = false;
         },
-        error: (err) => {
-          this.errorMsg = this.pagoService.mensajeError(err);
+        error: () => {
+          this.errorMsg = '';
+          this.emptyMsg = 'No se han encontrado pagos';
           this.pagos = [];
           this.isLoading = false;
         },
@@ -74,6 +75,11 @@ export class PagosListComponent implements OnInit {
   }
 
   onFiltrar(): void {
+    this.cargarPagos();
+  }
+
+  limpiarFiltros(): void {
+    this.filtros.reset();
     this.cargarPagos();
   }
 

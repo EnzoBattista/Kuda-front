@@ -17,7 +17,7 @@ export interface UsuarioListado {
 }
 
 export type RolFiltro = '' | 'DUEÑO' | 'RECEPCIONISTA' | 'CLIENTE';
-export type EstadoFiltro = '' | 'ACTIVO' | 'PENDIENTE' | 'ELIMINADO';
+export type EstadoFiltro = '' | 'ACTIVO' | 'PENDIENTE' | 'DESACTIVADO' | 'ELIMINADO';
 export type TipoInscripcionFiltro = '' | 'ABONADO' | 'NO_ABONADO';
 export type TipoInscripcion = 'ABONADO' | 'NO_ABONADO';
 
@@ -151,6 +151,13 @@ export class GestionUsuariosService {
   eliminarCliente(email: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(
       `${this.clientesUrl}/${encodeURIComponent(email)}`,
+    );
+  }
+
+  toggleEstado(email: string): Observable<{ message: string; usuario: UsuarioListado }> {
+    return this.http.patch<{ message: string; usuario: UsuarioListado }>(
+      `${this.apiUrl}/${encodeURIComponent(email)}/estado`,
+      {}
     );
   }
 
