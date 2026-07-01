@@ -287,7 +287,13 @@ export class ClasesListComponent implements OnInit {
       return of(item);
     }
     return this.clasesService.getCupoOcupado(clase.id, fecha).pipe(
-      map((ocupado) => ({ ...item, cupoOcupado: ocupado })),
+      // El backend suma "bloqueos" de lista de espera al conteo de ACTIVA, así que
+      // el ocupado puede venir mayor al cupo. La ocupación real nunca supera el cupo.
+      map((ocupado) => ({
+        ...item,
+        cupoOcupado:
+          item.cupoMaximo > 0 ? Math.min(ocupado, item.cupoMaximo) : ocupado,
+      })),
       catchError(() => of(item)),
     );
   }
