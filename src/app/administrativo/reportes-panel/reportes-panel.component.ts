@@ -47,7 +47,6 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
   @ViewChild('chartIngresosMes') chartIngresosMesRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartHorarios') chartHorariosRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('chartDetalle') chartDetalleRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('chartDetalleMetodo') chartDetalleMetodoRef!: ElementRef<HTMLCanvasElement>;
 
   isLoading = true;
   refrescando = false;
@@ -75,7 +74,6 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
 
   private charts: Chart[] = [];
   private chartDetalle: Chart | null = null;
-  private chartDetalleMetodo: Chart | null = null;
 
   ngOnInit(): void {
     const anioActual = new Date().getFullYear();
@@ -156,14 +154,6 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
     return this.reportes.formatearMoneda(valor);
   }
 
-  formatearMetodo(metodo: string): string {
-    return this.reportes.formatearMetodo(metodo);
-  }
-
-  labelHorario(item: HorarioPopular): string {
-    return `${item.nombre} · ${item.dia_semana} ${item.hora_inicio}`;
-  }
-
   // ─── Resúmenes de las cards ─────────────────────────────────────────────────
 
   get topHorario(): HorarioPopular | null {
@@ -227,13 +217,6 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
         value: this.formatearMoneda(this.ingresos?.total_historico ?? 0),
       },
     ];
-    const top = this.ingresos?.por_metodo?.[0];
-    if (top) {
-      chips.push({
-        label: this.formatearMetodo(top.metodo),
-        value: this.formatearMoneda(top.total),
-      });
-    }
     return chips;
   }
 
@@ -253,7 +236,7 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
   // ─── Modal "Visualizar reporte" ─────────────────────────────────────────────
 
   get usaCategoria(): boolean {
-    return this.reporteActivo === 'ingresos' || this.reporteActivo === 'horarios';
+    return this.reporteActivo === 'ingresos';
   }
 
   get usaAnio(): boolean {
@@ -322,7 +305,7 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
         error: (err) => this.onDetalleError(err),
       });
     } else if (this.reporteActivo === 'horarios') {
-      this.reportes.getHorariosSeleccionados(anio, actId).subscribe({
+      this.reportes.getHorariosSeleccionados(anio).subscribe({
         next: (data) => this.onDetalleOk(() => (this.detalleHorarios = data)),
         error: (err) => this.onDetalleError(err),
       });
@@ -488,31 +471,6 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
     };
   }
 
-  private configIngresosMetodo(): ChartConfiguration<'doughnut'> {
-    const serie = this.ingresos?.por_metodo ?? [];
-    return {
-      type: 'doughnut',
-      data: {
-        labels: serie.map((s) => this.formatearMetodo(s.metodo)),
-        datasets: [
-          {
-            data: serie.map((s) => s.total),
-            backgroundColor: serie.map((_, i) => COLORES[i % COLORES.length]),
-            borderWidth: 2,
-            borderColor: '#fff',
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'bottom' },
-        },
-      },
-    };
-  }
-
   private configHorarios(): ChartConfiguration<'bar'> {
     const top = this.horariosPopulares.slice(0, 8);
     return {
@@ -552,12 +510,6 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
       if (config) {
         const ctx = this.chartDetalleRef?.nativeElement?.getContext('2d');
         if (ctx) this.chartDetalle = new Chart(ctx, config);
-      }
-
-      // En el reporte de ingresos sumamos la distribución histórica por método.
-      if (this.reporteActivo === 'ingresos' && (this.ingresos?.por_metodo?.length ?? 0) > 0) {
-        const ctxMetodo = this.chartDetalleMetodoRef?.nativeElement?.getContext('2d');
-        if (ctxMetodo) this.chartDetalleMetodo = new Chart(ctxMetodo, this.configIngresosMetodo());
       }
     });
   }
@@ -662,7 +614,5 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
   private destruirChartDetalle(): void {
     this.chartDetalle?.destroy();
     this.chartDetalle = null;
-    this.chartDetalleMetodo?.destroy();
-    this.chartDetalleMetodo = null;
   }
 }

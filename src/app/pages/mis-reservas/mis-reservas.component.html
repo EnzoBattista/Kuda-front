@@ -411,14 +411,7 @@
     <ng-container *ngIf="modalPaso === 'resultado-cancelacion' && resultadoCancelacion as rc">
       <div class="resultado-ok">
         <span class="resultado-icono">✓</span>
-        <h3>Reserva cancelada</h3>
-        <p class="help">{{ rc.message }}</p>
-        <p class="help" *ngIf="rc.bono && rc.tipoCupon === 'MENSUAL'" style="color: var(--brand-blue); font-weight: bold; margin-top: 0.5rem;">
-          Se acreditó un bono de descuento de ${{ rc.bono | number }} para la mensualidad del mes siguiente.
-        </p>
-        <p class="help" *ngIf="rc.bono && rc.tipoCupon === 'INDIVIDUAL'" style="color: var(--brand-blue); font-weight: bold; margin-top: 0.5rem;">
-          Se acreditó un cupón de ${{ rc.bono | number }} disponible para la próxima reserva en esta clase.
-        </p>
+        <p class="help" style="font-weight: bold; margin-top: 0.5rem; font-size: 1.1rem;">La cancelación se realizó con éxito.</p>
       </div>
       <div class="form-actions">
         <button class="btn btn-primary" type="button" (click)="cerrarModal()">Aceptar</button>

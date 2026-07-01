@@ -240,10 +240,14 @@ export class ReservasService {
           const mapped = activasCompletas.map((r) =>
             this.mapReservaDto(r, individuales, mensuales, hoy),
           );
-          // Próximas: activas o canceladas por el CEF (sin fechas pasadas).
-          const proximas = mapped.filter(
-            (r) => r.estado === 'ACTIVA' || r.estado === 'CANCELADA',
-          );
+          // Próximas: activas o canceladas por el CEF (sin clases que ya finalizaron hoy).
+          const proximas = mapped.filter((r) => {
+            if (r.estado !== 'ACTIVA' && r.estado !== 'CANCELADA') return false;
+            if (r.proximaFecha === hoy) {
+              return this.horasHastaClase(hoy, r.horaFin) >= 0;
+            }
+            return true;
+          });
           // Orden cronológico descendente (próximas primero)
           proximas.sort(
             (a, b) =>

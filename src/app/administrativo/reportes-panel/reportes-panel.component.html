@@ -145,12 +145,12 @@
         </span>
         <h4>Horarios más seleccionados</h4>
       </header>
-      <p class="stat-desc">Clases con más reservas activas según su día y horario.</p>
+      <p class="stat-desc">Franjas de día y horario con más reservas activas, sumando todas las clases y actividades.</p>
       <div class="stat-summary">
         <ng-container *ngIf="topHorario; else sinHorarios">
-          <strong class="stat-value stat-value-sm">{{ topHorario!.nombre }}</strong>
+          <strong class="stat-value stat-value-sm">{{ topHorario!.dia_semana }}</strong>
           <span class="stat-sub">
-            {{ topHorario!.dia_semana }} · {{ topHorario!.hora_inicio }}
+            {{ topHorario!.hora_inicio }}<ng-container *ngIf="topHorario!.hora_fin">–{{ topHorario!.hora_fin }}</ng-container>
           </span>
         </ng-container>
         <ng-template #sinHorarios>
@@ -276,29 +276,20 @@
               <span>{{ formatearMoneda(detalleIngresos?.total_anual ?? 0) }}</span>
             </div>
           </div>
-
-          <div class="reporte-metodo" *ngIf="ingresos?.por_metodo?.length">
-            <p class="reporte-subtitulo">Distribución histórica por método de pago</p>
-            <div class="reporte-chart-wrap reporte-chart-pie">
-              <canvas #chartDetalleMetodo aria-label="Gráfico de ingresos por método"></canvas>
-            </div>
-          </div>
         </ng-container>
 
         <!-- Horarios más seleccionados -->
         <div class="reporte-tabla" *ngIf="reporteActivo === 'horarios'">
-          <p class="reporte-subtitulo">{{ detalleHorarios?.categoria?.nombre }}</p>
+          <p class="reporte-subtitulo">Todas las clases y actividades</p>
           <div class="tabla-row head horarios">
             <span>#</span>
-            <span>Clase / horario</span>
+            <span>Día y horario</span>
             <span>Reservas</span>
-            <span>Cupo</span>
           </div>
           <div class="tabla-row horarios" *ngFor="let h of detalleHorarios?.horarios; let i = index">
             <span>{{ i + 1 }}</span>
-            <span>{{ h.actividad }} · {{ h.horario }}</span>
+            <span>{{ h.horario }}</span>
             <span>{{ h.total_reservas }}</span>
-            <span>{{ h.cupo }}</span>
           </div>
         </div>
       </ng-container>

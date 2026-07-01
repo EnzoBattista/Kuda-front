@@ -4,8 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
-export type MedioCobro = 'MERCADO_PAGO' | 'QR';
-export type MetodoPago = 'EFECTIVO' | 'TRANSFERENCIA' | 'MERCADO_PAGO' | 'QR';
+export type MetodoPago = 'MERCADO_PAGO';
 export type EstadoPago = 'PENDIENTE' | 'COMPLETADO' | 'RECHAZADO';
 
 export interface PagoListado {
@@ -33,26 +32,6 @@ export interface PagoListado {
   } | null;
 }
 
-
-export interface GenerarPagoQrPayload {
-  monto: number;
-  concepto: string;
-  cliente_email?: string;
-  reserva_id?: number;
-  inscripcion_mensual_id?: number;
-  origen?: string;
-  origen_id?: number;
-}
-
-export interface GenerarPagoQrResponse {
-  message: string;
-  pago_id: number;
-  qr_data: string;
-  referencia: string;
-  estado: EstadoPago;
-  monto: number;
-  concepto: string;
-}
 
 export interface ComprobantePago {
   gimnasio: {
@@ -146,10 +125,6 @@ export class PagoService {
       );
   }
 
-  generarPagoQr(payload: GenerarPagoQrPayload): Observable<GenerarPagoQrResponse> {
-    return this.http.post<GenerarPagoQrResponse>(`${this.apiUrl}/qr`, payload);
-  }
-
   getComprobante(id: number): Observable<ComprobantePago> {
     return this.http.get<ComprobantePago>(`${this.apiUrl}/${id}/comprobante`);
   }
@@ -191,10 +166,7 @@ export class PagoService {
 
   metodoLabel(metodo: MetodoPago): string {
     const labels: Record<MetodoPago, string> = {
-      EFECTIVO: 'Efectivo',
-      TRANSFERENCIA: 'Transferencia',
       MERCADO_PAGO: 'Mercado Pago',
-      QR: 'QR',
     };
     return labels[metodo] ?? metodo;
   }

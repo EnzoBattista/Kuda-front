@@ -372,5 +372,5 @@
 }
 
 .tabla-row.horarios {
-  grid-template-columns: 2rem 1fr 5rem 4rem;
+  grid-template-columns: 2rem 1fr 5rem;
 }
