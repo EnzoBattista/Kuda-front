@@ -291,7 +291,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
       this.reservasService.cancelarMensualidad(mensualId).subscribe({
         next: () => {
           this.isCancelando = false;
-          this.bannerSuccess = 'Tu membresía mensual ha sido cancelada correctamente.';
+          this.bannerSuccess = 'La cancelación se realizó con éxito.';
           this.cerrarModal();
           this.cargarReservas();
         },
@@ -715,9 +715,12 @@ export class MisReservasComponent implements OnInit, OnDestroy {
     const horas = this.horasHasta(r);
     if (horas <= 0) return 'La clase ya ocurrió.';
     if (horas > 24) {
-      return r.esAbonado
-        ? 'Cancelás con más de 24hs de anticipación. Recibirás un bono del 20% para el mes siguiente.'
-        : 'Cancelás con más de 24hs de anticipación. Recibirás el reembolso completo del pago.';
+      if (r.esAbonado) {
+        return 'Cancelás con más de 24hs de anticipación. Recibirás un bono del 20% para el mes siguiente.';
+      } else {
+        const montoAbonado = r.montoAbonado ?? 0;
+        return `Cancelás con más de 24hs de anticipación. Se generará un cupón de crédito a tu favor por el monto que abonaste ($${montoAbonado}). Recordá que los descuentos o cupones aplicados anteriormente no son reembolsables.`;
+      }
     }
     return 'Cancelás con menos de 24hs de anticipación. No se aplicará reembolso.';
   }

@@ -219,7 +219,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 1rem;
-  z-index: 2000;
+  z-index: 9990;
   overflow-y: auto;
 }
 
