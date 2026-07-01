@@ -276,6 +276,18 @@
   transition: background 140ms ease, color 140ms ease;
 }
 
+/* Botón outline azul (fondo blanco, borde y texto azul) */
+.btn-outline-blue {
+  background: #fff;
+  border: 2px solid var(--brand-blue-600);
+  color: var(--brand-blue-600);
+}
+
+.btn-outline-blue:hover:not(:disabled) {
+  background: var(--brand-blue-600);
+  color: #fff;
+}
+
 .opcion-btn strong { color: inherit; }
 .opcion-btn .help { color: inherit; opacity: 0.75; }
 
