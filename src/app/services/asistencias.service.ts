@@ -23,6 +23,7 @@ export interface QrGeneradoResponse {
 
 export interface EscanearQrResponse {
   reserva_id: number;
+  message?: string;
   cliente: {
     email: string;
     nombre: string;

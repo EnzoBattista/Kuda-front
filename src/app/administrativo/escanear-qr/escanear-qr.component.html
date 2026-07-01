@@ -1,6 +1,6 @@
 <section class="card card-pad escanear-section">
   <h3>Control de accesos — Escanear QR</h3>
-  <p class="help">Apuntá la cámara al código QR del cliente para validar su ingreso.</p>
+  <p class="help">Apuntá la cámara al código QR del cliente. Si es válido, el ingreso se confirma automáticamente.</p>
 
   <div class="card card-pad success-banner" *ngIf="successMsg">{{ successMsg }}</div>
 
@@ -17,29 +17,34 @@
   </div>
 
   <ng-container *ngIf="!requiereHttpsEnCelu">
-    <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
+    <p class="error-text aviso-qr" *ngIf="errorMsg" role="alert">{{ errorMsg }}</p>
+    <p class="help procesando-msg" *ngIf="procesando">Validando QR y registrando ingreso…</p>
+    <p class="help reintento-hint" *ngIf="errorMsg && !procesando && !escaneando">
+      Alejá el QR escaneado y tocá «Activar cámara» para intentar con otro cliente.
+    </p>
 
     <div class="form-actions camara-actions">
       <button
         type="button"
         class="btn btn-primary"
         *ngIf="!escaneando"
-        [disabled]="iniciandoCamara"
+        [disabled]="iniciandoCamara || procesando"
         (click)="activarCamara()"
       >
-        {{ iniciandoCamara ? 'Abriendo cámara…' : (escaneando ? 'Cámara activa' : 'Activar cámara') }}
+        {{ iniciandoCamara ? 'Abriendo cámara…' : (procesando ? 'Procesando…' : 'Activar cámara') }}
       </button>
       <button
         type="button"
         class="btn btn-secondary"
         *ngIf="escaneando"
+        [disabled]="procesando"
         (click)="detenerCamara()"
       >
         Detener cámara
       </button>
     </div>
 
-    <p class="help ios-hint" *ngIf="esDispositivoMovil && !escaneando">
+    <p class="help ios-hint" *ngIf="esDispositivoMovil && !escaneando && !procesando">
       En iPhone: tocá «Activar cámara» y elegí <strong>Permitir</strong> cuando Safari pregunte.
     </p>
 
@@ -49,60 +54,3 @@
     </div>
   </ng-container>
 </section>
-
-<div class="modal-overlay" *ngIf="showModalValidacion && escaneoData" (click)="cerrarModal()">
-  <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
-    <h4 class="modal-title">Validación visual</h4>
-
-    <div class="validacion-cliente">
-      <img
-        [src]="escaneoData.cliente.foto_perfil"
-        [alt]="escaneoData.cliente.nombre + ' ' + escaneoData.cliente.apellido"
-        class="foto-perfil"
-      />
-      <div>
-        <p class="cliente-nombre">
-          {{ escaneoData.cliente.nombre }} {{ escaneoData.cliente.apellido }}
-        </p>
-        <p class="help">DNI {{ escaneoData.cliente.dni }}</p>
-        <p class="help">
-          {{ escaneoData.clase.nombre }} · {{ escaneoData.clase.hora_inicio }} – {{ escaneoData.clase.hora_fin }}
-        </p>
-      </div>
-    </div>
-
-    <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
-
-    <div class="field">
-      <label class="label" for="motivo-denegar">Motivo (solo si denegás)</label>
-      <input
-        id="motivo-denegar"
-        class="control"
-        [(ngModel)]="motivoDenegado"
-        placeholder="Identidad no coincide"
-      />
-    </div>
-
-    <div class="form-actions">
-      <button
-        type="button"
-        class="btn btn-primary"
-        (click)="confirmarIngreso()"
-        [disabled]="modalSubmitting"
-      >
-        {{ modalSubmitting ? 'Procesando…' : 'Confirmar ingreso' }}
-      </button>
-      <button
-        type="button"
-        class="btn btn-danger"
-        (click)="denegarAcceso()"
-        [disabled]="modalSubmitting"
-      >
-        Denegar acceso
-      </button>
-      <button type="button" class="btn btn-secondary" (click)="cerrarModal()" [disabled]="modalSubmitting">
-        Cancelar
-      </button>
-    </div>
-  </div>
-</div>

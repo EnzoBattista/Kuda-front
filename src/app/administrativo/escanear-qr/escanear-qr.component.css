@@ -68,64 +68,20 @@
   border: 1px solid rgba(30, 64, 175, 0.2);
 }
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(15, 23, 42, 0.55);
+.aviso-qr {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.2);
 }
 
-@media (min-width: 600px) {
-  .modal-overlay {
-    align-items: center;
-  }
+.procesando-msg {
+  margin: 0.75rem 0 0;
+  font-weight: 600;
 }
 
-.modal-panel {
-  width: 100%;
-  max-width: min(480px, 100%);
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.modal-title {
-  margin: 0;
-}
-
-.validacion-cliente {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.foto-perfil {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--border);
-  flex-shrink: 0;
-}
-
-.cliente-nombre {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.modal-panel .form-actions {
-  margin-top: 0.25rem;
-}
-
-@media (min-width: 480px) {
-  .modal-panel .form-actions {
-    grid-template-columns: 1fr 1fr;
-  }
+.reintento-hint {
+  margin: 0.35rem 0 0;
+  color: #64748b;
 }
