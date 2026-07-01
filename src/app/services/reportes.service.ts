@@ -21,8 +21,6 @@ export interface IngresosReporte {
 }
 
 export interface HorarioPopular {
-  clase_id: number;
-  nombre: string;
   dia_semana: string;
   hora_inicio: string;
   hora_fin: string;
@@ -54,20 +52,17 @@ export interface IngresosMensualesReporte {
 }
 
 export interface HorarioSeleccionado {
-  clase_id: number;
-  actividad: string;
-  nombre: string;
   dia_semana: string;
   hora_inicio: string;
   hora_fin: string;
   horario: string;
   cupo: number;
   total_reservas: number;
+  ocupacion_pct: number | null;
 }
 
 export interface HorariosSeleccionadosReporte {
   anio: number;
-  categoria: { id: number | null; nombre: string };
   hay_datos: boolean;
   mensaje: string | null;
   horarios: HorarioSeleccionado[];
@@ -114,15 +109,10 @@ export class ReportesService {
     );
   }
 
-  getHorariosSeleccionados(
-    anio: number,
-    actividadId?: number | null,
-  ): Observable<HorariosSeleccionadosReporte> {
-    const params: Record<string, string | number> = { anio };
-    if (actividadId != null) params['actividad_id'] = actividadId;
+  getHorariosSeleccionados(anio: number): Observable<HorariosSeleccionadosReporte> {
     return this.http.get<HorariosSeleccionadosReporte>(
       `${this.apiUrl}/horarios-seleccionados`,
-      { params },
+      { params: { anio } },
     );
   }
 

@@ -154,10 +154,6 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
     return this.reportes.formatearMoneda(valor);
   }
 
-  labelHorario(item: HorarioPopular): string {
-    return `${item.nombre} · ${item.dia_semana} ${item.hora_inicio}`;
-  }
-
   // ─── Resúmenes de las cards ─────────────────────────────────────────────────
 
   get topHorario(): HorarioPopular | null {
@@ -240,7 +236,7 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
   // ─── Modal "Visualizar reporte" ─────────────────────────────────────────────
 
   get usaCategoria(): boolean {
-    return this.reporteActivo === 'ingresos' || this.reporteActivo === 'horarios';
+    return this.reporteActivo === 'ingresos';
   }
 
   get usaAnio(): boolean {
@@ -309,7 +305,7 @@ export class ReportesPanelComponent implements OnInit, OnDestroy {
         error: (err) => this.onDetalleError(err),
       });
     } else if (this.reporteActivo === 'horarios') {
-      this.reportes.getHorariosSeleccionados(anio, actId).subscribe({
+      this.reportes.getHorariosSeleccionados(anio).subscribe({
         next: (data) => this.onDetalleOk(() => (this.detalleHorarios = data)),
         error: (err) => this.onDetalleError(err),
       });
