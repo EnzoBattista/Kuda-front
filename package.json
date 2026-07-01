@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start:http": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
-    "start:https": "local-ssl-proxy --source 4201 --target 4200 --hostname localhost",
-    "prestart:all": "node scripts/free-dev-ports.cjs",
+    "start:http": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json --disable-host-check",
+    "start:https": "node scripts/start-https-mobile.cjs",
+    "prestart:all": "node scripts/free-dev-ports.cjs && node scripts/print-dev-urls.cjs",
     "start:all": "concurrently -k -n PC,CEL -c blue,magenta \"npm run start:http\" \"npm run start:https\"",
     "start": "npm run start:http",
     "start:mobile": "concurrently -k -n PC,CEL -c blue,magenta \"npm run start:http\" \"npm run start:https\"",

@@ -40,6 +40,7 @@ export interface RegistrarAsistenciaPayload {
   clase_id: number;
   estado: 'PRESENTE' | 'DENEGADO' | 'AUSENTE';
   motivo_denegado?: string;
+  manual?: boolean;
 }
 
 export interface AsistenciaHistorialItem {
@@ -83,6 +84,7 @@ export interface ClaseHoy {
   id: number;
   nombre: string;
   actividad?: string;
+  dia_semana?: string;
   hora_inicio: string;
   hora_fin: string;
   inscriptos: InscriptoClaseHoy[];

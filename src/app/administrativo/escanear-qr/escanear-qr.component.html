@@ -2,8 +2,6 @@
   <h3>Control de accesos — Escanear QR</h3>
   <p class="help">Apuntá la cámara al código QR del cliente. Si es válido, el ingreso se confirma automáticamente.</p>
 
-  <div class="card card-pad success-banner" *ngIf="successMsg">{{ successMsg }}</div>
-
   <div class="https-aviso card card-pad" *ngIf="requiereHttpsEnCelu">
     <p class="https-aviso-titulo">Cámara bloqueada en HTTP</p>
     <p class="help">
@@ -17,9 +15,9 @@
   </div>
 
   <ng-container *ngIf="!requiereHttpsEnCelu">
-    <p class="error-text aviso-qr" *ngIf="errorMsg" role="alert">{{ errorMsg }}</p>
+    <p class="error-text aviso-qr" *ngIf="errorCamara" role="alert">{{ errorCamara }}</p>
     <p class="help procesando-msg" *ngIf="procesando">Validando QR y registrando ingreso…</p>
-    <p class="help reintento-hint" *ngIf="errorMsg && !procesando && !escaneando">
+    <p class="help reintento-hint" *ngIf="scanFallido && !procesando && !escaneando">
       Alejá el QR escaneado y tocá «Activar cámara» para intentar con otro cliente.
     </p>
 

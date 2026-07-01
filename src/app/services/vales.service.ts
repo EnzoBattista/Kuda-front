@@ -8,6 +8,7 @@ export interface ValeApi {
   id: number;
   cliente_email: string;
   clase_id: number | null;
+  tipo: 'MENSUAL' | 'INDIVIDUAL';
   monto: number | string;
   valido_desde: string;
   valido_hasta: string;
@@ -24,6 +25,7 @@ export interface ValeApi {
 export interface Vale {
   id: number;
   claseId: number | null;
+  tipo: 'MENSUAL' | 'INDIVIDUAL';
   monto: number;
   validoDesde: string;
   validoHasta: string;
@@ -73,6 +75,7 @@ function toVale(v: ValeApi): Vale {
   return {
     id: v.id,
     claseId: v.clase_id,
+    tipo: v.tipo,
     monto: Number(v.monto),
     validoDesde: String(v.valido_desde).slice(0, 10),
     validoHasta: String(v.valido_hasta).slice(0, 10),

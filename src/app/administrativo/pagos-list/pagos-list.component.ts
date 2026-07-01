@@ -107,6 +107,22 @@ export class PagosListComponent implements OnInit {
   }
 
   imprimirComprobante(): void {
+    const original = document.getElementById('comprobante-print');
+    if (!original) return;
+
+    const clone = original.cloneNode(true) as HTMLElement;
+    clone.id = 'comprobante-print-clone';
+
+    document.body.classList.add('comprobante-printing');
+    document.body.appendChild(clone);
+
+    const cleanup = () => {
+      document.body.classList.remove('comprobante-printing');
+      clone.remove();
+    };
+
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.setTimeout(cleanup, 1000);
     window.print();
   }
 

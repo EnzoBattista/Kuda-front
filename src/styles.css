@@ -328,3 +328,22 @@ p {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+@media print {
+  body.comprobante-printing > *:not(#comprobante-print-clone) {
+    display: none !important;
+  }
+
+  body.comprobante-printing #comprobante-print-clone {
+    display: block !important;
+    margin: 0;
+    padding: 1.5rem;
+    background: #fff;
+    box-shadow: none;
+    border: none;
+    width: 100%;
+    height: auto;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+}

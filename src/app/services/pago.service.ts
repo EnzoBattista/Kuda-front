@@ -103,6 +103,54 @@ export interface FiltrosPagos {
   hasta?: string;
 }
 
+export const MSG_MP_SIN_CONEXION =
+  'No pudimos conectarnos con Mercado Pago. Intentá nuevamente en unos minutos';
+
+const PATRONES_ERROR_RED_MP = [
+  'mercadopago',
+  'enotfound',
+  'econnrefused',
+  'etimedout',
+  'eai_again',
+  'enetunreach',
+  'getaddrinfo',
+  'network error',
+  'failed to fetch',
+  'fetch failed',
+  'net::err_',
+  'socket hang up',
+  'error de conexión',
+  'error de conexion',
+];
+
+const textoDesdeError = (err: unknown): string => {
+  if (err instanceof HttpErrorResponse) {
+    const body = err.error;
+    if (typeof body === 'object' && body !== null) {
+      if ('message' in body) return String((body as { message: string }).message);
+      if ('error' in body) return String((body as { error: string }).error);
+    }
+    return err.message ?? '';
+  }
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String((err as { message: string }).message);
+  }
+  return '';
+};
+
+export const esErrorConexionMercadoPago = (err: unknown): boolean => {
+  if (err instanceof HttpErrorResponse) {
+    if ([0, 502, 503, 504].includes(err.status)) return true;
+  }
+
+  const texto = textoDesdeError(err).toLowerCase();
+  if (!texto) return false;
+  if (texto.includes(MSG_MP_SIN_CONEXION.toLowerCase())) return true;
+
+  return PATRONES_ERROR_RED_MP.some((patron) => texto.includes(patron));
+};
+
 @Injectable({ providedIn: 'root' })
 export class PagoService {
   private readonly apiUrl = `${environment.apiUrl}/pagos`;
@@ -153,14 +201,31 @@ export class PagoService {
   }
 
   mensajeError(err: unknown): string {
+    if (esErrorConexionMercadoPago(err)) {
+      return MSG_MP_SIN_CONEXION;
+    }
+
     if (err instanceof HttpErrorResponse) {
       const body = err.error;
       if (typeof body === 'object' && body !== null) {
-        if ('message' in body) return String((body as { message: string }).message);
-        if ('error' in body) return String((body as { error: string }).error);
+        if ('message' in body) {
+          const msg = String((body as { message: string }).message);
+          return esErrorConexionMercadoPago(msg) ? MSG_MP_SIN_CONEXION : msg;
+        }
+        if ('error' in body) {
+          const msg = String((body as { error: string }).error);
+          return esErrorConexionMercadoPago(msg) ? MSG_MP_SIN_CONEXION : msg;
+        }
       }
-      return err.message ?? 'Error de conexión con el servidor.';
+      const msg = err.message ?? 'Error de conexión con el servidor.';
+      return esErrorConexionMercadoPago(msg) ? MSG_MP_SIN_CONEXION : msg;
     }
+
+    const msg = textoDesdeError(err);
+    if (msg) {
+      return esErrorConexionMercadoPago(msg) ? MSG_MP_SIN_CONEXION : msg;
+    }
+
     return 'Error inesperado.';
   }
 

@@ -5,6 +5,7 @@ import {
   AsistenciasService,
   QrGeneradoResponse,
 } from '../../services/asistencias.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-mi-qr',
@@ -15,14 +16,13 @@ import {
 })
 export class MiQrComponent {
   private readonly asistenciasService = inject(AsistenciasService);
+  private readonly toastService = inject(ToastService);
 
   loading = false;
-  errorMsg = '';
   qrData: QrGeneradoResponse | null = null;
 
   generarQr(): void {
     this.loading = true;
-    this.errorMsg = '';
     this.qrData = null;
 
     this.asistenciasService.generarMiQr().subscribe({
@@ -31,7 +31,7 @@ export class MiQrComponent {
         this.loading = false;
       },
       error: (err) => {
-        this.errorMsg = this.asistenciasService.mensajeError(err);
+        this.toastService.showError(this.asistenciasService.mensajeError(err));
         this.loading = false;
       },
     });

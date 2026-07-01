@@ -7,6 +7,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Html5Qrcode } from 'html5-qrcode';
 import { AsistenciasService } from '../../services/asistencias.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-escanear-qr',
@@ -17,6 +18,7 @@ import { AsistenciasService } from '../../services/asistencias.service';
 })
 export class EscanearQrComponent implements OnInit, OnDestroy {
   private readonly asistenciasService = inject(AsistenciasService);
+  private readonly toastService = inject(ToastService);
 
   private scanner: Html5Qrcode | null = null;
   private ultimoToken = '';
@@ -28,8 +30,8 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
   escaneando = false;
   iniciandoCamara = false;
   procesando = false;
-  errorMsg = '';
-  successMsg = '';
+  errorCamara = '';
+  scanFallido = false;
 
   readonly httpsCeluPort = 4201;
 
@@ -50,7 +52,7 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.requiereHttpsEnCelu) {
-      this.errorMsg =
+      this.errorCamara =
         'Estás en HTTP. En iPhone Safari la cámara solo funciona con HTTPS (puerto 4201).';
     }
   }
@@ -66,8 +68,8 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
       this.abrirVersionHttps();
       return;
     }
-    this.errorMsg = '';
-    this.successMsg = '';
+    this.errorCamara = '';
+    this.scanFallido = false;
     void this.iniciarCamara();
   }
 
@@ -137,7 +139,7 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
       this.escaneando = true;
     } catch (err) {
       console.error('[escanear-qr] cámara:', err);
-      this.errorMsg = this.mensajeErrorCamara();
+      this.errorCamara = this.mensajeErrorCamara();
       this.escaneando = false;
     } finally {
       this.iniciandoCamara = false;
@@ -191,19 +193,20 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
     if (this.esEscaneoDuplicado(normalizado)) return;
 
     this.procesando = true;
-    this.errorMsg = '';
-    this.successMsg = '';
+    this.scanFallido = false;
     await this.detenerCamara();
 
     this.asistenciasService.escanearQr(normalizado).subscribe({
       next: (data) => {
-        const nombre = `${data.cliente.nombre} ${data.cliente.apellido}`.trim();
-        this.successMsg = `${data.message ?? 'Ingreso confirmado'} — ${nombre}`;
+        this.toastService.showSuccess(
+          data.message ?? 'Asistencia registrada con éxito',
+        );
         this.procesando = false;
         setTimeout(() => void this.iniciarCamara(), this.cooldownMs);
       },
       error: (err) => {
-        this.errorMsg = this.asistenciasService.mensajeError(err);
+        this.toastService.showError(this.asistenciasService.mensajeError(err));
+        this.scanFallido = true;
         this.procesando = false;
       },
     });

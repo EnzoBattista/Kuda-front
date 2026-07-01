@@ -1,32 +1,96 @@
-<section class="container page-historial">
-  <div class="card card-pad">
-    <h2>{{ esStaff ? 'Historial de asistencia' : 'Mi historial de asistencia' }}</h2>
+<section class="card historial-section">
+  <div class="card-head">
+    <h3>{{ esStaff ? 'Historial de asistencia' : 'Mi historial de asistencia' }}</h3>
+  </div>
 
-    <p class="help" *ngIf="loading">Cargando…</p>
-    <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
-    <p class="help empty-msg" *ngIf="!loading && !errorMsg && emptyMsg">{{ emptyMsg }}</p>
+  <form class="historial-filtros" [formGroup]="filtros" *ngIf="esStaff && (allItems.length > 0 || hayFiltrosAplicados())">
+    <div class="filtros-row">
+      <div class="field">
+        <label class="label" for="filtro-dni">DNI</label>
+        <input
+          id="filtro-dni"
+          class="control"
+          type="search"
+          formControlName="dni"
+          placeholder="Buscar por DNI..."
+          autocomplete="off"
+        />
+      </div>
 
-    <ul class="historial-list" *ngIf="!loading && items.length > 0">
-      <li class="card card-pad historial-item" *ngFor="let item of items">
-        <div class="historial-head">
-          <strong>{{ item.clase?.nombre ?? 'Clase' }}</strong>
-          <span class="badge" [class.badge-presente]="item.estado === 'PRESENTE'" [class.badge-denegado]="item.estado === 'DENEGADO'" [class.badge-ausente]="item.estado === 'AUSENTE'">
-            {{ estadoLabel(item.estado) }}
-          </span>
-        </div>
+      <div class="field">
+        <label class="label" for="filtro-actividad">Actividad</label>
+        <select id="filtro-actividad" class="control" formControlName="actividad">
+          <option value="">Todas</option>
+          <option *ngFor="let actividad of actividadesOpciones" [value]="actividad">
+            {{ actividad }}
+          </option>
+        </select>
+      </div>
 
-        <p class="help" *ngIf="item.clase">
-          {{ item.fecha }} · {{ item.clase.dia_semana }} · {{ item.clase.hora_inicio }} – {{ item.clase.hora_fin }}
+      <div class="field">
+        <label class="label" for="filtro-desde">Desde</label>
+        <input id="filtro-desde" class="control" type="date" formControlName="desde" />
+      </div>
+
+      <div class="field">
+        <label class="label" for="filtro-hasta">Hasta</label>
+        <input id="filtro-hasta" class="control" type="date" formControlName="hasta" />
+      </div>
+
+      <div class="field">
+        <label class="label" for="filtro-hora">Hora de inicio</label>
+        <select id="filtro-hora" class="control" formControlName="hora_inicio">
+          <option value="">Todas</option>
+          <option *ngFor="let hora of horasInicio" [value]="hora">{{ hora }}</option>
+        </select>
+      </div>
+
+      <div class="field field-action">
+        <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">Limpiar filtros</button>
+      </div>
+    </div>
+  </form>
+
+  <p class="help" *ngIf="loading">Cargando…</p>
+  <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
+  <p class="help empty-msg" *ngIf="!loading && !errorMsg && emptyMsg">{{ emptyMsg }}</p>
+  <p class="help empty-msg" *ngIf="!loading && !errorMsg && sinResultadosFiltro">
+    No se encontraron registros con esos filtros
+  </p>
+
+  <div class="table" *ngIf="!loading && !errorMsg && itemsFiltrados.length > 0">
+    <div class="row head" [class.row-cliente]="!esStaff">
+      <div *ngIf="esStaff">Cliente</div>
+      <div *ngIf="esStaff">DNI</div>
+      <div>Actividad</div>
+      <div>Fecha</div>
+      <div>Horario</div>
+      <div>Estado</div>
+    </div>
+
+    <div class="row" *ngFor="let item of itemsFiltrados" [class.row-cliente]="!esStaff">
+      <div *ngIf="esStaff" class="cell-trunc" [title]="clienteNombre(item)">
+        {{ clienteNombre(item) }}
+      </div>
+      <div *ngIf="esStaff">{{ item.cliente.dni || '—' }}</div>
+      <div class="cell-trunc" [title]="item.clase?.actividad || item.clase?.nombre || '—'">
+        {{ item.clase?.actividad || item.clase?.nombre || '—' }}
+      </div>
+      <div>{{ item.fecha }}</div>
+      <div class="cell-trunc" [title]="horarioClase(item)">{{ horarioClase(item) }}</div>
+      <div>
+        <span
+          class="badge"
+          [class.badge-presente]="item.estado === 'PRESENTE'"
+          [class.badge-denegado]="item.estado === 'DENEGADO'"
+          [class.badge-ausente]="item.estado === 'AUSENTE'"
+        >
+          {{ estadoLabel(item.estado) }}
+        </span>
+        <p class="help motivo-denegado" *ngIf="item.estado === 'DENEGADO' && item.motivo_denegado">
+          {{ item.motivo_denegado }}
         </p>
-
-        <p class="help" *ngIf="esStaff && item.cliente">
-          {{ item.cliente.nombre }} {{ item.cliente.apellido }} · DNI {{ item.cliente.dni }}
-        </p>
-
-        <p class="error-text" *ngIf="item.estado === 'DENEGADO' && item.motivo_denegado">
-          Motivo: {{ item.motivo_denegado }}
-        </p>
-      </li>
-    </ul>
+      </div>
+    </div>
   </div>
 </section>

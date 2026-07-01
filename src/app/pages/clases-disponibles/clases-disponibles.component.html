@@ -343,38 +343,75 @@
           <dd>{{ confirmacionDetallePago() }}</dd>
         </div>
         <div
-          class="clase-info-row"
+          class="vale-selector-wrap"
           *ngIf="tieneValesDisponibles()"
         >
-          <dt>Aplicar vales disponibles (${{ montoTotalValesDisponibles() | number }})</dt>
-          <dd>
-            <label class="vale-toggle">
-              <input
-                type="checkbox"
-                [(ngModel)]="aplicarValesToggle"
-                [ngModelOptions]="{ standalone: true }"
-              />
-              <span class="vale-toggle-slider"></span>
-            </label>
-          </dd>
+          <div class="field">
+            <div class="label">Aplicar vale</div>
+            <div class="custom-select" (click)="$event.stopPropagation()">
+              <div
+                class="control vale-select-trigger"
+                [class.vale-select-trigger--elegido]="valeSeleccionado()"
+                role="button"
+                tabindex="0"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="showValesDropdown"
+                (click)="toggleValesDropdown($event)"
+                (keydown.enter)="toggleValesDropdown($event)"
+                (keydown.space)="toggleValesDropdown($event); $event.preventDefault()"
+              >
+                <span>{{ textoValeEnSelector() }}</span>
+                <span class="vale-select-caret" aria-hidden="true">▼</span>
+              </div>
+              <div class="vale-dropdown card" *ngIf="showValesDropdown" role="listbox">
+                <button
+                  type="button"
+                  class="vale-option"
+                  [class.vale-option--selected]="!valeSeleccionado()"
+                  role="option"
+                  [attr.aria-selected]="!valeSeleccionado()"
+                  (click)="seleccionarVale(null, $event)"
+                >
+                  Sin vale
+                </button>
+                <button
+                  type="button"
+                  class="vale-option"
+                  role="option"
+                  *ngFor="let v of valesFiltradosPorModalidad()"
+                  [class.vale-option--selected]="esValeSeleccionado(v.id)"
+                  [attr.aria-selected]="esValeSeleccionado(v.id)"
+                  (click)="seleccionarVale(v.id, $event)"
+                >
+                  ${{ v.monto | number }} — {{ etiquetaVale(v) }}
+                </button>
+              </div>
+            </div>
+            <p class="help">Elegí un vale para descontar del total. Solo podés usar uno por reserva.</p>
+          </div>
         </div>
         <div
           class="clase-info-row"
           *ngIf="montoDescuentoUpgrade() > 0"
         >
           <dt>Descuento por reserva individual</dt>
-          <dd>
-            -${{ montoDescuentoUpgrade() | number }}
-          </dd>
+          <dd>-${{ montoDescuentoUpgrade() | number }}</dd>
         </div>
         <div
           class="clase-info-row"
-          *ngIf="tieneValesDisponibles() || montoDescuentoUpgrade() > 0"
+          *ngIf="montoDescuentoVale() > 0"
+        >
+          <dt>Descuento por vale</dt>
+          <dd>-${{ montoDescuentoVale() | number }}</dd>
+        </div>
+        <div
+          class="clase-info-row"
+          *ngIf="tieneValesDisponibles() || montoDescuentoUpgrade() > 0 || montoDescuentoVale() > 0"
         >
           <dt>Total</dt>
           <dd>
-            <span *ngIf="!aplicarValesToggle && montoDescuentoUpgrade() === 0">${{ montoBaseReserva() | number }}</span>
-            <span *ngIf="aplicarValesToggle || montoDescuentoUpgrade() > 0">
+            <span *ngIf="montoDescuentoVale() === 0 && montoDescuentoUpgrade() === 0">${{ montoBaseReserva() | number }}</span>
+            <span *ngIf="montoDescuentoVale() > 0 || montoDescuentoUpgrade() > 0">
               <s style="opacity: 0.6;">${{ montoBaseReserva() | number }}</s>
               <strong style="margin-left: 0.5rem;">${{ montoFinalReserva() | number }}</strong>
             </span>

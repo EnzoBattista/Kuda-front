@@ -4,7 +4,6 @@
 
   <p class="help" *ngIf="loading">Cargando clases de hoy…</p>
   <p class="error-text" *ngIf="errorMsg">{{ errorMsg }}</p>
-  <div class="card card-pad success-banner" *ngIf="successMsg">{{ successMsg }}</div>
   <p class="error-text" *ngIf="itemError">{{ itemError }}</p>
 
   <ng-container *ngIf="!loading && !errorMsg">
@@ -19,13 +18,13 @@
         (change)="claseSeleccionadaId = +$any($event.target).value"
       >
         <option *ngFor="let c of clases" [value]="c.id">
-          {{ c.nombre }} · {{ c.hora_inicio }} – {{ c.hora_fin }}
+          {{ etiquetaClase(c) }}
         </option>
       </select>
     </div>
 
     <p class="help" *ngIf="claseSeleccionada && claseSeleccionada.inscriptos.length === 0">
-      No hay inscriptos para esta clase hoy.
+      No hay inscriptos para esta clase.
     </p>
 
     <ul class="inscriptos-list" *ngIf="claseSeleccionada && claseSeleccionada.inscriptos.length > 0">
@@ -42,7 +41,7 @@
             type="button"
             class="btn btn-primary"
             (click)="marcar(ins, 'PRESENTE')"
-            [disabled]="procesandoReservaId === ins.reserva_id || yaRegistrado(ins)"
+            [disabled]="procesandoReservaId === ins.reserva_id || presenteRegistrado(ins)"
           >
             Presente
           </button>
@@ -50,7 +49,7 @@
             type="button"
             class="btn btn-secondary"
             (click)="marcar(ins, 'AUSENTE')"
-            [disabled]="procesandoReservaId === ins.reserva_id"
+            [disabled]="procesandoReservaId === ins.reserva_id || ausenteRegistrado(ins)"
           >
             Ausente
           </button>

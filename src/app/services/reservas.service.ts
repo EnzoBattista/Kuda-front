@@ -27,6 +27,8 @@ export const MSG_RESERVA_CONFIRMADA_SEÑA = 'Tu seña fue registrada exitosament
 export const MSG_RESERVA_INCOMPLETA = 'Hubo un problema con el pago.';
 export const MSG_RESERVA_PAGO_INCOMPLETO =
   'El pago no se completó. Tu reserva no fue confirmada. Elegí la clase nuevamente para intentarlo otra vez.';
+export const MSG_SENA_PAGO_INCOMPLETO =
+  'El pago no se completó. La seña sigue pendiente.';
 export const MSG_RESERVA_PAGO_RECHAZADO =
   'Tu pago fue rechazado. La reserva no fue confirmada. Podés intentarlo de nuevo con otro medio de pago.';
 export const MSG_RESERVA_CANCELADA = 'La cancelación se realizó con éxito.';
@@ -559,7 +561,7 @@ export class ReservasService {
       }));
     }
 
-    const periodoInicio = new Date().toISOString().slice(0, 10);
+    const periodoInicio = this.fechaHoyArgentina();
     const body: Record<string, unknown> = {
       cliente_email: email,
       actividad_id: clase.actividadId,
@@ -825,7 +827,7 @@ export class ReservasService {
       (m) =>
         m.clase_id === claseId &&
         fecha >= String(m.periodo_inicio).slice(0, 10) &&
-        fecha < String(m.periodo_fin).slice(0, 10) &&
+        fecha <= String(m.periodo_fin).slice(0, 10) &&
         (m.reservas ?? []).some((r) => r.estado === 'ACTIVA'),
     );
   }
@@ -1005,11 +1007,16 @@ export class ReservasService {
   }
 
   private mensajeErrorPago(err: unknown): string {
-    const detalle = this.pagoService.mensajeError(err);
-    if (detalle && detalle !== 'Error inesperado.' && detalle !== 'Error de conexión con el servidor.') {
-      return detalle;
-    }
-    return MSG_RESERVA_INCOMPLETA;
+    return this.pagoService.mensajeError(err);
+  }
+
+  private fechaHoyArgentina(): string {
+    return new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
   }
 
   private enrichClaseDisponible(
@@ -1166,7 +1173,7 @@ export class ReservasService {
               m.estado !== 'CANCELADA' &&
               m.clase_id === clase?.id &&
               fecha >= String(m.periodo_inicio).slice(0, 10) &&
-              fecha < String(m.periodo_fin).slice(0, 10),
+              fecha <= String(m.periodo_fin).slice(0, 10),
           )
         : undefined;
 
@@ -1303,7 +1310,6 @@ function labelDia(dia: string): string {
 
 function calcularProximaFecha(diaSemana: string): string {
   const mapa: Record<string, number> = {
-    Domingo: 0,
     Lunes: 1,
     Martes: 2,
     Miercoles: 3,

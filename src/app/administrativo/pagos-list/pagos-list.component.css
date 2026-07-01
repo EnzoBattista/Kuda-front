@@ -144,30 +144,3 @@
   color: var(--brand-blue-700);
 }
 
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .comprobante-overlay,
-  .comprobante-overlay * {
-    visibility: visible;
-  }
-
-  .comprobante-overlay {
-    position: absolute;
-    inset: 0;
-    background: white;
-    padding: 0;
-  }
-
-  .comprobante-panel {
-    box-shadow: none;
-    border: none;
-    max-width: 100%;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-}

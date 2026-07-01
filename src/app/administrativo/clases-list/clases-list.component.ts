@@ -307,7 +307,6 @@ export class ClasesListComponent implements OnInit {
 
   private calcularProximaFecha(diaSemana: string): string | null {
     const mapa: Record<string, number> = {
-      Domingo: 0,
       Lunes: 1,
       Martes: 2,
       Miercoles: 3,
@@ -499,7 +498,7 @@ export class ClasesListComponent implements OnInit {
 
   private readonly ORDEN_DIA: Record<string, number> = {
     Lunes: 0, Martes: 1, Miercoles: 2, 'Miércoles': 2, Jueves: 3,
-    Viernes: 4, Sabado: 5, 'Sábado': 5, Domingo: 6,
+    Viernes: 4, Sabado: 5, 'Sábado': 5,
   };
 
   get clasesFiltradas(): ClaseListItem[] {
@@ -563,7 +562,7 @@ export class ClasesListComponent implements OnInit {
       return clase.proximas_fechas.slice(0, max);
     }
     const mapa: Record<string, number> = {
-      Domingo: 0, Lunes: 1, Martes: 2, Miercoles: 3, Miércoles: 3,
+      Lunes: 1, Martes: 2, Miercoles: 3, Miércoles: 3,
       Jueves: 4, Viernes: 5, Sabado: 6, Sábado: 6,
     };
     const objetivo = mapa[clase.dia_semana];
