@@ -150,10 +150,7 @@ export class ReportesService {
 
   formatearMetodo(metodo: string): string {
     const map: Record<string, string> = {
-      EFECTIVO: 'Efectivo',
-      TRANSFERENCIA: 'Transferencia',
       MERCADO_PAGO: 'Mercado Pago',
-      QR: 'QR',
     };
     return map[metodo] ?? metodo;
   }
