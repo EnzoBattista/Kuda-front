@@ -276,13 +276,6 @@
               <span>{{ formatearMoneda(detalleIngresos?.total_anual ?? 0) }}</span>
             </div>
           </div>
-
-          <div class="reporte-metodo" *ngIf="ingresos?.por_metodo?.length">
-            <p class="reporte-subtitulo">Distribución histórica por método de pago</p>
-            <div class="reporte-chart-wrap reporte-chart-pie">
-              <canvas #chartDetalleMetodo aria-label="Gráfico de ingresos por método"></canvas>
-            </div>
-          </div>
         </ng-container>
 
         <!-- Horarios más seleccionados -->

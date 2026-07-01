@@ -17,7 +17,6 @@ export interface UsuariosNuevosReporte {
 export interface IngresosReporte {
   mes_actual: { mes: string; total: number };
   por_mes: { mes: string; total: number }[];
-  por_metodo: { metodo: string; total: number }[];
   total_historico: number;
 }
 
@@ -146,13 +145,6 @@ export class ReportesService {
     const nombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const idx = Number(mes) - 1;
     return `${nombres[idx] ?? mes} ${anio?.slice(2) ?? ''}`.trim();
-  }
-
-  formatearMetodo(metodo: string): string {
-    const map: Record<string, string> = {
-      MERCADO_PAGO: 'Mercado Pago',
-    };
-    return map[metodo] ?? metodo;
   }
 
   formatearMoneda(valor: number): string {
