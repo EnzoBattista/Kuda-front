@@ -28,6 +28,7 @@ export class NuevaPasswordComponent implements OnInit {
 
   token = '';
   isSubmitting = false;
+  submitted = false;
   submitError = '';
   successMessage = '';
 
@@ -43,6 +44,7 @@ export class NuevaPasswordComponent implements OnInit {
   }
 
   onSubmit(): void {
+    this.submitted = true;
     this.submitError = '';
     this.successMessage = '';
     this.form.markAllAsTouched();
