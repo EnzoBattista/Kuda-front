@@ -5,17 +5,13 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Html5Qrcode } from 'html5-qrcode';
-import {
-  AsistenciasService,
-  EscanearQrResponse,
-} from '../../services/asistencias.service';
+import { AsistenciasService } from '../../services/asistencias.service';
 
 @Component({
   selector: 'app-escanear-qr',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './escanear-qr.component.html',
   styleUrl: './escanear-qr.component.css',
 })
@@ -23,19 +19,17 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
   private readonly asistenciasService = inject(AsistenciasService);
 
   private scanner: Html5Qrcode | null = null;
+  private ultimoToken = '';
+  private ultimoEscaneoMs = 0;
+
   readonly scannerId = 'qr-reader';
+  readonly cooldownMs = 4000;
 
   escaneando = false;
   iniciandoCamara = false;
+  procesando = false;
   errorMsg = '';
   successMsg = '';
-
-  escaneoData: EscanearQrResponse | null = null;
-  showModalValidacion = false;
-  motivoDenegado = 'Identidad no coincide';
-
-  modalError = '';
-  modalSubmitting = false;
 
   readonly httpsCeluPort = 4201;
 
@@ -67,12 +61,13 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** iOS exige un toque del usuario antes de abrir la cámara. */
   activarCamara(): void {
     if (this.requiereHttpsEnCelu) {
       this.abrirVersionHttps();
       return;
     }
+    this.errorMsg = '';
+    this.successMsg = '';
     void this.iniciarCamara();
   }
 
@@ -86,7 +81,7 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
 
   private configEscaneo() {
     return {
-      fps: 10,
+      fps: 8,
       qrbox: (w: number, h: number) => {
         const edge = Math.min(w, h);
         const size = Math.max(180, Math.floor(edge * 0.65));
@@ -97,9 +92,8 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
   }
 
   async iniciarCamara(): Promise<void> {
-    if (this.iniciandoCamara || this.escaneando) return;
+    if (this.iniciandoCamara || this.escaneando || this.procesando) return;
 
-    this.errorMsg = '';
     this.iniciandoCamara = true;
     await this.detenerCamara();
 
@@ -181,71 +175,37 @@ export class EscanearQrComponent implements OnInit, OnDestroy {
     this.escaneando = false;
   }
 
-  private async onQrLeido(token: string): Promise<void> {
-    if (this.modalSubmitting || this.showModalValidacion) return;
+  private esEscaneoDuplicado(token: string): boolean {
+    const ahora = Date.now();
+    if (token === this.ultimoToken && ahora - this.ultimoEscaneoMs < this.cooldownMs) {
+      return true;
+    }
+    this.ultimoToken = token;
+    this.ultimoEscaneoMs = ahora;
+    return false;
+  }
 
-    await this.detenerCamara();
+  private async onQrLeido(token: string): Promise<void> {
+    const normalizado = token.trim();
+    if (!normalizado || this.procesando) return;
+    if (this.esEscaneoDuplicado(normalizado)) return;
+
+    this.procesando = true;
     this.errorMsg = '';
     this.successMsg = '';
+    await this.detenerCamara();
 
-    this.asistenciasService.escanearQr(token.trim()).subscribe({
+    this.asistenciasService.escanearQr(normalizado).subscribe({
       next: (data) => {
-        this.escaneoData = data;
-        this.showModalValidacion = true;
-        this.modalError = '';
+        const nombre = `${data.cliente.nombre} ${data.cliente.apellido}`.trim();
+        this.successMsg = `${data.message ?? 'Ingreso confirmado'} — ${nombre}`;
+        this.procesando = false;
+        setTimeout(() => void this.iniciarCamara(), this.cooldownMs);
       },
       error: (err) => {
         this.errorMsg = this.asistenciasService.mensajeError(err);
+        this.procesando = false;
       },
     });
-  }
-
-  cerrarModal(): void {
-    this.showModalValidacion = false;
-    this.escaneoData = null;
-    this.modalError = '';
-    this.motivoDenegado = 'Identidad no coincide';
-  }
-
-  confirmarIngreso(): void {
-    if (!this.escaneoData) return;
-    this.registrar('PRESENTE');
-  }
-
-  denegarAcceso(): void {
-    if (!this.escaneoData) return;
-    if (!this.motivoDenegado.trim()) {
-      this.modalError = 'Ingresá un motivo para denegar el acceso.';
-      return;
-    }
-    this.registrar('DENEGADO', this.motivoDenegado.trim());
-  }
-
-  private registrar(estado: 'PRESENTE' | 'DENEGADO', motivo?: string): void {
-    if (!this.escaneoData) return;
-
-    this.modalSubmitting = true;
-    this.modalError = '';
-
-    this.asistenciasService
-      .registrar({
-        reserva_id: this.escaneoData.reserva_id,
-        email: this.escaneoData.cliente.email,
-        clase_id: this.escaneoData.clase.id,
-        estado,
-        motivo_denegado: motivo,
-      })
-      .subscribe({
-        next: (res) => {
-          this.successMsg = res.message;
-          this.showModalValidacion = false;
-          this.escaneoData = null;
-          this.modalSubmitting = false;
-        },
-        error: (err) => {
-          this.modalError = this.asistenciasService.mensajeError(err);
-          this.modalSubmitting = false;
-        },
-      });
   }
 }
