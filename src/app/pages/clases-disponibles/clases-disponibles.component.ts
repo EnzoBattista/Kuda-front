@@ -47,10 +47,8 @@ type PasoModal =
 export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
   private readonly pollingIntervalMs = 3_000;
   private readonly pollingTimeoutMs = 5 * 60_000;
-  private readonly pollingTrasCierreMs = 1_200;
-  private readonly reintentosTrasCierre = 2;
-  /** Breve espera tras cerrar MP por si el redirect de aprobación está en curso. */
-  private readonly cierrePagoGraciaMs = 1_000;
+  /** Un reintento breve solo si MP aún reporta el pago en proceso. */
+  private readonly reintentoMpEnProcesoMs = 800;
   private pagoSeguimientoGen = 0;
   private pollingSub: Subscription | null = null;
   private pollingTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -169,6 +167,17 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     const pagoQuery = this.route.snapshot.queryParamMap.get('pago');
 
     if (pagoId > 0) {
+      const pagoFallido =
+        pagoQuery === 'fail' ||
+        this.route.snapshot.queryParamMap.get('status') === 'failure' ||
+        this.route.snapshot.queryParamMap.get('status') === 'rejected';
+
+      if (pagoFallido) {
+        this.mostrarPagoNoCompletado(MSG_RESERVA_PAGO_RECHAZADO);
+        this.liberarReservaPorPagoFallido(pagoId);
+        return;
+      }
+
       this.pagoIdEnCurso = pagoId;
       this.bannerPagoEnCurso = 'Consultando el estado de tu pago con Mercado Pago…';
       this.iniciarPollingPago(pagoId);
@@ -627,103 +636,73 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     }, 800);
   }
 
-  /**
-   * Tras cerrar MP o volver a la pestaña: confirma con el backend una vez
-   * y, si sigue pendiente, abandona el pago y libera la reserva.
-   */
   private pagoMpEnProceso(mpStatus?: string | null): boolean {
     return mpStatus === 'pending' || mpStatus === 'in_process';
   }
 
+  /**
+   * Tras cerrar MP o volver a la pestaña: consulta al instante (como el éxito)
+   * y muestra el resultado sin esperar reintentos ni abandonar en el hilo principal.
+   */
   private manejarCierreVentanaPago(pagoId: number, gen = this.pagoSeguimientoGen): void {
     if (this.pagoCompletado) return;
 
-    this.bannerPagoEnCurso = 'Verificando si el pago se completó…';
-
-    setTimeout(() => {
+    const evaluarEstado = (estado: {
+      estado: string;
+      message: string;
+      mp_status?: string | null;
+    }): void => {
       if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
 
-      this.pagoService.consultarEstado(pagoId).subscribe({
-        next: (estado) => {
+      if (estado.estado === 'COMPLETADO' || estado.estado === 'RECHAZADO') {
+        this.procesarEstadoPago(estado);
+        return;
+      }
+
+      if (this.pagoMpEnProceso(estado.mp_status)) {
+        setTimeout(() => {
           if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
-          if (estado.estado === 'COMPLETADO') {
-            this.procesarEstadoPago(estado);
-            return;
-          }
-          if (estado.estado === 'RECHAZADO') {
-            this.procesarEstadoPago(estado);
-            return;
-          }
-          if (estado.estado === 'PENDIENTE' && !this.pagoMpEnProceso(estado.mp_status)) {
-            this.abortarPagoPendiente(pagoId, gen);
-            return;
-          }
-          this.abortarPagoIncompletoConReintentos(pagoId, gen);
-        },
-        error: () => {
-          if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
-          this.abortarPagoIncompletoConReintentos(pagoId, gen);
-        },
-      });
-    }, this.cierrePagoGraciaMs);
+          this.pagoService.consultarEstado(pagoId).subscribe({
+            next: (retry) => evaluarEstado(retry),
+            error: () => this.abortarPagoPendiente(pagoId, gen),
+          });
+        }, this.reintentoMpEnProcesoMs);
+        return;
+      }
+
+      this.abortarPagoPendiente(pagoId, gen, MSG_RESERVA_PAGO_INCOMPLETO);
+    };
+
+    this.pagoService.consultarEstado(pagoId).subscribe({
+      next: evaluarEstado,
+      error: () => this.abortarPagoPendiente(pagoId, gen),
+    });
   }
 
-  private abortarPagoIncompletoConReintentos(pagoId: number, gen: number, intento = 0): void {
-    if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
-
-    if (intento >= this.reintentosTrasCierre) {
-      this.abortarPagoPendiente(pagoId, gen);
-      return;
-    }
-
-    setTimeout(() => {
-      if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
-      this.pagoService.consultarEstado(pagoId).subscribe({
-        next: (estado) => {
-          if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
-          if (estado.estado === 'COMPLETADO') {
-            this.procesarEstadoPago(estado);
-            return;
-          }
-          if (estado.estado === 'RECHAZADO') {
-            this.procesarEstadoPago(estado);
-            return;
-          }
-          if (estado.estado === 'PENDIENTE' && !this.pagoMpEnProceso(estado.mp_status)) {
-            this.abortarPagoPendiente(pagoId, gen);
-            return;
-          }
-          this.abortarPagoIncompletoConReintentos(pagoId, gen, intento + 1);
-        },
-        error: () => this.abortarPagoIncompletoConReintentos(pagoId, gen, intento + 1),
-      });
-    }, this.pollingTrasCierreMs);
-  }
-
-  private abortarPagoPendiente(pagoId: number, gen: number): void {
+  private abortarPagoPendiente(
+    pagoId: number,
+    gen: number,
+    mensaje = MSG_RESERVA_PAGO_INCOMPLETO,
+  ): void {
     if (this.pagoCompletado || gen !== this.pagoSeguimientoGen) return;
 
     this.detenerPollingPago();
     this.detenerMonitoreoVentana();
     document.removeEventListener('visibilitychange', this.onVisibilidadPago);
-    this.bannerPagoEnCurso = '';
-    this.bannerSuccess = '';
+    this.mostrarPagoNoCompletado(mensaje);
 
     this.pagoService.abandonarPago(pagoId).subscribe({
       next: (res) => {
         if (gen !== this.pagoSeguimientoGen) return;
         if (res.estado === 'COMPLETADO') {
+          this.pagoCompletado = false;
+          this.bannerError = '';
           this.procesarEstadoPago({
             estado: 'COMPLETADO',
             message: res.message || MSG_RESERVA_CONFIRMADA,
           });
           return;
         }
-        this.pagoSeguimientoGen += 1;
-        this.pagoCompletado = true;
-        this.pagoIdEnCurso = null;
-        this.reservaIdPendiente = null;
-        this.bannerError = res.message || MSG_RESERVA_PAGO_INCOMPLETO;
         this.recargarClases();
       },
       error: (err) => {
@@ -734,32 +713,32 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
           });
           return;
         }
-        // El backend puede haber confirmado el pago aunque la petición falle en red
         this.pagoService.consultarEstado(pagoId).subscribe({
           next: (estado) => {
             if (gen !== this.pagoSeguimientoGen) return;
             if (estado.estado === 'COMPLETADO') {
+              this.pagoCompletado = false;
+              this.bannerError = '';
               this.procesarEstadoPago(estado);
-              return;
+            } else {
+              this.recargarClases();
             }
-            this.pagoSeguimientoGen += 1;
-            this.pagoCompletado = true;
-            this.pagoIdEnCurso = null;
-            this.reservaIdPendiente = null;
-            this.bannerError = MSG_RESERVA_PAGO_INCOMPLETO;
-            this.recargarClases();
           },
-          error: () => {
-            this.pagoSeguimientoGen += 1;
-            this.pagoCompletado = true;
-            this.pagoIdEnCurso = null;
-            this.reservaIdPendiente = null;
-            this.bannerError = MSG_RESERVA_PAGO_INCOMPLETO;
-            this.recargarClases();
-          },
+          error: () => this.recargarClases(),
         });
       },
     });
+  }
+
+  /** Muestra el aviso de fallo al instante, igual que el banner de éxito. */
+  private mostrarPagoNoCompletado(mensaje: string): void {
+    this.pagoCompletado = true;
+    this.pagoIdEnCurso = null;
+    this.reservaIdPendiente = null;
+    this.bannerPagoEnCurso = '';
+    this.bannerSuccess = '';
+    this.bannerError = mensaje;
+    this.recargarClases();
   }
 
   private verificarPagoIncompleto(pagoId: number): void {
@@ -768,10 +747,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
 
   private finalizarPagoNoCompletado(mensaje = MSG_RESERVA_PAGO_INCOMPLETO): void {
     if (this.pagoCompletado || !this.pagoIdEnCurso) return;
-    this.abortarPagoPendiente(this.pagoIdEnCurso, this.pagoSeguimientoGen);
-    if (mensaje !== MSG_RESERVA_PAGO_INCOMPLETO) {
-      this.bannerError = mensaje;
-    }
+    this.abortarPagoPendiente(this.pagoIdEnCurso, this.pagoSeguimientoGen, mensaje);
   }
 
   private liberarReservaPorPagoFallido(pagoId?: number): void {
@@ -826,7 +802,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     onExito?: () => void,
   ): void {
     if (estado.estado === 'COMPLETADO') {
-      if (estado.mp_status !== 'approved') {
+      if (estado.mp_status && estado.mp_status !== 'approved') {
         return;
       }
       this.pagoCompletado = true;

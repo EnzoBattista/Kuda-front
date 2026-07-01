@@ -574,7 +574,7 @@ export class ReservasService {
           if (monto <= 0) {
             return of({
               message: MSG_RESERVA_CONFIRMADA,
-              reservaId: reservaId || inscripcion.id,
+              reservaId,
             });
           }
 
@@ -894,12 +894,12 @@ export class ReservasService {
       .post<InscripcionIndividualApi>(this.inscripcionesIndUrl, body)
       .pipe(
         switchMap((inscripcion) => {
-          const reservaId = inscripcion.reservas?.[0]?.id ?? 0;
+          const reservaId = this.reservaIdDesdeInscripcion(inscripcion);
           const monto = this.montoACobrarIndividual(inscripcion, tipoPago);
           return this.finalizarConPagoOpcional(
             clase,
             monto,
-            reservaId || inscripcion.id,
+            reservaId,
             tipoPago,
             undefined,
             inscripcion.id,
@@ -930,6 +930,11 @@ export class ReservasService {
     const titulo = `${clase.actividad} — ${clase.proximaFecha}`;
     const email = this.auth.getCurrentUser()?.email;
     const idReserva = reservaId > 0 ? reservaId : 0;
+    const origenPago = inscripcionMensualId
+      ? 'MENSUALIDAD'
+      : tipoPago === 'SEÑA'
+        ? 'SEÑA'
+        : 'CLASE_SUELTA';
 
     return this.pagoService
       .createPreference({
@@ -938,7 +943,7 @@ export class ReservasService {
         cliente_email: email,
         reserva_id: idReserva > 0 ? idReserva : undefined,
         inscripcion_mensual_id: inscripcionMensualId,
-        origen: inscripcionMensualId ? 'MENSUALIDAD' : 'CLASE_SUELTA',
+        origen: origenPago,
         origen_id: inscripcionMensualId ?? inscripcionIndividualId,
       })
       .pipe(
@@ -976,7 +981,6 @@ export class ReservasService {
       );
   }
 
-  /** Id de reserva real; nunca usar el id de inscripción como reserva_id en pagos. */
   /** Id de reserva real; nunca usar el id de inscripción como reserva_id en pagos. */
   private reservaIdDesdeInscripcion(inscripcion: {
     reservas?: { id: number }[];
