@@ -394,7 +394,7 @@
     aria-labelledby="modal-inscriptos-title"
     (click)="$event.stopPropagation()"
   >
-    <h4 id="modal-inscriptos-title" class="modal-title">Inscriptos (Abonados mensuales)</h4>
+    <h4 id="modal-inscriptos-title" class="modal-title">Clientes Inscriptos</h4>
     <p class="help" *ngIf="selectedClase">
       {{ nombreActividad(selectedClase) }} — {{ selectedClase.dia_semana }}
       {{ selectedClase.hora_inicio }} – {{ selectedClase.hora_fin }}
@@ -406,15 +406,36 @@
       No hay inscriptos
     </p>
 
-    <ul class="lista-espera-items" *ngIf="!inscriptosLoading && inscriptosItems.length > 0">
-      <li class="lista-espera-item" *ngFor="let item of inscriptosItems">
-        <div class="lista-espera-info">
-          <strong>{{ item.cliente?.nombre }} {{ item.cliente?.apellido }}</strong>
-          <span class="help">{{ item.cliente?.email }}</span>
-          <span class="help">Teléfono: {{ item.cliente?.telefono || '—' }}</span>
-        </div>
-      </li>
-    </ul>
+    <div class="table-responsive" *ngIf="!inscriptosLoading && inscriptosItems.length > 0" style="margin-top: 1rem; max-height: 300px; overflow-y: auto;">
+      <table class="table-inscriptos" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600;">
+            <th style="padding: 0.5rem 0.25rem;">Cliente</th>
+            <th style="padding: 0.5rem 0.25rem;">Email</th>
+            <th style="padding: 0.5rem 0.25rem;">Teléfono</th>
+            <th style="padding: 0.5rem 0.25rem; text-align: right;">Tipo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of inscriptosItems" style="border-bottom: 1px solid var(--border);">
+            <td style="padding: 0.75rem 0.25rem; font-weight: 500;">
+              {{ item.cliente?.nombre }} {{ item.cliente?.apellido }}
+            </td>
+            <td style="padding: 0.75rem 0.25rem; color: var(--muted);">
+              {{ item.cliente?.email }}
+            </td>
+            <td style="padding: 0.75rem 0.25rem; color: var(--muted);">
+              {{ item.cliente?.telefono || '—' }}
+            </td>
+            <td style="padding: 0.75rem 0.25rem; text-align: right; white-space: nowrap;">
+              <span class="tipo-badge" [ngClass]="item.tipo === 'Mensual' ? 'tipo-badge-mensual' : 'tipo-badge-individual'">
+                {{ item.tipo }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div class="form-actions">
       <button

@@ -493,3 +493,19 @@
   flex-direction: column;
   gap: 0.15rem;
 }
+
+.tipo-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  display: inline-block;
+}
+.tipo-badge-mensual {
+  background: rgba(22, 63, 122, 0.12);
+  color: var(--brand-blue);
+}
+.tipo-badge-individual {
+  background: rgba(46, 117, 89, 0.12);
+  color: #2e7559;
+}
