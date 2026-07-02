@@ -72,12 +72,6 @@
               <h5 class="clase-actividad-nombre">{{ grupo.actividad }}</h5>
               <p class="clase-fecha-hora">{{ formatFechaHora(clase) }}</p>
             </div>
-            <span
-              class="clase-estado-badge"
-              [class.clase-estado-cancelada]="estadoEsCancelada(clase)"
-            >
-              {{ estadoLabel(clase) }}
-            </span>
           </div>
 
           <dl class="clase-info">
@@ -452,7 +446,7 @@
       Cantidad de días de gracia global para el pago de mensualidades (1–10).
     </p>
 
-    <form class="form" [formGroup]="graciaForm" (ngSubmit)="guardarDiasGracia()" ngNativeValidate>
+    <form class="form" [formGroup]="graciaForm" (ngSubmit)="guardarDiasGracia()">
       <div class="field">
         <label class="label" for="dias-gracia-global">Días de gracia mensual</label>
         <input
@@ -467,7 +461,7 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="guardandoGracia">
+        <button type="submit" class="btn btn-primary" [disabled]="guardandoGracia || graciaForm.invalid">
           Guardar
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalGracia()" [disabled]="guardandoGracia">

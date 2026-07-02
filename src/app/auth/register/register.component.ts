@@ -1,12 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { AuthService, RegisterRequest } from '../../services/auth.service';
@@ -21,46 +15,22 @@ import { ToastService } from '../../services/toast.service';
 })
 export class RegisterComponent {
   isSubmitting = false;
-  submitted = false;
 
-  readonly form = new FormGroup(
-    {
-      nombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      apellido: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      dni: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
-      email: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
-      genero: new FormControl<'femenino' | 'masculino' | 'otro'>('otro', {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
-      fechaNacimiento: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
-      telefono: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
-      fichaMedicaFile: new FormControl<File | null>(null, {
-        validators: [Validators.required],
-      }),
-      password: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required, Validators.minLength(8)],
-      }),
-      confirmPassword: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required, Validators.minLength(8)],
-      }),
-    },
-    { validators: [RegisterComponent.passwordsMatchValidator] }
-  );
+  readonly form = new FormGroup({
+    nombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    apellido: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    dni: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    email: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    genero: new FormControl<'femenino' | 'masculino' | 'otro'>('otro', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    fechaNacimiento: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    telefono: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    fichaMedicaFile: new FormControl<File | null>(null, { validators: [Validators.required] }),
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+  });
 
   fichaMedicaFileName = '';
   fichaMedicaEncoded: string | null = null;
@@ -71,24 +41,7 @@ export class RegisterComponent {
   ) {}
 
   onSubmit(): void {
-    this.submitted = true;
-
-    if (this.isUnder14()) {
-      this.toast.showError('Se debe ser mayor de 14 años.');
-      return;
-    }
-    if (this.form.hasError('passwordsMismatch')) {
-      this.toast.showError('Las contraseñas no coinciden.');
-      return;
-    }
-    if (this.form.controls.password.hasError('minlength') || this.form.controls.confirmPassword.hasError('minlength')) {
-      this.toast.showError('La contraseña debe tener al menos 8 caracteres.');
-      return;
-    }
-    if (this.form.invalid) {
-      this.toast.showError('Por favor, revisá que todos los campos sean correctos.');
-      return;
-    }
+    if (this.isSubmitting) return;
 
     this.isSubmitting = true;
 
@@ -108,30 +61,15 @@ export class RegisterComponent {
     this.auth.register(req).subscribe({
       next: () => {
         this.isSubmitting = false;
-        this.toast.showSuccess('Se ha enviado un enlace de confirmación a su casilla de email. Tiene 48hs para confirmar su registro.');
+        this.toast.showSuccess(
+          'Se ha enviado un enlace de confirmación a su casilla de email. Tiene 48hs para confirmar su registro.'
+        );
       },
       error: (err) => {
         this.isSubmitting = false;
-        this.toast.showError(this.mapRegisterError(err?.error?.message ?? ''));
+        this.toast.showError(err?.error?.message ?? 'No se pudo registrar. Verificá los datos.');
       },
     });
-  }
-
-  private mapRegisterError(msg: string): string {
-    const lower = (msg ?? '').toLowerCase();
-    if (lower.includes('email') && (lower.includes('registrado') || lower.includes('uso'))) {
-      return 'El email ya se encuentra registrado.';
-    }
-    if (lower.includes('contraseña') && lower.includes('8')) {
-      return 'La contraseña debe tener al menos 8 caracteres.';
-    }
-    if (lower.includes('14') || lower.includes('mayor de edad') || lower.includes('menor')) {
-      return 'Se debe ser mayor de 14 años.';
-    }
-    if (lower.includes('coinciden')) {
-      return 'Las contraseñas no coinciden.';
-    }
-    return msg || 'No se pudo registrar. Verificá los datos.';
   }
 
   onFichaMedicaSelected(event: Event): void {
@@ -153,29 +91,4 @@ export class RegisterComponent {
     };
     reader.readAsDataURL(file);
   }
-
-  isUnder14(): boolean {
-    const fecha = this.form.controls.fechaNacimiento.value;
-    if (!fecha) return false;
-    const hoy = new Date();
-    const nacimiento = new Date(fecha);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
-    return edad <= 14;
-  }
-
-  get maxFechaNacimiento(): string {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 14);
-    return d.toISOString().split('T')[0];
-  }
-
-  private static passwordsMatchValidator(group: AbstractControl) {
-    const password = group.get('password')?.value;
-    const confirm = group.get('confirmPassword')?.value;
-    if (!password || !confirm) return null;
-    return password === confirm ? null : { passwordsMismatch: true };
-  }
 }
-
