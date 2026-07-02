@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService, CurrentUser } from '../../services/auth.service';
+import { ToastService } from '../../shared/toast.service';
 import {
   CanalesNotificacion,
   NotificacionesService,
@@ -19,8 +20,6 @@ export class MiInformacionComponent implements OnInit {
   usuario: CurrentUser | null = null;
   notifLoading = false;
   notifSaving = false;
-  notifError = '';
-  notifSuccess = '';
 
   readonly notifForm = new FormGroup({
     notificaciones_activas: new FormControl(true, { nonNullable: true }),
@@ -33,6 +32,7 @@ export class MiInformacionComponent implements OnInit {
     public readonly auth: AuthService,
     private readonly router: Router,
     private readonly notificaciones: NotificacionesService,
+    private readonly toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -57,14 +57,13 @@ export class MiInformacionComponent implements OnInit {
 
   private cargarPreferenciasNotificacion(): void {
     this.notifLoading = true;
-    this.notifError = '';
     this.notificaciones.getMisPreferencias().subscribe({
       next: (prefs) => {
         this.poblarNotifForm(prefs.canales_notificacion, prefs.notificaciones_activas);
         this.notifLoading = false;
       },
       error: (err) => {
-        this.notifError = this.notificaciones.mensajeError(err);
+        this.toast.showError(this.notificaciones.mensajeError(err));
         this.notifLoading = false;
       },
     });
@@ -81,8 +80,6 @@ export class MiInformacionComponent implements OnInit {
 
   guardarPreferenciasNotificacion(): void {
     this.notifSaving = true;
-    this.notifError = '';
-    this.notifSuccess = '';
 
     const v = this.notifForm.getRawValue();
     this.notificaciones
@@ -96,11 +93,11 @@ export class MiInformacionComponent implements OnInit {
       })
       .subscribe({
         next: (res) => {
-          this.notifSuccess = res.message;
+          this.toast.showSuccess(res.message);
           this.notifSaving = false;
         },
         error: (err) => {
-          this.notifError = this.notificaciones.mensajeError(err);
+          this.toast.showError(this.notificaciones.mensajeError(err));
           this.notifSaving = false;
         },
       });

@@ -86,6 +86,14 @@ export class ClasesService {
       );
   }
 
+  getInscriptos(id: number): Observable<any[]> {
+    return this.http
+      .get<any[]>(`${this.apiUrl}/${id}/inscriptos`, { headers: this.noCacheHeaders })
+      .pipe(
+        catchError((err) => throwError(() => this.toHuError(err))),
+      );
+  }
+
   create(data: CreateClaseDto): Observable<{ message: string; clase: Clase }> {
     return this.http
       .post<{ message: string; clase: Clase }>(this.apiUrl, data)

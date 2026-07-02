@@ -284,29 +284,29 @@
 
   <!-- Modal: crear/modificar profesor -->
   <div class="modal-overlay" *ngIf="showModalFormProfesor" (click)="cerrarModalProfesor()">
-    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+    <form class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()" (ngSubmit)="onGuardarProfesor()" ngNativeValidate>
       <h4 class="modal-title">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar nuevo profesor' }}</h4>
 
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Nombre</div>
-          <input class="control" [(ngModel)]="formProfesor.nombre" />
+          <input class="control" name="profNombre" [(ngModel)]="formProfesor.nombre" required />
         </div>
         <div class="field">
           <div class="label">Apellido</div>
-          <input class="control" [(ngModel)]="formProfesor.apellido" />
+          <input class="control" name="profApellido" [(ngModel)]="formProfesor.apellido" required />
         </div>
         <div class="field">
           <div class="label">DNI</div>
-          <input class="control" [(ngModel)]="formProfesor.dni" />
+          <input class="control" name="profDni" [(ngModel)]="formProfesor.dni" required />
         </div>
         <div class="field">
           <div class="label">Teléfono</div>
-          <input class="control" [(ngModel)]="formProfesor.telefono" />
+          <input class="control" name="profTelefono" [(ngModel)]="formProfesor.telefono" required />
         </div>
         <div class="field">
           <div class="label">Email</div>
-          <input class="control" type="email" [(ngModel)]="formProfesor.email" />
+          <input class="control" type="email" name="profEmail" [(ngModel)]="formProfesor.email" required />
         </div>
       </div>
 
@@ -342,48 +342,48 @@
       <p class="muted" *ngIf="!loadingActividades && actividades.length === 0">Sin actividades disponibles para asignar.</p>
 
       <div class="modal-actions">
-        <button class="btn btn-primary" (click)="onGuardarProfesor()" [disabled]="!formProfesor.nombre.trim() || !formProfesor.apellido.trim() || !formProfesor.dni.trim() || !formProfesor.telefono.trim() || !formProfesor.email.trim()">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar profesor' }}</button>
-        <button class="btn btn-secondary" (click)="cerrarModalProfesor()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">{{ profesorAEditarId ? 'Modificar profesor' : 'Registrar profesor' }}</button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalProfesor()">Cancelar</button>
       </div>
-    </div>
+    </form>
   </div>
 
   <!-- Modal: crear recepcionista -->
   <div class="modal-overlay" *ngIf="showModalCrearEmpleado" (click)="cerrarModalCrearEmpleado()">
-    <div class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()">
+    <form class="card card-pad modal-panel" role="dialog" (click)="$event.stopPropagation()" (ngSubmit)="onCreateEmpleado()" ngNativeValidate>
       <h4 class="modal-title">{{ empleadoAEditarEmail ? 'Modificar recepcionista' : 'Registrar recepcionista' }}</h4>
 
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Nombre</div>
-          <input class="control" [(ngModel)]="createEmpleadoForm.nombre" />
+          <input class="control" name="empNombre" [(ngModel)]="createEmpleadoForm.nombre" required />
         </div>
         <div class="field">
           <div class="label">Apellido</div>
-          <input class="control" [(ngModel)]="createEmpleadoForm.apellido" />
+          <input class="control" name="empApellido" [(ngModel)]="createEmpleadoForm.apellido" required />
         </div>
         <div class="field">
           <div class="label">DNI</div>
-          <input class="control" [(ngModel)]="createEmpleadoForm.dni" />
+          <input class="control" name="empDni" [(ngModel)]="createEmpleadoForm.dni" required />
         </div>
         <div class="field">
           <div class="label">Email</div>
-          <input class="control" type="email" [(ngModel)]="createEmpleadoForm.email" />
+          <input class="control" type="email" name="empEmail" [(ngModel)]="createEmpleadoForm.email" required />
         </div>
         <div class="field">
           <div class="label">Teléfono</div>
-          <input class="control" [(ngModel)]="createEmpleadoForm.telefono" />
+          <input class="control" name="empTelefono" [(ngModel)]="createEmpleadoForm.telefono" required />
         </div>
         <div class="field">
           <div class="label">Contraseña <span *ngIf="empleadoAEditarEmail" class="muted" style="font-size: 0.8em; font-weight: normal;">(Opcional: dejalo en blanco para mantener la actual)</span></div>
-          <input class="control" type="password" [(ngModel)]="createEmpleadoForm.password" />
+          <input class="control" type="password" name="empPassword" [(ngModel)]="createEmpleadoForm.password" [required]="!empleadoAEditarEmail" />
         </div>
       </div>
 
       <div class="modal-actions">
-        <button type="button" class="btn btn-primary" (click)="onCreateEmpleado()" [disabled]="!createEmpleadoForm.nombre.trim() || !createEmpleadoForm.apellido.trim() || !createEmpleadoForm.dni.trim() || !createEmpleadoForm.email.trim() || !createEmpleadoForm.telefono.trim() || (!empleadoAEditarEmail && !createEmpleadoForm.password.trim())">{{ empleadoAEditarEmail ? 'Modificar recepcionista' : 'Registrar recepcionista' }}</button>
+        <button type="submit" class="btn btn-primary">{{ empleadoAEditarEmail ? 'Modificar recepcionista' : 'Registrar recepcionista' }}</button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalCrearEmpleado()">Cancelar</button>
       </div>
-    </div>
+    </form>
   </div>
 </div>

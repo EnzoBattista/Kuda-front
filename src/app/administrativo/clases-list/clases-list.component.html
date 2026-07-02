@@ -111,6 +111,9 @@
             <button type="button" class="btn-clase accion-lista" (click)="onVerListaEspera(clase)">
               Ver lista de espera
             </button>
+            <button type="button" class="btn-clase accion-lista" (click)="onVerInscriptos(clase)">
+              Ver inscriptos
+            </button>
             <button type="button" class="btn-clase accion-cancelar" (click)="onCancelar(clase)">
               Cancelar clase
             </button>
@@ -377,6 +380,53 @@
         class="btn btn-secondary"
         (click)="cerrarModalListaEspera()"
         [disabled]="modalSubmitting"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Inscriptos -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalInscriptos"
+  role="presentation"
+  (click)="cerrarModalInscriptos()"
+>
+  <div
+    class="card card-pad modal-panel modal-panel-wide"
+    role="dialog"
+    aria-labelledby="modal-inscriptos-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h4 id="modal-inscriptos-title" class="modal-title">Inscriptos (Abonados mensuales)</h4>
+    <p class="help" *ngIf="selectedClase">
+      {{ nombreActividad(selectedClase) }} — {{ selectedClase.dia_semana }}
+      {{ selectedClase.hora_inicio }} – {{ selectedClase.hora_fin }}
+    </p>
+
+    <p class="help" *ngIf="inscriptosLoading">Cargando inscriptos…</p>
+    <p class="error-text" *ngIf="inscriptosError">{{ inscriptosError }}</p>
+    <p class="help" *ngIf="!inscriptosLoading && !inscriptosError && inscriptosItems.length === 0">
+      No hay inscriptos
+    </p>
+
+    <ul class="lista-espera-items" *ngIf="!inscriptosLoading && inscriptosItems.length > 0">
+      <li class="lista-espera-item" *ngFor="let item of inscriptosItems">
+        <div class="lista-espera-info">
+          <strong>{{ item.cliente?.nombre }} {{ item.cliente?.apellido }}</strong>
+          <span class="help">{{ item.cliente?.email }}</span>
+          <span class="help">Teléfono: {{ item.cliente?.telefono || '—' }}</span>
+        </div>
+      </li>
+    </ul>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="cerrarModalInscriptos()"
       >
         Cerrar
       </button>

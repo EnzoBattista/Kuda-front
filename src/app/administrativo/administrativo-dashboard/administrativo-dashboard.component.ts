@@ -250,10 +250,6 @@ export class AdministrativoDashboardComponent {
     this.formProfesorError = '';
     this.formProfesorSuccess = '';
     const p = this.formProfesor;
-    if (!p.nombre || !p.apellido || !p.dni) {
-      this.toast.showError('Completá nombre, apellido y DNI.');
-      return;
-    }
     if (p.actividadesSeleccionadas.length === 0) {
       this.toast.showError('El profesor debe dictar al menos una actividad');
       return;
@@ -315,6 +311,12 @@ export class AdministrativoDashboardComponent {
     ) {
       return 'El profesor con este número de documento ya se encuentra registrado';
     }
+    if (
+      (lower.includes('email') || lower.includes('correo')) &&
+      (lower.includes('ya') || lower.includes('existe') || lower.includes('registrado'))
+    ) {
+      return 'El email ya se encuentra registrado por otro profesor';
+    }
     return msg || 'No se pudo registrar el profesor.';
   }
 
@@ -374,10 +376,6 @@ export class AdministrativoDashboardComponent {
     const telefono = (f.telefono || '').trim();
     const password = f.password || '';
 
-    if (!nombre || !apellido || !dni || !email || !telefono) {
-      this.toast.showError('Completá todos los campos obligatorios.');
-      return;
-    }
     if (!this.empleadoAEditarEmail && (!password || password.length < 8)) {
       this.toast.showError('La contraseña debe tener al menos 8 caracteres.');
       return;

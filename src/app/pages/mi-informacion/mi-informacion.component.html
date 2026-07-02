@@ -29,12 +29,6 @@
         <span class="info-label">Teléfono</span>
         <span class="info-value">{{ usuario.telefono }}</span>
       </div>
-      <div class="info-item">
-        <span class="info-label">Estado de cuenta</span>
-        <span class="info-value" [class.activo]="usuario.activo" [class.inactivo]="!usuario.activo">
-          {{ usuario.activo ? 'Activa' : 'Inactiva' }}
-        </span>
-      </div>
     </div>
 
     <div class="info-actions">
@@ -47,8 +41,6 @@
       <p class="help">Elegí qué alertas querés recibir del gimnasio.</p>
 
       <p class="help" *ngIf="notifLoading">Cargando preferencias…</p>
-      <p class="error-text" *ngIf="notifError">{{ notifError }}</p>
-      <div class="help success-banner" *ngIf="notifSuccess" role="status">{{ notifSuccess }}</div>
 
       <form class="form notif-form" [formGroup]="notifForm" (ngSubmit)="guardarPreferenciasNotificacion()" *ngIf="!notifLoading">
         <label class="toggle-row">

@@ -118,6 +118,11 @@ export class ClasesListComponent implements OnInit {
   listaEsperaLoading = false;
   listaEsperaError = '';
 
+  showModalInscriptos = false;
+  inscriptosItems: any[] = [];
+  inscriptosLoading = false;
+  inscriptosError = '';
+
   selectedClase: ClaseListItem | null = null;
   modalError = '';
   modalSubmitting = false;
@@ -799,6 +804,36 @@ export class ClasesListComponent implements OnInit {
       error: (err) => {
         this.listaEsperaError = this.listaEsperaService.mensajeError(err);
         this.listaEsperaLoading = false;
+      },
+    });
+  }
+
+  onVerInscriptos(clase: ClaseListItem): void {
+    this.selectedClase = clase;
+    this.inscriptosItems = [];
+    this.inscriptosError = '';
+    this.showModalInscriptos = true;
+    this.cargarInscriptos(clase.id);
+  }
+
+  cerrarModalInscriptos(): void {
+    this.showModalInscriptos = false;
+    this.selectedClase = null;
+    this.inscriptosItems = [];
+    this.inscriptosError = '';
+  }
+
+  private cargarInscriptos(claseId: number): void {
+    this.inscriptosLoading = true;
+    this.inscriptosError = '';
+    this.clasesService.getInscriptos(claseId).subscribe({
+      next: (items) => {
+        this.inscriptosItems = items;
+        this.inscriptosLoading = false;
+      },
+      error: (err) => {
+        this.inscriptosError = err?.message || 'Error al cargar los inscriptos';
+        this.inscriptosLoading = false;
       },
     });
   }

@@ -1251,9 +1251,11 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
     Lunes: 0,
     Martes: 1,
     Miercoles: 2,
+    'Miércoles': 2,
     Jueves: 3,
     Viernes: 4,
     Sabado: 5,
+    'Sábado': 5,
   };
 
   get clasesPorActividad(): { actividad: string; clases: ClaseDisponible[] }[] {

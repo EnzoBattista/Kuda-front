@@ -11,6 +11,8 @@ import {
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
+import { ToastService } from '../../shared/toast.service';
+
 @Component({
   selector: 'app-editar-perfil',
   standalone: true,
@@ -42,13 +44,10 @@ export class EditarPerfilComponent implements OnInit {
   isSubmitting = false;
   submitted = false;
   isLoading = true;
-  loadError = '';
-  submitError = '';
-  successMessage = '';
-
   constructor(
     public readonly auth: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -68,7 +67,7 @@ export class EditarPerfilComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
-        this.loadError = 'No se pudo cargar tu perfil. Intentá nuevamente.';
+        this.toast.showError('No se pudo cargar tu perfil. Intentá nuevamente.');
       },
     });
   }
@@ -92,8 +91,6 @@ export class EditarPerfilComponent implements OnInit {
 
   onSubmit(): void {
     this.submitted = true;
-    this.submitError = '';
-    this.successMessage = '';
     
     if (this.auth.isAdministrativo()) {
       this.form.controls.genero.clearValidators();
@@ -126,12 +123,11 @@ export class EditarPerfilComponent implements OnInit {
       .subscribe({
         next: () => {
           this.isSubmitting = false;
-          this.successMessage = 'Se ha modificado su información personal';
+          this.toast.showSuccess('Se ha modificado su información personal');
         },
         error: (err) => {
           this.isSubmitting = false;
-          this.submitError =
-            err?.error?.message ?? 'No se pudieron guardar los cambios. Intentá nuevamente.';
+          this.toast.showError(err?.error?.message ?? 'No se pudieron guardar los cambios. Intentá nuevamente.');
         },
       });
   }

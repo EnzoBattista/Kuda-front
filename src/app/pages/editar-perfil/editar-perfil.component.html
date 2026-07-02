@@ -7,15 +7,14 @@
     <h2>Modificar datos personales</h2>
     <p class="help">Actualizá tu información personal.</p>
 
-    <p class="form-error" *ngIf="loadError">{{ loadError }}</p>
-
-    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()" ngNativeValidate>
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Nombre</div>
           <input
             class="control"
             formControlName="nombre"
+            required
             [attr.aria-invalid]="submitted && form.controls.nombre.invalid ? 'true' : 'false'"
           />
           <div class="error-text" *ngIf="submitted && form.controls.nombre.hasError('required')">
@@ -28,6 +27,7 @@
           <input
             class="control"
             formControlName="apellido"
+            required
             [attr.aria-invalid]="submitted && form.controls.apellido.invalid ? 'true' : 'false'"
           />
           <div class="error-text" *ngIf="submitted && form.controls.apellido.hasError('required')">
@@ -39,7 +39,7 @@
       <div class="form-row form-row-2" *ngIf="!auth.isAdministrativo()">
         <div class="field">
           <div class="label">Género</div>
-          <select class="control" formControlName="genero">
+          <select class="control" formControlName="genero" required>
             <option value="femenino">Femenino</option>
             <option value="masculino">Masculino</option>
             <option value="otro">Otro</option>
@@ -53,6 +53,7 @@
             type="date"
             formControlName="fechaNacimiento"
             [max]="maxFechaNacimiento"
+            required
             [attr.aria-invalid]="submitted && form.controls.fechaNacimiento.invalid ? 'true' : 'false'"
           />
           <div class="error-text" *ngIf="submitted && form.controls.fechaNacimiento.hasError('required')">
@@ -73,17 +74,8 @@
         />
       </div>
 
-      <div class="error-text" *ngIf="submitError" style="display: flex; justify-content: space-between; align-items: center;">
-        <span style="margin: 0;">{{ submitError }}</span>
-        <button type="button" (click)="submitError = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
-      </div>
-      <div class="help success-banner" *ngIf="successMessage" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>{{ successMessage }}</span>
-        <button type="button" (click)="successMessage = ''" aria-label="Cerrar" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; color: inherit;">&times;</button>
-      </div>
-
       <div class="form-actions">
-        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting || form.invalid">
+        <button class="btn btn-primary" type="submit" [disabled]="isSubmitting">
           {{ isSubmitting ? 'Guardando…' : 'Guardar cambios' }}
         </button>
       </div>
