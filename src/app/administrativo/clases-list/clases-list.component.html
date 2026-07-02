@@ -72,12 +72,6 @@
               <h5 class="clase-actividad-nombre">{{ grupo.actividad }}</h5>
               <p class="clase-fecha-hora">{{ formatFechaHora(clase) }}</p>
             </div>
-            <span
-              class="clase-estado-badge"
-              [class.clase-estado-cancelada]="estadoEsCancelada(clase)"
-            >
-              {{ estadoLabel(clase) }}
-            </span>
           </div>
 
           <dl class="clase-info">
