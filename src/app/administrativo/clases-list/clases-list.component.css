@@ -337,7 +337,6 @@
 
 /* Eliminar clase → rojo marca entero, ancho completo (peligro) */
 .accion-eliminar {
-  grid-column: 1 / -1;
   background: var(--brand-red);
   color: #fff;
 }
