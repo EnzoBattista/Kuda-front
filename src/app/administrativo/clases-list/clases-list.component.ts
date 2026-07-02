@@ -438,9 +438,9 @@ export class ClasesListComponent implements OnInit {
       if (cupoCtrl?.hasError('cupoRango')) {
         const err = cupoCtrl.errors?.['cupoRango'];
         if (err?.minError && this.formMode === 'modificar') {
-          this.modalError = 'No se pudo modificar la clase. El cupo debe ser mayor o igual a 10';
+          this.toastService.showError('No se pudo modificar la clase. El cupo debe ser mayor o igual a 10');
         } else {
-          this.modalError = this.cupoRangoMsg;
+          this.toastService.showError(this.cupoRangoMsg);
         }
       }
       return;

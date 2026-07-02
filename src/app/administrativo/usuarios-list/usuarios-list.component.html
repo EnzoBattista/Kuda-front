@@ -105,19 +105,19 @@
       Enviar mensaje a {{ selectedUsuario.nombre }} {{ selectedUsuario.apellido }} ({{ selectedUsuario.email }})
     </p>
 
-    <form class="form" [formGroup]="notificarForm" (ngSubmit)="enviarNotificacion()">
+    <form class="form" [formGroup]="notificarForm" (ngSubmit)="enviarNotificacion()" ngNativeValidate>
       <div class="field">
         <label class="label" for="notif-asunto">Asunto</label>
-        <input id="notif-asunto" class="control" formControlName="asunto" />
+        <input id="notif-asunto" class="control" formControlName="asunto" required />
       </div>
 
       <div class="field">
         <label class="label" for="notif-mensaje">Mensaje</label>
-        <textarea id="notif-mensaje" class="control" rows="5" formControlName="mensaje"></textarea>
+        <textarea id="notif-mensaje" class="control" rows="5" formControlName="mensaje" required></textarea>
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="notificarSubmitting || notificarForm.invalid">
+        <button type="submit" class="btn btn-primary" [disabled]="notificarSubmitting">
           Enviar
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalNotificar()" [disabled]="notificarSubmitting">
@@ -176,10 +176,10 @@
       Día de aviso global por falta de pago de mensualidad (dentro de los {{ diasGraciaGlobal }} días de gracia).
     </p>
 
-    <form class="form" [formGroup]="recordatorioForm" (ngSubmit)="guardarRecordatorio()">
+    <form class="form" [formGroup]="recordatorioForm" (ngSubmit)="guardarRecordatorio()" ngNativeValidate>
       <div class="field">
         <label class="label" for="recordatorio-dia">Día para recordar la falta de pago (1–{{ diasGraciaGlobal }})</label>
-        <input id="recordatorio-dia" type="number" class="control" formControlName="dia" />
+        <input id="recordatorio-dia" type="number" class="control" formControlName="dia" required min="1" [attr.max]="diasGraciaGlobal" />
       </div>
 
       <div class="form-actions" style="margin-top: 1.5rem;">

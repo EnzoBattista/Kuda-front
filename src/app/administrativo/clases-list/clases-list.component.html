@@ -452,7 +452,7 @@
       Cantidad de días de gracia global para el pago de mensualidades (1–10).
     </p>
 
-    <form class="form" [formGroup]="graciaForm" (ngSubmit)="guardarDiasGracia()">
+    <form class="form" [formGroup]="graciaForm" (ngSubmit)="guardarDiasGracia()" ngNativeValidate>
       <div class="field">
         <label class="label" for="dias-gracia-global">Días de gracia mensual</label>
         <input
@@ -460,6 +460,9 @@
           class="control"
           type="number"
           formControlName="dias"
+          required
+          min="1"
+          max="10"
         />
       </div>
 

@@ -135,7 +135,7 @@ export class SalasListComponent implements OnInit {
 
     // Escenario 3: cupo inválido. No se llama al backend; se muestra el mensaje.
     if (cupoNum < 10) {
-      this.modalError = 'El cupo debe ser mayor o igual a 10.';
+      this.toastService.showError('El cupo debe ser mayor o igual a 10.');
       return;
     }
 
@@ -167,7 +167,7 @@ export class SalasListComponent implements OnInit {
 
     // Escenario 4: cupo inválido. No se llama al backend; se muestra el mensaje.
     if (cupoNum < 10) {
-      this.modalError = 'El cupo debe ser mayor o igual a 10.';
+      this.toastService.showError('El cupo debe ser mayor o igual a 10.');
       return;
     }
 

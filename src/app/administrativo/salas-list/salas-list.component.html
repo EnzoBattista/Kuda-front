@@ -70,18 +70,18 @@
     <h4 class="modal-title">Agregar sala</h4>
     <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
-    <form [formGroup]="formSala" (ngSubmit)="onSubmitAgregar()" class="form">
+    <form [formGroup]="formSala" (ngSubmit)="onSubmitAgregar()" class="form" ngNativeValidate>
       <div class="field">
         <label class="label" for="agregar-identificador">Identificador</label>
-        <input id="agregar-identificador" class="control" formControlName="identificador" autocomplete="off" />
+        <input id="agregar-identificador" class="control" formControlName="identificador" autocomplete="off" required />
       </div>
       <div class="field">
         <label class="label" for="agregar-cupo">Cupo</label>
-        <input id="agregar-cupo" class="control" type="number" min="10" formControlName="cupo" />
+        <input id="agregar-cupo" class="control" type="number" min="10" formControlName="cupo" required />
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting || formSala.invalid">
+        <button type="submit" class="btn btn-primary" [disabled]="modalSubmitting">
           {{ modalSubmitting ? 'Guardando…' : 'Agregar' }}
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModales()" [disabled]="modalSubmitting">
@@ -98,14 +98,14 @@
     <h4 class="modal-title">Modificar sala</h4>
     <p class="error-text" *ngIf="modalError">{{ modalError }}</p>
 
-    <form [formGroup]="formSala" (ngSubmit)="onSubmitModificar()" class="form">
+    <form [formGroup]="formSala" (ngSubmit)="onSubmitModificar()" class="form" ngNativeValidate>
       <div class="field">
         <label class="label" for="modificar-identificador">Identificador</label>
-        <input id="modificar-identificador" class="control" formControlName="identificador" autocomplete="off" />
+        <input id="modificar-identificador" class="control" formControlName="identificador" autocomplete="off" required />
       </div>
       <div class="field">
         <label class="label" for="modificar-cupo">Cupo</label>
-        <input id="modificar-cupo" class="control" type="number" min="10" formControlName="cupo" />
+        <input id="modificar-cupo" class="control" type="number" min="10" formControlName="cupo" required />
       </div>
 
       <div class="form-actions">
