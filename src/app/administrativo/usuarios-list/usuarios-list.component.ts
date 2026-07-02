@@ -13,6 +13,8 @@ import {
   UsuariosFiltro,
 } from '../../services/gestion-usuarios.service';
 import { NotificacionesService } from '../../services/notificaciones.service';
+import { ConfiguracionService } from '../../services/configuracion.service';
+import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
@@ -32,6 +34,8 @@ export class UsuariosListComponent implements OnInit {
   usuarios: UsuarioListado[] = [];
   isLoading = false;
   errorMsg = '';
+  diasGraciaGlobal = 1;
+  recordatorioGlobal: number | null = 1;
 
   // Orden de la lista: primero Activos, luego Pendientes, al final Eliminados.
   private readonly ordenEstado: Record<string, number> = {
@@ -51,13 +55,30 @@ export class UsuariosListComponent implements OnInit {
     mensaje: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
 
+  showModalRecordatorio = false;
+  recordatorioSubmitting = false;
+  readonly recordatorioForm = new FormGroup({
+    dia: new FormControl<number | null>(null, { nonNullable: false }),
+  });
+
+  private readonly mensajeRecordatorioFueraDeGracia = (dias: number) =>
+    `El recordatorio debe estar dentro de los ${dias} días de gracia para pagar`;
+
   constructor(
     private readonly gestion: GestionUsuariosService,
     private readonly notificaciones: NotificacionesService,
+    private readonly configuracion: ConfiguracionService,
+    private readonly auth: AuthService,
     private readonly toast: ToastService
   ) {}
 
+  get puedeConfigurarSistema(): boolean {
+    return this.auth.isDueno();
+  }
+
   ngOnInit(): void {
+    this.cargarConfiguracion();
+
     this.filtros.valueChanges
       .pipe(
         startWith(this.filtros.getRawValue()),
@@ -82,18 +103,28 @@ export class UsuariosListComponent implements OnInit {
       });
   }
 
+  private cargarConfiguracion(): void {
+    this.configuracion.obtener().subscribe({
+      next: (cfg) => {
+        this.diasGraciaGlobal = cfg.dias_gracia_mensual;
+        this.recordatorioGlobal = cfg.recordatorio_pago_dia;
+      },
+      error: () => {
+        this.diasGraciaGlobal = 1;
+        this.recordatorioGlobal = 1;
+      },
+    });
+  }
+
   limpiarFiltros(): void {
     this.filtros.reset({ q: '', estado: '', tipoInscripcion: '' });
   }
 
-  // Ordena por estado (Activo → Pendiente → Eliminado) preservando el orden
-  // interno que devuelve el backend (Array.sort es estable).
   private ordenarPorEstado(data: UsuarioListado[]): UsuarioListado[] {
     const peso = (u: UsuarioListado): number => this.ordenEstado[u.estado ?? ''] ?? 99;
     return [...data].sort((a, b) => peso(a) - peso(b));
   }
 
-  // Click/tap en una celda truncada (nombre/email) → muestra el texto completo.
   toggleExpand(ev: Event): void {
     (ev.currentTarget as HTMLElement | null)?.classList.toggle('expandido');
   }
@@ -166,43 +197,44 @@ export class UsuariosListComponent implements OnInit {
       });
   }
 
-  showModalRecordatorio = false;
-  recordatorioSubmitting = false;
-  readonly recordatorioForm = new FormGroup({
-    dia: new FormControl<number | null>(null, { nonNullable: false, validators: [Validators.required, Validators.min(1), Validators.max(10)] }),
-  });
-
-  abrirModalRecordatorio(usuario: UsuarioListado): void {
-    this.selectedUsuario = usuario;
-    // We ideally should fetch current preferencies, but if we don't have them we can just start empty.
-    this.recordatorioForm.reset({ dia: null });
+  abrirModalRecordatorio(): void {
+    this.recordatorioForm.reset({ dia: this.recordatorioGlobal });
     this.showModalRecordatorio = true;
   }
 
   cerrarModalRecordatorio(): void {
     this.showModalRecordatorio = false;
-    this.selectedUsuario = null;
     this.recordatorioSubmitting = false;
   }
 
   guardarRecordatorio(): void {
-    this.recordatorioForm.markAllAsTouched();
-    if (this.recordatorioForm.invalid || !this.selectedUsuario) return;
+    if (this.recordatorioSubmitting) return;
+
+    const dia = Number(this.recordatorioForm.value.dia);
+    if (!Number.isInteger(dia) || dia < 1 || dia > this.diasGraciaGlobal) {
+      const diasMsg =
+        Number.isInteger(dia) && dia > this.diasGraciaGlobal
+          ? dia
+          : this.diasGraciaGlobal;
+      this.toast.showError(this.mensajeRecordatorioFueraDeGracia(diasMsg));
+      return;
+    }
 
     this.recordatorioSubmitting = true;
-    const dia = this.recordatorioForm.value.dia;
 
-    this.notificaciones.actualizarPreferenciasCliente(this.selectedUsuario.email, {
-      recordatorio_pago_dia: dia,
-    }).subscribe({
-      next: (res) => {
-        this.toast.showSuccess(res.message);
+    this.configuracion.actualizar({ recordatorio_pago_dia: dia }).subscribe({
+      next: (cfg) => {
+        this.recordatorioGlobal = cfg.recordatorio_pago_dia;
+        this.diasGraciaGlobal = cfg.dias_gracia_mensual;
+        this.toast.showSuccess('Recordatorio modificado');
         this.cerrarModalRecordatorio();
       },
       error: (err) => {
-        this.toast.showError(this.notificaciones.mensajeError(err));
+        this.toast.showError(
+          err?.error?.message ?? 'No se pudo modificar el recordatorio',
+        );
         this.recordatorioSubmitting = false;
-      }
+      },
     });
   }
 
@@ -230,7 +262,6 @@ export class UsuariosListComponent implements OnInit {
       next: (res) => {
         this.toast.showSuccess(res.message || 'Cliente eliminado con éxito');
         this.cerrarModalEliminar();
-        // Reload list
         const valores: UsuariosFiltro = this.filtros.getRawValue();
         valores.rol = 'CLIENTE';
         this.gestion.getAll(valores).subscribe((data) => {
@@ -249,12 +280,11 @@ export class UsuariosListComponent implements OnInit {
 
   toggleEstado(usuario: UsuarioListado): void {
     if (!usuario || usuario.estado === 'ELIMINADO') return;
-    
+
     this.isLoading = true;
     this.gestion.toggleEstado(usuario.email).subscribe({
       next: (res) => {
         this.toast.showSuccess(res.message);
-        // Reload list
         const valores: UsuariosFiltro = this.filtros.getRawValue();
         valores.rol = 'CLIENTE';
         this.gestion.getAll(valores).subscribe((data) => {

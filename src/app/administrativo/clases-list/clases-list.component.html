@@ -3,6 +3,14 @@
     <h3>Clases</h3>
     <div class="card-head-actions">
       <button
+        *ngIf="isDueno"
+        type="button"
+        class="btn btn-secondary"
+        (click)="abrirModalGracia()"
+      >
+        Configurar días de gracia
+      </button>
+      <button
         type="button"
         class="btn btn-primary"
         (click)="onAgregar()"
@@ -373,5 +381,46 @@
         Cerrar
       </button>
     </div>
+  </div>
+</div>
+
+<!-- Modal: Configurar días de gracia -->
+<div
+  class="modal-overlay"
+  *ngIf="showModalGracia"
+  role="presentation"
+  (click)="cerrarModalGracia()"
+>
+  <div
+    class="card card-pad modal-panel"
+    role="dialog"
+    aria-labelledby="modal-gracia-title"
+    (click)="$event.stopPropagation()"
+  >
+    <h4 id="modal-gracia-title" class="modal-title">Configurar días de gracia</h4>
+    <p class="help">
+      Cantidad de días de gracia global para el pago de mensualidades (1–10).
+    </p>
+
+    <form class="form" [formGroup]="graciaForm" (ngSubmit)="guardarDiasGracia()">
+      <div class="field">
+        <label class="label" for="dias-gracia-global">Días de gracia mensual</label>
+        <input
+          id="dias-gracia-global"
+          class="control"
+          type="number"
+          formControlName="dias"
+        />
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="guardandoGracia">
+          Guardar
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalGracia()" [disabled]="guardandoGracia">
+          Cancelar
+        </button>
+      </div>
+    </form>
   </div>
 </div>

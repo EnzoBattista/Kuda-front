@@ -23,6 +23,7 @@ import {
   cupoClaseRangoValidator,
 } from '../../validators/cupo-clase.validator';
 import { ToastService } from '../../services/toast.service';
+import { ConfiguracionService } from '../../services/configuracion.service';
 
 export interface ClaseListItem extends Clase {
   proximaFecha: string | null;
@@ -61,6 +62,22 @@ export class ClasesListComponent implements OnInit {
   private readonly listaEsperaService = inject(ListaEsperaService);
   private readonly fb = inject(FormBuilder);
   private readonly toastService = inject(ToastService);
+  private readonly configuracionService = inject(ConfiguracionService);
+
+  readonly graciaForm = this.fb.group({
+    dias: [1],
+  });
+
+  showModalGracia = false;
+  guardandoGracia = false;
+  diasGraciaGlobal = 1;
+  recordatorioPagoDia = 1;
+
+  private readonly mensajeGraciaFueraDeRango =
+    'No se puede modificar porque los dias de gracia debe estar en el rango 1-10';
+
+  private readonly mensajeGraciaMenorQueRecordatorio =
+    'No se puede modificar porque el recordatorio de pago se encuentra fuera de rango';
 
   readonly diasClase = DIAS_CLASE;
   readonly horasPermitidas = HORAS_PERMITIDAS;
@@ -132,6 +149,7 @@ export class ClasesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargarClases();
+    this.cargarConfiguracionGracia();
     this.claseForm.get('salaId')?.valueChanges.subscribe(() => {
       this.claseForm.get('cupo_maximo')?.updateValueAndValidity({ emitEvent: false });
     });
@@ -812,5 +830,64 @@ export class ClasesListComponent implements OnInit {
 
   tipoListaLabel(item: ListaEsperaItem): string {
     return item.tipo === 'MENSUAL' ? 'Abonado' : 'No abonado';
+  }
+
+  private cargarConfiguracionGracia(): void {
+    this.configuracionService.obtener().subscribe({
+      next: (cfg) => {
+        this.diasGraciaGlobal = cfg.dias_gracia_mensual;
+        this.recordatorioPagoDia = cfg.recordatorio_pago_dia ?? 1;
+        this.graciaForm.patchValue({ dias: cfg.dias_gracia_mensual });
+      },
+      error: () => {
+        this.diasGraciaGlobal = 1;
+        this.recordatorioPagoDia = 1;
+        this.graciaForm.patchValue({ dias: 1 });
+      },
+    });
+  }
+
+  abrirModalGracia(): void {
+    this.graciaForm.patchValue({ dias: this.diasGraciaGlobal });
+    this.showModalGracia = true;
+  }
+
+  cerrarModalGracia(): void {
+    this.showModalGracia = false;
+    this.guardandoGracia = false;
+  }
+
+  guardarDiasGracia(): void {
+    if (this.guardandoGracia) return;
+
+    const dias = Number(this.graciaForm.getRawValue().dias);
+
+    if (!Number.isInteger(dias) || dias < 1 || dias > 10) {
+      this.toastService.showError(this.mensajeGraciaFueraDeRango);
+      return;
+    }
+
+    if (dias < this.recordatorioPagoDia) {
+      this.toastService.showError(this.mensajeGraciaMenorQueRecordatorio);
+      return;
+    }
+
+    this.guardandoGracia = true;
+
+    this.configuracionService.actualizar({ dias_gracia_mensual: dias }).subscribe({
+      next: (cfg) => {
+        this.diasGraciaGlobal = cfg.dias_gracia_mensual;
+        this.recordatorioPagoDia = cfg.recordatorio_pago_dia ?? this.recordatorioPagoDia;
+        this.toastService.showSuccess('Configuracion modificada exitosamente');
+        this.guardandoGracia = false;
+        this.cerrarModalGracia();
+      },
+      error: (err) => {
+        this.toastService.showError(
+          err?.error?.message ?? 'No se pudo actualizar la configuración',
+        );
+        this.guardandoGracia = false;
+      },
+    });
   }
 }

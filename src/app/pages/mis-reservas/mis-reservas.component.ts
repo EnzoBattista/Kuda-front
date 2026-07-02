@@ -1,12 +1,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { Subscription, interval } from 'rxjs';
+import { Subscription, interval, forkJoin } from 'rxjs';
 
 import {
   MSG_RESERVA_CANCELADA,
   MSG_RESERVA_PAGO_RECHAZADO,
   MSG_SENA_PAGO_INCOMPLETO,
+  MSG_RESERVA_CONFIRMADA,
+  AbonadoGrupoMensual,
   ReservaHistorial,
   ReservasService,
   ResultadoCancelacion,
@@ -30,7 +32,12 @@ interface AbonadoGrupo {
   estadoMensualidad?: string;
   reservas: ReservaHistorial[];
   cantidadActivas: number;
+  cantidadPendientes?: number;
   totalClases?: number;
+  mostrarPagarMes?: boolean;
+  requierePago?: boolean;
+  diasGraciaRestantes?: number | null;
+  monto?: number;
 }
 
 interface CardItem {
@@ -75,6 +82,10 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   errorCancelacion = '';
   isCompletandoSena = false;
   errorCompletarSena = '';
+  isPagandoMes = false;
+  errorPagarMes = '';
+  mensualidadesExtra: AbonadoGrupo[] = [];
+  private mensualidadesMap = new Map<number, AbonadoGrupoMensual>();
 
   bannerPagoEnCurso = '';
   pagoCompletado = false;
@@ -128,11 +139,42 @@ export class MisReservasComponent implements OnInit, OnDestroy {
   cargarReservas(): void {
     this.isLoading = true;
     this.errorMsg = '';
-    this.reservasService.getMisReservas().subscribe({
-      next: (data) => {
-        this.reservas = (data ?? []).filter((r) => r.estado !== 'CANCELADA' || r.esAbonado);
-        this.actividades = [...new Set(this.reservas.map((r) => r.actividad))].sort();
-        this.sedes = [...new Set(this.reservas.map((r) => r.sede))].sort();
+    forkJoin({
+      reservas: this.reservasService.getMisReservas(),
+      mensualidades: this.reservasService.getMensualidadesCliente(),
+    }).subscribe({
+      next: ({ reservas, mensualidades }) => {
+        this.reservas = (reservas ?? []).filter((r) => r.estado !== 'CANCELADA' || r.esAbonado);
+        const hoy = new Date().toISOString().slice(0, 10);
+        this.mensualidadesMap = new Map(
+          (mensualidades ?? []).map((m) => [
+            m.id,
+            this.reservasService.construirGrupoDesdeMensual(m, hoy),
+          ]),
+        );
+        const idsEnReservas = new Set(
+          this.reservas
+            .filter((r) => r.inscripcionMensualId)
+            .map((r) => r.inscripcionMensualId as number),
+        );
+        this.mensualidadesExtra = (mensualidades ?? [])
+          .filter(
+            (m) =>
+              (m.estado === 'EN_GRACIA' ||
+                (m.estado === 'PENDIENTE_PAGO' && m.mostrar_pagar_mes)) &&
+              !idsEnReservas.has(m.id),
+          )
+          .map((m) => this.reservasService.construirGrupoDesdeMensual(m, hoy));
+        const todasActividades = [
+          ...this.reservas.map((r) => r.actividad),
+          ...this.mensualidadesExtra.map((g) => g.actividad),
+        ];
+        const todasSedes = [
+          ...this.reservas.map((r) => r.sede),
+          ...this.mensualidadesExtra.map((g) => g.sede),
+        ];
+        this.actividades = [...new Set(todasActividades)].sort();
+        this.sedes = [...new Set(todasSedes)].sort();
         this.aplicarFiltros();
         this.isLoading = false;
       },
@@ -151,6 +193,30 @@ export class MisReservasComponent implements OnInit, OnDestroy {
         (!sede || r.sede === sede),
     );
     this.items = this.agruparReservas(this.reservasFiltradas);
+    for (const item of this.items) {
+      if (item.kind === 'grupo' && item.grupo) {
+        const meta = this.mensualidadesMap.get(item.grupo.mensualId);
+        if (meta) {
+          item.grupo.mostrarPagarMes = meta.mostrarPagarMes;
+          item.grupo.requierePago = meta.requierePago;
+          item.grupo.diasGraciaRestantes = meta.diasGraciaRestantes;
+          item.grupo.monto = meta.monto;
+          if (!item.grupo.estadoMensualidad) {
+            item.grupo.estadoMensualidad = meta.estadoMensualidad;
+          }
+        }
+      }
+    }
+    const extrasFiltrados = this.mensualidadesExtra.filter(
+      (g) =>
+        (!actividad || g.actividad === actividad) &&
+        (!sede || g.sede === sede),
+    );
+    for (const g of extrasFiltrados) {
+      if (!this.items.some((i) => i.kind === 'grupo' && i.grupo?.mensualId === g.mensualId)) {
+        this.items.push({ kind: 'grupo', grupo: g });
+      }
+    }
   }
 
   private agruparReservas(reservas: ReservaHistorial[]): CardItem[] {
@@ -175,6 +241,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
             estadoMensualidad: r.estadoMensualidad,
             reservas: [],
             cantidadActivas: 0,
+            cantidadPendientes: 0,
             totalClases: r.totalReservas,
           };
           grupos.set(key, grupo);
@@ -182,6 +249,9 @@ export class MisReservasComponent implements OnInit, OnDestroy {
         }
         grupo.reservas.push(r);
         if (r.estado === 'ACTIVA') grupo.cantidadActivas += 1;
+        if (r.estado === 'PENDIENTE_PAGO') {
+          grupo.cantidadPendientes = (grupo.cantidadPendientes ?? 0) + 1;
+        }
       } else {
         items.push({ kind: 'individual', reserva: r });
       }
@@ -195,11 +265,67 @@ export class MisReservasComponent implements OnInit, OnDestroy {
       );
     }
 
-    // Oculta abonados que ya no tienen ninguna reserva activa (mensual
-    // "muerta" porque el cliente canceló todas o el CEF las canceló).
-    return items.filter(
-      (i) => i.kind !== 'grupo' || (i.grupo?.cantidadActivas ?? 0) > 0,
-    );
+    return items.filter((i) => {
+      if (i.kind !== 'grupo') return true;
+      const g = i.grupo;
+      if (!g) return false;
+      return (
+        g.cantidadActivas > 0 ||
+        (g.cantidadPendientes ?? 0) > 0 ||
+        g.mostrarPagarMes ||
+        ['PENDIENTE_PAGO', 'EN_GRACIA'].includes(g.estadoMensualidad ?? '')
+      );
+    });
+  }
+
+  estadoMensualidadLabel(estado?: string): string {
+    const map: Record<string, string> = {
+      VIGENTE: 'Vigente',
+      PENDIENTE_PAGO: 'Pendiente de pago',
+      EN_GRACIA: 'En gracia',
+      SUSPENDIDA: 'Suspendido',
+      CANCELADA: 'Cancelado',
+      FINALIZADA: 'Finalizado',
+    };
+    return map[estado ?? ''] ?? estado ?? '—';
+  }
+
+  colorEstadoMensualidad(estado?: string): string {
+    if (estado === 'CANCELADA' || estado === 'SUSPENDIDA') return 'var(--brand-red, #dc2626)';
+    if (estado === 'PENDIENTE_PAGO' || estado === 'EN_GRACIA') return '#d97706';
+    return 'var(--success-color, #2ecc71)';
+  }
+
+  pagarMes(grupo: AbonadoGrupo): void {
+    if (!grupo.mostrarPagarMes || this.isPagandoMes) return;
+    this.isPagandoMes = true;
+    this.errorPagarMes = '';
+    this.reservasService.pagarMensualidad(grupo.mensualId).subscribe({
+      next: (result) => {
+        this.isPagandoMes = false;
+        if (result.pendientePago && result.redirectUrl && result.pagoId) {
+          this.iniciarPagoMercadoPago(result.redirectUrl, result.pagoId);
+        } else {
+          this.toastService.show(result.message, 'success');
+          this.cargarReservas();
+        }
+      },
+      error: (err: unknown) => {
+        this.isPagandoMes = false;
+        this.errorPagarMes = this.mensajeErrorCarga(err);
+        this.toastService.show(this.errorPagarMes, 'error');
+      },
+    });
+  }
+
+  private iniciarPagoMercadoPago(redirectUrl: string, pagoId: number): void {
+    this.bannerPagoEnCurso = 'Completá el pago en Mercado Pago para confirmar tu mensualidad.';
+    this.bannerError = '';
+    this.bannerSuccess = '';
+    this.ventanaPago = window.open(redirectUrl, '_blank');
+    this.ventanaPagoMonitoreada = this.ventanaPago;
+    document.addEventListener('visibilitychange', this.onVisibilidadPago);
+    this.iniciarPollingPago(pagoId);
   }
 
 
@@ -710,8 +836,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
       this.pagoIdEnCurso = null;
       this.bannerPagoEnCurso = '';
       this.bannerError = '';
-      this.bannerSuccess =
-        'Seña completada correctamente. Tu reserva está confirmada con pago completo.';
+      this.bannerSuccess = MSG_RESERVA_CONFIRMADA;
       this.cargarReservas();
       return;
     }
@@ -773,6 +898,7 @@ export class MisReservasComponent implements OnInit, OnDestroy {
       CANCELADA: 'Cancelada',
       COMPLETADA: 'Completada',
       EN_ESPERA: 'En lista de espera',
+      PENDIENTE_PAGO: 'Pendiente de pago',
     };
     return map[r.estado] ?? r.estado;
   }

@@ -16,7 +16,7 @@ import { CupoPendienteLista } from './lista-espera.service';
 
 
 export type ModalidadReserva = 'ABONADO' | 'INDIVIDUAL';
-export type EstadoHistorial = 'ACTIVA' | 'CANCELADA' | 'COMPLETADA' | 'EN_ESPERA';
+export type EstadoHistorial = 'ACTIVA' | 'CANCELADA' | 'COMPLETADA' | 'EN_ESPERA' | 'PENDIENTE_PAGO';
 export type TipoPago = 'PAGO_COMPLETO' | 'SEÑA';
 export type TipoListaEspera = 'ABONADO' | 'INDIVIDUAL';
 
@@ -114,6 +114,28 @@ export interface ResultadoReserva {
   pendientePago?: boolean;
 }
 
+export interface AbonadoGrupoMensual {
+  mensualId: number;
+  actividad: string;
+  actividadDescripcion?: string;
+  descripcionExpandida?: boolean;
+  sede: string;
+  diaSemana: string;
+  horaInicio: string;
+  horaFin: string;
+  periodoInicio?: string;
+  periodoFin?: string;
+  estadoMensualidad?: string;
+  reservas: ReservaHistorial[];
+  cantidadActivas: number;
+  cantidadPendientes?: number;
+  totalClases?: number;
+  mostrarPagarMes?: boolean;
+  requierePago?: boolean;
+  diasGraciaRestantes?: number | null;
+  monto?: number;
+}
+
 interface ReservaApiDto {
   id: number;
   fecha_exacta: string;
@@ -167,9 +189,16 @@ interface InscripcionMensualApi {
   periodo_fin: string;
   estado: string;
   monto: number | string;
-  actividad?: { nombre: string };
+  inscripcion_anterior_id?: number | null;
+  ultima_clase_efectiva?: string;
+  mostrar_pagar_mes?: boolean;
+  requiere_pago?: boolean;
+  dias_gracia_restantes?: number | null;
+  fin_gracia?: string | null;
+  actividad?: { nombre: string; descripcion?: string };
   clase?: {
     id: number;
+    dia_semana?: string;
     hora_inicio: string;
     hora_fin: string;
     sala?: { identificador: string };
@@ -242,8 +271,17 @@ export class ReservasService {
           const mapped = activasCompletas.map((r) =>
             this.mapReservaDto(r, individuales, mensuales, hoy),
           );
-          // Próximas: activas o canceladas por el CEF (sin clases que ya finalizaron hoy).
           const proximas = mapped.filter((r) => {
+            if (r.estado === 'PENDIENTE_PAGO' && r.inscripcionMensualId) {
+              const mensual = mensuales.find((m) => m.id === r.inscripcionMensualId);
+              if (
+                mensual?.inscripcion_anterior_id &&
+                !mensual.mostrar_pagar_mes
+              ) {
+                return false;
+              }
+            }
+            if (r.estado === 'PENDIENTE_PAGO') return true;
             if (r.estado !== 'ACTIVA' && r.estado !== 'CANCELADA') return false;
             if (r.proximaFecha === hoy) {
               return this.horasHastaClase(hoy, r.horaFin) >= 0;
@@ -674,6 +712,114 @@ export class ReservasService {
       .pipe(
         catchError((err) => throwError(() => this.toHttpError(err)))
       );
+  }
+
+  getMensualidadesCliente(): Observable<InscripcionMensualApi[]> {
+    const email = this.auth.getCurrentUser()?.email;
+    if (!email) {
+      return of([]);
+    }
+    const params = new HttpParams().set('cliente_email', email);
+    return this.http
+      .get<InscripcionMensualApi[]>(this.inscripcionesMenUrl, {
+        headers: this.noCacheHeaders,
+        params,
+      })
+      .pipe(catchError(() => of([])));
+  }
+
+  pagarMensualidad(mensualId: number): Observable<ResultadoReserva> {
+    return this.http
+      .post<{
+        pago_id: number;
+        init_point?: string;
+        sandbox_init_point?: string;
+      }>(`${this.inscripcionesMenUrl}/${mensualId}/pagar`, {})
+      .pipe(
+        map((pref) => {
+          const redirectUrl = pref.init_point || pref.sandbox_init_point;
+          if (!redirectUrl) {
+            throw new Error('Mercado Pago no devolvió URL de checkout');
+          }
+          return {
+            message: MSG_PAGO_PENDIENTE_MP,
+            reservaId: 0,
+            redirectUrl,
+            pagoId: pref.pago_id,
+            pendientePago: true,
+          } satisfies ResultadoReserva;
+        }),
+        catchError((err) => throwError(() => this.toHttpError(err))),
+      );
+  }
+
+  mensualidadAPseudoReservas(m: InscripcionMensualApi, hoy: string): ReservaHistorial[] {
+    const reservas = m.reservas ?? [];
+    if (reservas.length === 0) return [];
+
+    const horaInicio = formatHora(m.clase?.hora_inicio ?? '00:00');
+    const horaFin = formatHora(m.clase?.hora_fin ?? '00:00');
+    const sede = extraerSalaDto(m.clase?.sala);
+
+    return reservas.map((r) => {
+      const fecha = String(r.fecha_exacta).slice(0, 10);
+      let estado: EstadoHistorial =
+        r.estado === 'CANCELADA'
+          ? 'CANCELADA'
+          : r.estado === 'PENDIENTE_PAGO'
+            ? 'PENDIENTE_PAGO'
+            : 'ACTIVA';
+      if (estado === 'ACTIVA' && fecha < hoy) {
+        estado = 'COMPLETADA';
+      }
+      return {
+        id: r.id,
+        claseId: m.clase_id,
+        actividad: m.actividad?.nombre ?? '—',
+        actividadDescripcion: m.actividad?.descripcion,
+        sede,
+        diaSemana: m.clase?.dia_semana ?? diaDesdeFecha(fecha),
+        horaInicio,
+        horaFin,
+        modalidad: 'ABONADO',
+        esAbonado: true,
+        estado,
+        montoAbonado: Number(m.monto),
+        fechaReserva: fecha,
+        proximaFecha: fecha,
+        inscripcionMensualId: m.id,
+        periodoInicio: String(m.periodo_inicio).slice(0, 10),
+        periodoFin: String(m.periodo_fin).slice(0, 10),
+        estadoMensualidad: m.estado,
+        totalReservas: reservas.length,
+      };
+    });
+  }
+
+  construirGrupoDesdeMensual(m: InscripcionMensualApi, hoy: string): AbonadoGrupoMensual {
+    const reservas = this.mensualidadAPseudoReservas(m, hoy);
+    const horaInicio = formatHora(m.clase?.hora_inicio ?? '00:00');
+    const horaFin = formatHora(m.clase?.hora_fin ?? '00:00');
+    return {
+      mensualId: m.id,
+      actividad: m.actividad?.nombre ?? '—',
+      actividadDescripcion: m.actividad?.descripcion,
+      sede: extraerSalaDto(m.clase?.sala),
+      diaSemana: m.clase?.dia_semana ?? (reservas[0]?.diaSemana ?? '—'),
+      horaInicio,
+      horaFin,
+      periodoInicio: String(m.periodo_inicio).slice(0, 10),
+      periodoFin: String(m.periodo_fin).slice(0, 10),
+      estadoMensualidad: m.estado,
+      reservas,
+      cantidadActivas: reservas.filter((r) => r.estado === 'ACTIVA').length,
+      cantidadPendientes: reservas.filter((r) => r.estado === 'PENDIENTE_PAGO').length,
+      totalClases: reservas.length,
+      mostrarPagarMes: Boolean(m.mostrar_pagar_mes),
+      requierePago: Boolean(m.requiere_pago),
+      diasGraciaRestantes: m.dias_gracia_restantes ?? null,
+      monto: Number(m.monto),
+    };
   }
 
   completarSena(inscripcionId: number): Observable<any> {
@@ -1189,7 +1335,11 @@ export class ReservasService {
 
     const esAbonado = Boolean(mensual);
     let estado: EstadoHistorial =
-      dto.estado === 'CANCELADA' ? 'CANCELADA' : 'ACTIVA';
+      dto.estado === 'CANCELADA'
+        ? 'CANCELADA'
+        : dto.estado === 'PENDIENTE_PAGO'
+          ? 'PENDIENTE_PAGO'
+          : 'ACTIVA';
 
     if (estado === 'ACTIVA' && fecha < hoy) {
       estado = 'COMPLETADA';

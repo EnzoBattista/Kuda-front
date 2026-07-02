@@ -177,9 +177,12 @@
             <div class="reserva-info-row" *ngIf="g.estadoMensualidad">
               <dt>Estado de pase</dt>
               <dd>
-                <span [style.color]="g.estadoMensualidad === 'CANCELADA' ? 'var(--brand-red, #dc2626)' : 'var(--success-color, #2ecc71)'" style="font-weight: bold;">
-                  {{ g.estadoMensualidad === 'VIGENTE' ? 'Vigente' : g.estadoMensualidad === 'CANCELADA' ? 'Cancelado' : g.estadoMensualidad }}
+                <span [style.color]="colorEstadoMensualidad(g.estadoMensualidad)" style="font-weight: bold;">
+                  {{ estadoMensualidadLabel(g.estadoMensualidad) }}
                 </span>
+                <div *ngIf="g.estadoMensualidad === 'EN_GRACIA' && g.diasGraciaRestantes != null" style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem;">
+                  Quedan {{ g.diasGraciaRestantes }} día(s) de gracia para pagar.
+                </div>
               </dd>
             </div>
             <div class="reserva-info-row">
@@ -201,7 +204,7 @@
             <div class="reserva-info-row">
               <dt>Clases reservadas</dt>
               <dd>
-                {{ g.cantidadActivas }} activas / {{ g.totalClases || g.reservas.length }} totales
+                {{ g.cantidadActivas }} activas<span *ngIf="(g.cantidadPendientes ?? 0) > 0"> / {{ g.cantidadPendientes }} pendientes de pago</span> / {{ g.totalClases || g.reservas.length }} totales
                 <div *ngIf="g.estadoMensualidad === 'CANCELADA'" style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem;">
                   Quedan en curso las clases no canceladas.
                 </div>
@@ -209,11 +212,21 @@
             </div>
           </dl>
 
-          <div class="form-actions" style="display: flex; gap: 0.5rem;">
+          <div class="form-actions" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             <button type="button" class="btn btn-secondary" (click)="abrirDetalleGrupo(g)" style="flex: 1;">
               Ver detalle
             </button>
-            <button type="button" class="btn btn-danger" (click)="abrirCancelacionMensual(g)" style="flex: 1;" *ngIf="g.estadoMensualidad !== 'CANCELADA'">
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="pagarMes(g)"
+              style="flex: 1;"
+              *ngIf="g.mostrarPagarMes && g.requierePago"
+              [disabled]="isPagandoMes"
+            >
+              {{ isPagandoMes ? 'Procesando…' : 'Pagar mes' }}
+            </button>
+            <button type="button" class="btn btn-danger" (click)="abrirCancelacionMensual(g)" style="flex: 1;" *ngIf="g.estadoMensualidad === 'VIGENTE'">
               Cancelar Pase
             </button>
           </div>

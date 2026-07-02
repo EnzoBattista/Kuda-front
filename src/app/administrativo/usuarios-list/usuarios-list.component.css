@@ -17,6 +17,29 @@
   margin-bottom: 0.75rem;
 }
 
+.card-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.card-head-actions .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  padding: 0;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.card-head-actions .btn-icon svg {
+  display: block;
+}
+
 .card-head button {
   border: 1px solid var(--border);
   background: #fff;
