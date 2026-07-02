@@ -4,14 +4,15 @@
     <div class="card-head-actions" *ngIf="puedeConfigurarSistema">
       <button
         type="button"
-        class="btn-icon"
+        class="btn-icon btn-configurar-recordatorio"
         (click)="abrirModalRecordatorio()"
-        aria-label="Modificar notificación"
+        aria-label="Configurar recordatorio"
         title="Modificar recordatorio de falta de pago"
       >
         <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
         </svg>
+        <span class="btn-configurar-recordatorio-label">Configurar recordatorio</span>
       </button>
     </div>
   </div>
@@ -176,14 +177,14 @@
       Día de aviso global por falta de pago de mensualidad (dentro de los {{ diasGraciaGlobal }} días de gracia).
     </p>
 
-    <form class="form" [formGroup]="recordatorioForm" (ngSubmit)="guardarRecordatorio()" ngNativeValidate>
+    <form class="form" [formGroup]="recordatorioForm" (ngSubmit)="guardarRecordatorio()">
       <div class="field">
         <label class="label" for="recordatorio-dia">Día para recordar la falta de pago (1–{{ diasGraciaGlobal }})</label>
         <input id="recordatorio-dia" type="number" class="control" formControlName="dia" required min="1" [attr.max]="diasGraciaGlobal" />
       </div>
 
       <div class="form-actions" style="margin-top: 1.5rem;">
-        <button type="submit" class="btn btn-primary" [disabled]="recordatorioSubmitting">
+        <button type="submit" class="btn btn-primary">
           Modificar recordatorio
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalRecordatorio()" [disabled]="recordatorioSubmitting">

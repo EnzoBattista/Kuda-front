@@ -40,6 +40,18 @@
   display: block;
 }
 
+.card-head-actions .btn-configurar-recordatorio {
+  width: auto;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+}
+
+.btn-configurar-recordatorio-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 .card-head button {
   border: 1px solid var(--border);
   background: #fff;
