@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService, CurrentUser } from '../../services/auth.service';
-import { ToastService } from '../../shared/toast.service';
+import { ToastService } from '../../services/toast.service';
 import {
   CanalesNotificacion,
   NotificacionesService,
