@@ -12,7 +12,7 @@
       Completá tus datos. Debés ser mayor de 14 años para registrarte.
     </p>
 
-    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()" ngNativeValidate>
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
       <div class="form-row form-row-2">
         <div class="field">
           <div class="label">Nombre</div>
@@ -58,7 +58,6 @@
             class="control"
             type="date"
             formControlName="fechaNacimiento"
-            [max]="maxFechaNacimiento"
             required
           />
         </div>
@@ -92,7 +91,7 @@
         <button
           class="btn btn-primary"
           type="submit"
-          [disabled]="isSubmitting"
+          [disabled]="isSubmitting || form.invalid"
         >
           {{ isSubmitting ? 'Registrando…' : 'Registrarse' }}
         </button>

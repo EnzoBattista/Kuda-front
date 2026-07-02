@@ -54,8 +54,8 @@ const MSG_EMAIL_NO_REGISTRADO =
   'El email ingresado no pertenece a ninguna cuenta registrada';
 const MSG_RESET_OK = 'Su contraseña ha sido restablecida con éxito';
 const MSG_PASSWORDS_MISMATCH = 'Las contraseñas no coinciden';
-const MSG_TOKEN_EXPIRADO = 'El enlace de recuperación ha expirado';
 const MSG_TOKEN_INVALIDO = 'El enlace de recuperación es inválido';
+const MSG_PASSWORD_CORTA = 'La contraseña debe poseer mas de 8 caraceteres';
 
 interface PerfilFlat {
   email?: string;
@@ -373,19 +373,20 @@ function mapRecuperarPasswordError(err: unknown): string {
 function mapResetPasswordError(err: unknown): string {
   const raw = extractBackendMessage(err).toLowerCase();
 
-  if (raw.includes('expirado')) {
-    return MSG_TOKEN_EXPIRADO;
+  if (raw.includes('no coinciden')) {
+    return MSG_PASSWORDS_MISMATCH;
   }
+  if (raw.includes('caracteres')) {
+    return MSG_PASSWORD_CORTA;
+  }
+  // Un enlace expirado o ya usado se comunica como inválido (HU "Recuperar contraseña vía enlace").
   if (
+    raw.includes('expirado') ||
     raw.includes('inválido') ||
     raw.includes('invalido') ||
     raw.includes('incorrecto') ||
-    raw.includes('utilizado') ||
-    raw.includes('no coinciden')
+    raw.includes('utilizado')
   ) {
-    if (raw.includes('no coinciden')) {
-      return MSG_PASSWORDS_MISMATCH;
-    }
     return MSG_TOKEN_INVALIDO;
   }
 

@@ -65,7 +65,7 @@ export class ClasesListComponent implements OnInit {
   private readonly configuracionService = inject(ConfiguracionService);
 
   readonly graciaForm = this.fb.group({
-    dias: [1],
+    dias: [1 as number | null, Validators.required],
   });
 
   showModalGracia = false;

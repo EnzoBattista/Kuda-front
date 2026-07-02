@@ -58,7 +58,7 @@ export class UsuariosListComponent implements OnInit {
   showModalRecordatorio = false;
   recordatorioSubmitting = false;
   readonly recordatorioForm = new FormGroup({
-    dia: new FormControl<number | null>(null, { nonNullable: false }),
+    dia: new FormControl<number | null>(null, { validators: [Validators.required] }),
   });
 
   private readonly mensajeRecordatorioFueraDeGracia = (dias: number) =>

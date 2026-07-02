@@ -461,7 +461,7 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" class="btn btn-primary" [disabled]="guardandoGracia || graciaForm.invalid">
           Guardar
         </button>
         <button type="button" class="btn btn-secondary" (click)="cerrarModalGracia()" [disabled]="guardandoGracia">

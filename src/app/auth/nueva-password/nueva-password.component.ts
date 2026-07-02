@@ -1,41 +1,31 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink, Router } from '@angular/router';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-nueva-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './nueva-password.component.html',
   styleUrl: './nueva-password.component.css',
 })
 export class NuevaPasswordComponent implements OnInit {
-  readonly form = new FormGroup(
-    {
-      password: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required, Validators.minLength(8)],
-      }),
-      confirmPassword: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
-    },
-    { validators: [NuevaPasswordComponent.passwordsMatchValidator] }
-  );
+  readonly form = new FormGroup({
+    password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+  });
 
   token = '';
   isSubmitting = false;
-  submitted = false;
-  submitError = '';
-  successMessage = '';
 
   constructor(
     private readonly auth: AuthService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly toast: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -44,33 +34,22 @@ export class NuevaPasswordComponent implements OnInit {
   }
 
   onSubmit(): void {
-    this.submitted = true;
-    this.submitError = '';
-    this.successMessage = '';
-    this.form.markAllAsTouched();
-    if (this.form.invalid) return;
+    if (this.isSubmitting) return;
 
+    const { password, confirmPassword } = this.form.getRawValue();
     this.isSubmitting = true;
-    const { password, confirmPassword } = this.form.controls;
 
-    this.auth.nuevaPassword(this.token, password.value, confirmPassword.value).subscribe({
+    this.auth.nuevaPassword(this.token, password, confirmPassword).subscribe({
       next: (resp) => {
         this.isSubmitting = false;
-        this.successMessage =
-          resp?.message ?? 'Su contraseña ha sido restablecida con éxito';
+        this.toast.showSuccess(resp?.message ?? 'Su contraseña ha sido restablecida con éxito');
         this.form.reset();
+        void this.router.navigateByUrl('/login');
       },
       error: (err) => {
         this.isSubmitting = false;
-        this.submitError = err?.error?.message ?? 'El enlace es inválido o expiró. Solicitá uno nuevo.';
+        this.toast.showError(err?.error?.message ?? 'El enlace de recuperación es inválido');
       },
     });
-  }
-
-  private static passwordsMatchValidator(group: AbstractControl) {
-    const password = group.get('password')?.value;
-    const confirm = group.get('confirmPassword')?.value;
-    if (!password || !confirm) return null;
-    return password === confirm ? null : { passwordsMismatch: true };
   }
 }

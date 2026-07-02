@@ -1,15 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-cambiar-password',
@@ -19,87 +13,38 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './cambiar-password.component.css',
 })
 export class CambiarPasswordComponent {
-  readonly form = new FormGroup(
-    {
-      passwordActual: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
-      passwordNueva: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required, Validators.minLength(8)],
-      }),
-      confirmPassword: new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.required],
-      }),
-    },
-    { validators: [CambiarPasswordComponent.passwordsMatchValidator] }
-  );
+  readonly form = new FormGroup({
+    passwordActual: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    passwordNueva: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+  });
 
   isSubmitting = false;
-  submitted = false;
-  submitError = '';
-  successMessage = '';
 
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly toast: ToastService
+  ) {}
 
   onSubmit(): void {
-    this.submitted = true;
-    this.submitError = '';
-    this.successMessage = '';
+    if (this.isSubmitting) return;
 
-    if (this.form.invalid) return;
-
-    const { passwordActual, passwordNueva, confirmPassword } = this.form.controls;
-
-    if (passwordActual.value === passwordNueva.value) {
-      this.submitError = 'La nueva contraseña debe ser distinta a la actual';
-      return;
-    }
+    const { passwordActual, passwordNueva, confirmPassword } = this.form.getRawValue();
 
     this.isSubmitting = true;
 
-    this.auth
-      .cambiarPassword(passwordActual.value, passwordNueva.value, confirmPassword.value)
-      .subscribe({
-        next: () => {
-          this.isSubmitting = false;
-          this.successMessage = 'Contraseña modificada con éxito';
-          this.form.reset();
-        },
-        error: (err) => {
-          this.isSubmitting = false;
-          this.submitError = this.mapErrorMessage(err?.error?.message ?? '');
-        },
-      });
-  }
-
-  /**
-   * El back devuelve textos descriptivos. Acá los mapeamos a los strings EXACTOS
-   * pedidos por los escenarios de la HU "Cambiar contraseña".
-   */
-  private mapErrorMessage(msg: string): string {
-    const lower = msg.toLowerCase();
-    if (lower.includes('actual') && lower.includes('incorrecta')) {
-      return 'La contraseña actual es incorrecta';
-    }
-    if (
-      (lower.includes('distinta') || lower.includes('igual') || lower.includes('misma')) &&
-      lower.includes('actual')
-    ) {
-      return 'La nueva contraseña debe ser distinta a la actual';
-    }
-    if (lower.includes('coinciden')) {
-      return 'Las contraseñas no coinciden';
-    }
-    return msg || 'No se pudo actualizar la contraseña. Intentá nuevamente.';
-  }
-
-  private static passwordsMatchValidator(group: AbstractControl) {
-    const nueva = group.get('passwordNueva')?.value;
-    const confirm = group.get('confirmPassword')?.value;
-    if (!nueva || !confirm) return null;
-    return nueva === confirm ? null : { passwordsMismatch: true };
+    this.auth.cambiarPassword(passwordActual, passwordNueva, confirmPassword).subscribe({
+      next: (res) => {
+        this.isSubmitting = false;
+        this.toast.showSuccess(res.message ?? 'Contraseña modificada con éxito');
+        this.form.reset();
+      },
+      error: (err) => {
+        this.isSubmitting = false;
+        this.toast.showError(
+          err?.error?.message ?? 'No se pudo actualizar la contraseña. Intentá nuevamente.'
+        );
+      },
+    });
   }
 }
