@@ -405,8 +405,11 @@
           ¿Estás seguro de que deseas dar de baja este pase mensual? Se cancelarán todas las clases futuras y se liberarán los cupos correspondientes.
         </p>
 
-        <div class="aviso-cancelacion">
+        <div class="aviso-cancelacion" *ngIf="!esMensualidadImpaga(grupoSeleccionado)">
           <p>Se generarán cupones de crédito por el monto abonado de las clases futuras que falten más de 24 horas para comenzar.</p>
+        </div>
+        <div class="aviso-cancelacion" *ngIf="esMensualidadImpaga(grupoSeleccionado)">
+          <p>Este mes todavía no fue abonado, por lo que no se generará ningún cupón ni reintegro.</p>
         </div>
       </ng-container>
 
