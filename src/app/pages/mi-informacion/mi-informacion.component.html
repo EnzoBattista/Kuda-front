@@ -35,41 +35,5 @@
       <a routerLink="/editar-perfil" class="btn btn-primary">Modificar datos personales</a>
       <a routerLink="/cambiar-password" class="btn btn-secondary">Cambiar contraseña</a>
     </div>
-
-    <section class="notif-section" *ngIf="usuario && !auth.isAdministrativo()">
-      <h3>Preferencias de Notificaciones</h3>
-      <p class="help">Elegí qué alertas querés recibir del gimnasio.</p>
-
-      <p class="help" *ngIf="notifLoading">Cargando preferencias…</p>
-
-      <form class="form notif-form" [formGroup]="notifForm" (ngSubmit)="guardarPreferenciasNotificacion()" *ngIf="!notifLoading">
-        <label class="toggle-row">
-          <input type="checkbox" formControlName="notificaciones_activas" />
-          <span>Activar alertas</span>
-        </label>
-
-        <fieldset class="notif-opciones" [disabled]="!notifForm.controls.notificaciones_activas.value">
-          <legend class="label">Modificar notificaciones</legend>
-          <label class="check-row">
-            <input type="checkbox" formControlName="recordatorios_clases" />
-            <span>Recibir recordatorios de clases</span>
-          </label>
-          <label class="check-row">
-            <input type="checkbox" formControlName="promociones" />
-            <span>Recibir promociones</span>
-          </label>
-          <label class="check-row">
-            <input type="checkbox" formControlName="email" />
-            <span>Recibir notificaciones por email</span>
-          </label>
-        </fieldset>
-
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary" [disabled]="notifSaving">
-            {{ notifSaving ? 'Guardando…' : 'Guardar preferencias' }}
-          </button>
-        </div>
-      </form>
-    </section>
   </div>
 </div>
