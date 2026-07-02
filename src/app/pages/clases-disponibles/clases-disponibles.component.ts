@@ -321,11 +321,7 @@ export class ClasesDisponiblesComponent implements OnInit, OnDestroy {
   }
 
   etiquetaVale(v: Vale): string {
-    const partes = [v.actividad ?? 'Actividad'];
-    if (v.diaSemana && v.horaInicio) {
-      partes.push(`${v.diaSemana} ${v.horaInicio}`);
-    }
-    return partes.join(' · ');
+    return v.actividad ?? 'Actividad';
   }
 
   toggleValesDropdown(event: Event): void {
