@@ -290,6 +290,12 @@ export class MisReservasComponent implements OnInit, OnDestroy {
     return map[estado ?? ''] ?? estado ?? '—';
   }
 
+  // Un mes en gracia / precargado no fue abonado: al cancelarlo no se reintegra
+  // nada, así que no aplica el aviso de cupones de crédito.
+  esMensualidadImpaga(grupo?: AbonadoGrupo | null): boolean {
+    return ['PENDIENTE_PAGO', 'EN_GRACIA'].includes(grupo?.estadoMensualidad ?? '');
+  }
+
   colorEstadoMensualidad(estado?: string): string {
     if (estado === 'CANCELADA' || estado === 'SUSPENDIDA') return 'var(--brand-red, #dc2626)';
     if (estado === 'PENDIENTE_PAGO' || estado === 'EN_GRACIA') return '#d97706';
